@@ -1,1 +1,0 @@
-# VIPSS_LOCAL
