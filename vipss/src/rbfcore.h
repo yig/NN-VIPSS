@@ -11,7 +11,8 @@
 //#include "eigen3/Eigen/Dense"
 #include <armadillo>
 #include <unordered_map>
-using namespace std;
+// using namespace std;
+typedef unsigned int uint;
 
 enum RBF_INPUT{
     ON,
@@ -93,7 +94,7 @@ public:
 
 
 
-    int npt;
+    size_t npt;
     int polyDeg = 2;
     int bsize;
 
@@ -109,29 +110,29 @@ public:
     double rangevalue = 0.2;
     double maxvalue = 10000;
 
-    vector<double>pts;
-    vector<double>normals;
-    vector<double>tangents;
-    vector<uint>edges;
-    vector<int>labels;
+    std::vector<double>pts;
+    std::vector<double>normals;
+    std::vector<double>tangents;
+    std::vector<uint>edges;
+    std::vector<int>labels;
 
 private:
 
-    vector<double>initnormals;
-    vector<double>initnormals_uninorm;
+    std::vector<double>initnormals;
+    std::vector<double>initnormals_uninorm;
 
 public:
-    vector<double>newnormals;
-
-
-public:
-    vector<double>coff_cos;
-    vector<double>coff_sin;
+    std::vector<double>newnormals;
 
 
 public:
-    vector<double>finalMesh_v;
-    vector<uint>finalMesh_fv;
+    std::vector<double>coff_cos;
+    std::vector<double>coff_sin;
+
+
+public:
+    std::vector<double>finalMesh_v;
+    std::vector<uint>finalMesh_fv;
 
 public:
 
@@ -164,9 +165,9 @@ public:
     double sparse_para = 1e-3;
 
 public:
-    unordered_map<int, string>mp_RBF_INITMETHOD;
-    unordered_map<int, string>mp_RBF_METHOD;
-    unordered_map<int, string>mp_RBF_Kernal;
+    std::unordered_map<int, std::string>mp_RBF_INITMETHOD;
+    std::unordered_map<int, std::string>mp_RBF_METHOD;
+    std::unordered_map<int, std::string>mp_RBF_Kernal;
 
 public:
 
@@ -189,14 +190,14 @@ public:
     void (*Kernal_Hessian_Function_2p)(const double *p1, const double *p2, double *H);
 
 private:
-    vector<double>local_eigenBe, local_eigenEd, eigenBe, eigenEd, gtBe, gtEd;
+    std::vector<double>local_eigenBe, local_eigenEd, eigenBe, eigenEd, gtBe, gtEd;
 
 private:
-    vector<vector<double> >lamnbdaGlobal_Be,lamnbdaGlobal_Ed;
-    vector<double>lamnbda_list_sa;
+    std::vector<std::vector<double> >lamnbdaGlobal_Be,lamnbdaGlobal_Ed;
+    std::vector<double>lamnbda_list_sa;
 private:
-    unordered_map<int,unordered_map<int, vector<double> > >mp_RBF_InitNormal;
-    unordered_map<int,unordered_map<int, vector<double> > >mp_RBF_OptNormal;
+    std::unordered_map<int,std::unordered_map<int, std::vector<double> > >mp_RBF_InitNormal;
+    std::unordered_map<int,std::unordered_map<int, std::vector<double> > >mp_RBF_OptNormal;
 
 public:
 
@@ -212,7 +213,7 @@ public:
     inline double Dist_Function(const double *p);
 
 public:
-    static double Dist_Function(const R3Pt &in_pt);
+    //static double Dist_Function(const R3Pt &in_pt);
     //static FT Dist_Function(const Point_3 in_pt);
     int n_evacalls;
 public:
@@ -225,16 +226,16 @@ public:
 public:
 
 
-    void NormalRecification(double maxlen, vector<double> &nors);
+    void NormalRecification(double maxlen, std::vector<double> &nors);
 
 
 
 public:
-    void Set_HermiteRBF(vector<double>&pts);
-    int Solve_HermiteRBF(vector<double>&vn);
+    void Set_HermiteRBF(std::vector<double>&pts);
+    int Solve_HermiteRBF(std::vector<double>&vn);
 
 public:
-    void Set_Hermite_PredictNormal(vector<double>&pts);
+    void Set_Hermite_PredictNormal(std::vector<double>&pts);
 
 public:
 
@@ -249,7 +250,7 @@ public:
 
 public:
 
-    void Print_LamnbdaSearchTest(string fname);
+    void Print_LamnbdaSearchTest(std::string fname);
 
 
 
@@ -268,15 +269,15 @@ public:
 
 public:
 
-    bool Write_Hermite_NormalPrediction(string fname,int mode);
-    bool Write_Hermite_MST(string fname);
-    void WriteSeletivePLY(string fname, vector<double>&allnormals, vector<int>&pickInd);
+    bool Write_Hermite_NormalPrediction(std::string fname,int mode);
+    bool Write_Hermite_MST(std::string fname);
+    void WriteSeletivePLY(std::string fname, std::vector<double>&allnormals, std::vector<int>&pickInd);
 
     void SetInitnormal_Uninorm();
     void ClearSavedIterBatchInit();
-    void SaveIterBatchInit(vector<double>&allnormals, vector<double>&allnormals_uninorm, vector<int>&pickInd);
+    void SaveIterBatchInit(std::vector<double>&allnormals, std::vector<double>&allnormals_uninorm, std::vector<int>&pickInd);
 
-    void Write_Surface(string fname);
+    void Write_Surface(std::string fname);
 
 public:
 
@@ -284,12 +285,12 @@ public:
 
 public:
 
-    int ThreeStep(vector<double> &pts, vector<int> &labels, vector<double> &normals, vector<double> &tangents, vector<uint> &edges, RBF_Paras para);
-    int AllStep(vector<double> &pts, vector<int> &labels, vector<double> &normals, vector<double> &tangents, vector<uint> &edges, RBF_Paras para);
+    int ThreeStep(std::vector<double> &pts, std::vector<int> &labels, std::vector<double> &normals, std::vector<double> &tangents, std::vector<uint> &edges, RBF_Paras para);
+    int AllStep(std::vector<double> &pts, std::vector<int> &labels, std::vector<double> &normals, std::vector<double> &tangents, std::vector<uint> &edges, RBF_Paras para);
 
-    int InjectData(vector<double> &pts, vector<int> &labels, vector<double> &normals, vector<double> &tangents, vector<uint> &edges, RBF_Paras para);
+    int InjectData(std::vector<double> &pts, std::vector<int> &labels, std::vector<double> &normals, std::vector<double> &tangents, std::vector<uint> &edges, RBF_Paras para);
 
-    int InjectData(vector<double> &pts, RBF_Paras para);
+    int InjectData(std::vector<double> &pts, RBF_Paras para);
 
     void BuildK(RBF_Paras para);
 
@@ -299,18 +300,18 @@ public:
 
     void Surfacing(int method, int n_voxels_1d);
 
-    void BuildCoherentGraph();
+    //void BuildCoherentGraph();
 
-    void BatchInitEnergyTest(vector<double> &pts, vector<int> &labels, vector<double> &normals, vector<double> &tangents, vector<uint> &edges, RBF_Paras para);
+    void BatchInitEnergyTest(std::vector<double> &pts, std::vector<int> &labels, std::vector<double> &normals, std::vector<double> &tangents, std::vector<uint> &edges, RBF_Paras para);
 
 
 public:
-    vector<double>* ExportPts();
-    vector<double>* ExportPtsNormal(int normal_type);
+    std::vector<double>* ExportPts();
+    std::vector<double>* ExportPtsNormal(int normal_type);
 
 
-    vector<double>* ExportInitNormal(int kmethod, RBF_InitMethod init_type);
-    vector<double>* ExportOptNormal(int kmethod, RBF_InitMethod init_type);
+    std::vector<double>* ExportInitNormal(int kmethod, RBF_InitMethod init_type);
+    std::vector<double>* ExportOptNormal(int kmethod, RBF_InitMethod init_type);
 
 
 
@@ -318,30 +319,30 @@ public:
 
     Solution_Struct sol;
 
-    vector<int>record_partition;
-    vector<string>record_partition_name;
+    std::vector<int>record_partition;
+    std::vector<std::string>record_partition_name;
 
-    vector<int>npoints;
+    std::vector<size_t>npoints;
 
-    vector<string>record_initmethod;
-    vector<string>record_method;
-    vector<string>record_kernal;
-    vector<double>record_initenergy;
-    vector<double>record_energy;
-    vector<double>record_time;
+    std::vector<std::string>record_initmethod;
+    std::vector<std::string>record_method;
+    std::vector<std::string>record_kernal;
+    std::vector<double>record_initenergy;
+    std::vector<double>record_energy;
+    std::vector<double>record_time;
 
     double setup_time, init_time, solve_time, callfunc_time,invM_time, setK_time, surf_time;
-    vector<double>setup_timev, init_timev, solve_timev, callfunc_timev,invM_timev,setK_timev;
+    std::vector<double>setup_timev, init_timev, solve_timev, callfunc_timev,invM_timev,setK_timev;
 
     void Record();
     void Record(RBF_METHOD method, RBF_Kernal kernal, Solution_Struct &rsol, double time);
-    void AddPartition(string pname);
+    void AddPartition(std::string pname);
     void Print_Record();
-    void Print_TimerRecord(string fname);
+    void Print_TimerRecord(std::string fname);
     void Clear_TimerRecord();
     void Print_Record_Init();
 
-    void Print_TimerRecord_Single(string fname);
+    void Print_TimerRecord_Single(std::string fname);
 
 };
 

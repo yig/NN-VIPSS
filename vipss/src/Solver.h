@@ -8,7 +8,7 @@
 #include <nlopt.hpp>
 
 
-using namespace std;
+// using namespace std;
 
 enum ConstraintMethod{
     CM_EQUAL,
@@ -27,8 +27,8 @@ struct triple{
 
 struct LinearVec{
 
-    vector<int>ts;
-    vector<double>ws;
+    std::vector<int>ts;
+    std::vector<double>ws;
     double a;
     double b;
     int label;
@@ -45,12 +45,12 @@ struct LinearVec{
 
 struct QuadraticVec{
 
-    vector<triple>ts;
+    std::vector<triple>ts;
     double b;
     ConstraintMethod mt;
 
     QuadraticVec(){}
-    QuadraticVec(vector<triple>&ts, double b):ts(ts),b(b){}
+    QuadraticVec(std::vector<triple>&ts, double b):ts(ts),b(b){}
 
     void push_back(int i,int j,double val);
     void set_b(double b);
@@ -70,7 +70,7 @@ struct Solution_Struct{
     double init_energy;
     double energy;
     double time;
-    vector<double>solveval;
+    std::vector<double>solveval;
     arma::vec solvec_arma;
 
     Solution_Struct():init_energy(-1),energy(-1){}
@@ -85,7 +85,7 @@ public:
 //    GRBEnv objenv;
 //    GRBModel objmodel;
 
-//    vector<GRBVar>c_vars;
+//    std::vector<GRBVar>c_vars;
 
 public:
 //    Solver():objenv(GRBEnv()),objmodel(GRBModel(objenv)){
@@ -100,33 +100,33 @@ public:
 public:
 
 
-//    static int solveQuadraticProgramming(vector<triple> &M, vector<triple> &Ab,int n, vector<double>&solveval);
+//    static int solveQuadraticProgramming(std::vector<triple> &M, std::vector<triple> &Ab,int n, std::vector<double>&solveval);
 
-//    static int solveQuadraticProgramming(vector<triple> &M, vector<LinearVec> &Ab,int n, vector<double>&solveval);
-//    static int solveQuadraticProgramming(arma::mat &M, vector<LinearVec> &Ab,int n, Solution_Struct &sol);
+//    static int solveQuadraticProgramming(std::vector<triple> &M, std::vector<LinearVec> &Ab,int n, std::vector<double>&solveval);
+//    static int solveQuadraticProgramming(arma::mat &M, std::vector<LinearVec> &Ab,int n, Solution_Struct &sol);
 
 
-//    static int solveLinearLS(vector<triple> &M, vector<double> &b, int n, vector<double>&solveval);
+//    static int solveLinearLS(std::vector<triple> &M, std::vector<double> &b, int n, std::vector<double>&solveval);
 
-//    static int solveQCQP(arma::mat &M, vector<LinearVec> &Ab, vector<QuadraticVec> &Cb, int n, Solution_Struct &sol);
+//    static int solveQCQP(arma::mat &M, std::vector<LinearVec> &Ab, std::vector<QuadraticVec> &Cb, int n, Solution_Struct &sol);
 
-    //int solveQP_multiupdata_main(Solution_Struct &sol, vector<LinearVec> &Ab, int n, bool suppressinfo = true);
+    //int solveQP_multiupdata_main(Solution_Struct &sol, std::vector<LinearVec> &Ab, int n, bool suppressinfo = true);
     //int solveQP_multiupdata_init(arma::mat &M, int n);
 
 
 
-    static int nloptwrapper(vector<double>&lowerbound,
-                   vector<double>&upperbound,
+    static int nloptwrapper(std::vector<double>&lowerbound,
+                   std::vector<double>&upperbound,
                    nlopt::vfunc optfunc,
                    void *funcPara,
-                   vector<NLOptConstraint>&nl_constraints,
+                   std::vector<NLOptConstraint>&nl_constraints,
                    double tor,
                    int maxIter,
                    Solution_Struct &sol
                    );
 
-    static int nloptwrapper(vector<double>&lowerbound,
-                   vector<double>&upperbound,
+    static int nloptwrapper(std::vector<double>&lowerbound,
+                   std::vector<double>&upperbound,
                    nlopt::vfunc optfunc,
                    void *funcPara,
                    double tor,

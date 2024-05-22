@@ -139,6 +139,17 @@ inline bool FileExists( const string &in_str )
 #endif
 
 
+typedef bool WINbool;
+#define FALSE false
+#define TRUE true
+
+#include <assert.h>
+#define ASSERT(f) assert(f)
+
+#define TRACE printf
+
+
+
 #if defined(__linux__)
 #  include <string.h>
 #  include <strings.h>

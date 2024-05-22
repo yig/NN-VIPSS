@@ -11,6 +11,8 @@
 #include "ImplicitedSurfacing.h"
 typedef std::chrono::high_resolution_clock Clock;
 
+using namespace std;
+
 void RBF_Core::BuildK(RBF_Paras para){
 
     isuse_sparse = para.isusesparse;
@@ -41,7 +43,7 @@ void RBF_Core::BuildK(RBF_Paras para){
     cout << "Build Time: " << (setup_time = std::chrono::nanoseconds(t2 - t1).count()/1e9) << endl<< endl;
 
 
-    if(0)BuildCoherentGraph();
+    //if(0)BuildCoherentGraph();
 }
 
 void RBF_Core::InitNormal(RBF_Paras para){
@@ -91,24 +93,24 @@ void RBF_Core::OptNormal(int method){
 
 void RBF_Core::Surfacing(int method, int n_voxels_1d){
 
-    n_evacalls = 0;
+    /*n_evacalls = 0;
     Surfacer sf;
 
     surf_time = sf.Surfacing_Implicit(pts,n_voxels_1d,false,RBF_Core::Dist_Function);
 
     sf.WriteSurface(finalMesh_v,finalMesh_fv);
     if(open_debug_log)
-    cout<<"n_evacalls: "<<n_evacalls<<"   ave: "<<surf_time/n_evacalls<<endl;
+    cout<<"n_evacalls: "<<n_evacalls<<"   ave: "<<surf_time/n_evacalls<<endl;*/
 
 
 }
 
 
-int RBF_Core::InjectData(vector<double> &pts, RBF_Paras para)
+int RBF_Core::InjectData(std::vector<double> &pts, RBF_Paras para)
 {
-    vector<int> labels;
-    vector<double> normals,tangents;
-    vector<uint> edges;
+    std::vector<int> labels;
+    std::vector<double> normals,tangents;
+    std::vector<uint> edges;
 
     InjectData(pts,labels,normals,tangents,edges,para);
     // cout << " finish InjectData " << endl;
@@ -116,7 +118,7 @@ int RBF_Core::InjectData(vector<double> &pts, RBF_Paras para)
 
 }
 
-int RBF_Core::InjectData(vector<double> &pts, vector<int> &labels, vector<double> &normals, vector<double> &tangents, vector<uint> &edges, RBF_Paras para){
+int RBF_Core::InjectData(std::vector<double> &pts, std::vector<int> &labels, std::vector<double> &normals, std::vector<double> &tangents, std::vector<uint> &edges, RBF_Paras para){
 
     isuse_sparse = para.isusesparse;
     sparse_para = para.sparse_para;
@@ -151,7 +153,7 @@ int RBF_Core::InjectData(vector<double> &pts, vector<int> &labels, vector<double
 	return 1;
 }
 
-int RBF_Core::ThreeStep(vector<double>&pts, vector<int>&labels, vector<double>&normals, vector<double>&tangents,  vector<uint>&edges, RBF_Paras para){
+int RBF_Core::ThreeStep(std::vector<double>&pts, std::vector<int>&labels, std::vector<double>&normals, std::vector<double>&tangents,  std::vector<uint>&edges, RBF_Paras para){
 
     InjectData(pts, labels, normals, tangents, edges,  para);
     BuildK(para);
@@ -162,7 +164,7 @@ int RBF_Core::ThreeStep(vector<double>&pts, vector<int>&labels, vector<double>&n
 }
 
 
-int RBF_Core::AllStep(vector<double> &pts, vector<int> &labels, vector<double> &normals, vector<double> &tangents, vector<uint> &edges, RBF_Paras para){
+int RBF_Core::AllStep(std::vector<double> &pts, std::vector<int> &labels, std::vector<double> &normals, std::vector<double> &tangents, std::vector<uint> &edges, RBF_Paras para){
 
     InjectData(pts, labels, normals, tangents, edges,  para);
     BuildK(para);
@@ -173,7 +175,7 @@ int RBF_Core::AllStep(vector<double> &pts, vector<int> &labels, vector<double> &
 
 }
 
-void RBF_Core::BatchInitEnergyTest(vector<double> &pts, vector<int> &labels, vector<double> &normals, vector<double> &tangents, vector<uint> &edges, RBF_Paras para){
+void RBF_Core::BatchInitEnergyTest(std::vector<double> &pts, std::vector<int> &labels, std::vector<double> &normals, std::vector<double> &tangents, std::vector<uint> &edges, RBF_Paras para){
 
     InjectData(pts, labels, normals, tangents, edges,  para);
     BuildK(para);
@@ -188,7 +190,7 @@ void RBF_Core::BatchInitEnergyTest(vector<double> &pts, vector<int> &labels, vec
 }
 
 
-vector<double>* RBF_Core::ExportPts(){
+std::vector<double>* RBF_Core::ExportPts(){
 
     return &pts;
 
@@ -196,7 +198,7 @@ vector<double>* RBF_Core::ExportPts(){
 
 }
 
-vector<double>* RBF_Core::ExportPtsNormal(int normal_type){
+std::vector<double>* RBF_Core::ExportPtsNormal(int normal_type){
 
     if(normal_type==0)return &normals;
     else if(normal_type==1)return &initnormals;
@@ -208,13 +210,13 @@ vector<double>* RBF_Core::ExportPtsNormal(int normal_type){
 
 
 
-vector<double>* RBF_Core::ExportInitNormal(int kmethod, RBF_InitMethod init_type){
+std::vector<double>* RBF_Core::ExportInitNormal(int kmethod, RBF_InitMethod init_type){
 
     if(mp_RBF_InitNormal[kmethod].find(init_type)!=mp_RBF_InitNormal[kmethod].end())return &(mp_RBF_InitNormal[kmethod][init_type]);
     else return NULL;
 }
 
-vector<double>* RBF_Core::ExportOptNormal(int kmethod, RBF_InitMethod init_type){
+std::vector<double>* RBF_Core::ExportOptNormal(int kmethod, RBF_InitMethod init_type){
 
     if(mp_RBF_OptNormal[kmethod].find(init_type)!=mp_RBF_OptNormal[kmethod].end())return &(mp_RBF_OptNormal[kmethod][init_type]);
     else return NULL;
@@ -224,11 +226,11 @@ vector<double>* RBF_Core::ExportOptNormal(int kmethod, RBF_InitMethod init_type)
 
 void RBF_Core::Print_Record_Init(){
 
-    cout<<"InitMethod"<<string(30-string("InitMethod").size(),' ')<<"InitEn\t\t FinalEn"<<endl;
+    cout<<"InitMethod"<<std::string(30-std::string("InitMethod").size(),' ')<<"InitEn\t\t FinalEn"<<endl;
     cout<<std::setprecision(8);
     {
         for(int i=0;i<record_initmethod.size();++i){
-            cout<<record_initmethod[i]<<string(30-record_initmethod[i].size(),' ')<<record_initenergy[i]<<"\t\t"<<record_energy[i]<<endl;
+            cout<<record_initmethod[i]<<std::string(30-record_initmethod[i].size(),' ')<<record_initenergy[i]<<"\t\t"<<record_energy[i]<<endl;
         }
     }
 

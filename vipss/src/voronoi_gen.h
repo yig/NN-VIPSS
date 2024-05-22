@@ -6,6 +6,14 @@
 #include <unordered_map>
 #include <set>
 
+typedef std::set< tetgenmesh::point> P_Set; 
+typedef std::unordered_map<tetgenmesh::point, arma::vec3> PtNCluster;
+
+struct PtCluster{
+    P_Set key_pts;
+    P_Set group_pts;
+};
+
 class VoronoiGen{
 
     public:
@@ -14,12 +22,24 @@ class VoronoiGen{
         void loadData(const std::string& path );
         void InitMesh();
         void Tetrahedralize();
-        void GetVertexStar(tetgenmesh::point p_st, std::set<tetgenmesh::point>& candid_pts, int level);
+        void GetVertexStar(tetgenmesh::point& p_st, std::set<tetgenmesh::point>& candid_pts, int level);
         void EstimateNormals();
         void CalcualteNormalWithVIPSS(std::vector<double>& vts, std::vector<double>& normal);
         void OrientPtNormals();
-        void SavePtVn(const std::string& path);
+        void SavePtVn(const std::string& path, bool orient_normal = false);
         bool IsGoodNormal();
+        void BuildPtIdMap();
+
+        std::vector<double> ConvertPtAndNeighborsToVect(std::set<tetgenmesh::point>& candid_pts);
+        void BuildPtNCluster(P_Set& pset, const std::vector<double>& normals, PtNCluster& pt_cluster);
+        void CalculateScores();
+        void SavePtVnColor(const std::string& path, bool orient_normal);
+        void CalculatePtColors();
+        void UpdateVtAndVn();
+        void ScaleNormalByScore();
+        void MergeCluster();
+
+        void Run();
 
 
     public:
@@ -33,11 +53,27 @@ class VoronoiGen{
 
         RBF_API vipss_api_;
         tetgenmesh::point dummypoint_;
-        std::unordered_map<tetgenmesh::point, arma::vec3> pt_normal_map_;
+        
+        PtNCluster pt_normal_map_;
         std::string filename_;
         std::string out_dir_;
         std::set<tetgenmesh::point> candidate_pts_;
+             
+        arma::sp_mat pt_score_mat_;
+        arma::sp_mat pt_dist_mat_;
+        arma::sp_imat pt_adjecent_mat_;
         
+        std::unordered_map<tetgenmesh::point, size_t> point_id_map_;
+        std::unordered_map<tetgenmesh::point, PtCluster> point_cluster_map_;
+        std::unordered_map<tetgenmesh::point, PtNCluster> point_cluster_normal_map_;
+        std::unordered_map<tetgenmesh::point, double> pt_score_map_;
+
+        std::vector<double> vertices_;
+        std::vector<double> normals_;
+        std::vector<uint8_t> colors_;
+        double min_angle_ = 30.0;
+        
+
 
     private:
         clock_t ts_[6];

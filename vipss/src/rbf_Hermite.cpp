@@ -14,18 +14,20 @@
 //#include "mymesh/UnionFind.h"
 //#include "mymesh/tinyply.h"
 
+using namespace std;
+
 typedef std::chrono::high_resolution_clock Clock;
 double randomdouble() {return static_cast <double> (rand()) / static_cast <double> (RAND_MAX);}
 double randomdouble(double be,double ed) {return be + randomdouble()*(ed-be);	}
 
-void RBF_Core::NormalRecification(double maxlen, vector<double>&nors){
+void RBF_Core::NormalRecification(double maxlen, std::vector<double>&nors){
 
 
     double maxlen_r = -1;
     auto p_vn = nors.data();
-    int  np = nors.size()/3;
+    size_t  np = nors.size()/3;
     if(1){
-        for(int i=0;i<np;++i){
+        for(size_t i=0;i<np;++i){
             maxlen_r = max(maxlen_r,MyUtility::normVec(p_vn+i*3));
         }
 
@@ -33,7 +35,7 @@ void RBF_Core::NormalRecification(double maxlen, vector<double>&nors){
         double ratio = maxlen / maxlen_r;
         for(auto &a:nors)a*=ratio;
     }else{
-        for(int i=0;i<np;++i){
+        for(size_t i=0;i<np;++i){
             MyUtility::normalize(p_vn+i*3);
         }
 
@@ -44,11 +46,11 @@ void RBF_Core::NormalRecification(double maxlen, vector<double>&nors){
 
 }
 
-bool RBF_Core::Write_Hermite_NormalPrediction(string fname, int mode){
+bool RBF_Core::Write_Hermite_NormalPrediction(std::string fname, int mode){
 
 
-//    vector<uchar>labelcolor(npt*4);
-//    vector<uint>f2v;
+//    std::vector<uchar>labelcolor(npt*4);
+//    std::vector<uint>f2v;
 //    uchar red[] = {255,0,0, 255};
 //    uchar green[] = {0,255,0, 255};
 //    uchar blue[] = {0,0,255, 255};
@@ -66,7 +68,7 @@ bool RBF_Core::Write_Hermite_NormalPrediction(string fname, int mode){
 //        for(int j=0;j<4;++j)labelcolor[i*4+j] = pcolor[j];
 //    }
 
-    vector<double>nors;
+    std::vector<double>nors;
     if(mode ==0)nors=initnormals;
     else if(mode == 1)nors=newnormals;
     else if(mode == 2)nors = initnormals_uninorm;
@@ -84,7 +86,7 @@ bool RBF_Core::Write_Hermite_NormalPrediction(string fname, int mode){
 
 
 
-void RBF_Core::Set_HermiteRBF(vector<double>&pts){
+void RBF_Core::Set_HermiteRBF(std::vector<double>&pts){
 
     if(open_debug_log)
     cout<<"Set_HermiteRBF"<<endl;
@@ -259,7 +261,7 @@ void RBF_Core::Set_HermiteApprox_Lamnda(double hermite_ls){
 
 
 
-void RBF_Core::Set_Hermite_PredictNormal(vector<double>&pts){
+void RBF_Core::Set_Hermite_PredictNormal(std::vector<double>&pts){
 
 
 
@@ -383,17 +385,17 @@ int RBF_Core::Solve_Hermite_PredictNormal_UnitNorm(){
 double acc_time;
 
 static int countopt = 0;
-double optfunc_Hermite(const vector<double>&x, vector<double>&grad, void *fdata){
+double optfunc_Hermite(const std::vector<double>&x, std::vector<double>&grad, void *fdata){
 
     auto t1 = Clock::now();
     RBF_Core *drbf = reinterpret_cast<RBF_Core*>(fdata);
-    int n = drbf->npt;
+    size_t n = drbf->npt;
     arma::vec arma_x(n*3);
 
     //(  sin(a)cos(b), sin(a)sin(b), cos(a)  )  a =>[0, pi], b => [-pi, pi];
-    vector<double>sina_cosa_sinb_cosb(n * 4);
-    for(int i=0;i<n;++i){
-        int ind = i*4;
+    std::vector<double>sina_cosa_sinb_cosb(n * 4);
+    for(size_t i=0;i<n;++i){
+        size_t ind = i*4;
         sina_cosa_sinb_cosb[ind] = sin(x[i*2]);
         sina_cosa_sinb_cosb[ind+1] = cos(x[i*2]);
         sina_cosa_sinb_cosb[ind+2] = sin(x[i*2+1]);
@@ -421,7 +423,7 @@ double optfunc_Hermite(const vector<double>&x, vector<double>&grad, void *fdata)
 
         grad.resize(n*2);
 
-        for(int i=0;i<n;++i){
+        for(size_t i=0;i<n;++i){
             auto p_scsc = sina_cosa_sinb_cosb.data()+i*4;
 
             //            int ind = i*3;
@@ -451,7 +453,7 @@ int RBF_Core::Opt_Hermite_PredictNormal_UnitNormal(){
 
     sol.solveval.resize(npt * 2);
 
-    for(int i=0;i<npt;++i){
+    for(size_t i=0;i<npt;++i){
         double *veccc = initnormals.data()+i*3;
         {
             //MyUtility::normalize(veccc);
@@ -463,8 +465,8 @@ int RBF_Core::Opt_Hermite_PredictNormal_UnitNormal(){
     //cout<<"smallvec: "<<smallvec<<endl;
 
     if(1){
-        vector<double>upper(npt*2);
-        vector<double>lower(npt*2);
+        std::vector<double>upper(npt*2);
+        std::vector<double>lower(npt*2);
         for(int i=0;i<npt;++i){
             upper[i*2] = 2 * my_PI;
             upper[i*2 + 1] = 2 * my_PI;
@@ -487,8 +489,8 @@ int RBF_Core::Opt_Hermite_PredictNormal_UnitNormal(){
     }
     newnormals.resize(npt*3);
     arma::vec y(npt*4);
-    for(int i=0;i<npt;++i)y(i) = 0;
-    for(int i=0;i<npt;++i){
+    for(size_t i=0;i<npt;++i)y(i) = 0;
+    for(size_t i=0;i<npt;++i){
 
         double a = sol.solveval[i*2], b = sol.solveval[i*2+1];
         newnormals[i*3]   = y(npt+i) = sin(a) * cos(b);
@@ -531,15 +533,15 @@ void RBF_Core::Set_RBFCoef(arma::vec &y){
 
 int RBF_Core::Lamnbda_Search_GlobalEigen(){
 
-    vector<double>lamnbda_list({0, 0.001, 0.01, 0.1, 1});
-    //vector<double>lamnbda_list({  0.5,0.6,0.7,0.8,0.9,1,1.1,1.5,2,3});
+    std::vector<double>lamnbda_list({0, 0.001, 0.01, 0.1, 1});
+    //std::vector<double>lamnbda_list({  0.5,0.6,0.7,0.8,0.9,1,1.1,1.5,2,3});
     //lamnbda_list.clear();
     //for(double i=1.5;i<2.5;i+=0.1)lamnbda_list.push_back(i);
-    //vector<double>lamnbda_list({0});
-    vector<double>initen_list(lamnbda_list.size());
-    vector<double>finalen_list(lamnbda_list.size());
-    vector<vector<double>>init_normallist;
-    vector<vector<double>>opt_normallist;
+    //std::vector<double>lamnbda_list({0});
+    std::vector<double>initen_list(lamnbda_list.size());
+    std::vector<double>finalen_list(lamnbda_list.size());
+    std::vector<std::vector<double>>init_normallist;
+    std::vector<std::vector<double>>opt_normallist;
 
     lamnbda_list_sa = lamnbda_list;
     for(int i=0;i<lamnbda_list.size();++i){
@@ -590,7 +592,7 @@ int RBF_Core::Lamnbda_Search_GlobalEigen(){
 
 
 
-void RBF_Core::Print_LamnbdaSearchTest(string fname){
+void RBF_Core::Print_LamnbdaSearchTest(std::string fname){
 
 
     cout<<setprecision(7);

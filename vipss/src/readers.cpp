@@ -71,16 +71,16 @@ bool writeOffFile(string filename,const vector<double>&vertices,const vector<uns
     }
 
 
-    int n_vertices = vertices.size()/3;
-    int n_faces = faces2vertices.size()/3;
+    size_t n_vertices = vertices.size()/3;
+    size_t n_faces = faces2vertices.size()/3;
 
     outer<<"OFF"<<endl;
     outer<<n_vertices<<' '<<n_faces<<' '<<0<<endl;
-    for(int i=0;i<n_vertices;++i){
+    for(size_t i=0;i<n_vertices;++i){
         auto p_v = vertices.data()+i*3;
         outer << p_v[0] << " "<< p_v[1] << " "<< p_v[2] << endl;
     }
-    for(int i=0;i<n_faces;++i){
+    for(size_t i=0;i<n_faces;++i){
         auto p_fv = faces2vertices.data()+i*3;
         outer << "3 " << p_fv[0]+1<< " "<< p_fv[1]+1 << " "<< p_fv[2]+1 << endl;
     }
@@ -101,8 +101,8 @@ bool writePLYFile(string filename,const vector<double>&vertices,const vector<uns
     }
 
 
-    int n_vertices = vertices.size()/3;
-    int n_faces = faces2vertices.size()/3;
+    size_t n_vertices = vertices.size()/3;
+    size_t n_faces = faces2vertices.size()/3;
     outer << "ply" <<endl;
     outer << "format ascii 1.0"<<endl;
     outer << "element vertex " << n_vertices <<endl;
@@ -120,20 +120,20 @@ bool writePLYFile(string filename,const vector<double>&vertices,const vector<uns
     outer << "property list uchar int vertex_indices" <<endl;
     outer << "end_header" <<endl;
 
-    for(int i=0;i<n_vertices;++i){
+    for(size_t i=0;i<n_vertices;++i){
         auto p_v = vertices.data()+i*3;
         auto p_vn = vertices_normal.data()+i*3;
         auto p_vc = vertices_color.data()+i*4;
-        for(int j=0;j<3;++j)outer << p_v[j] << " ";
-        for(int j=0;j<3;++j)outer << p_vn[j] << " ";
-        for(int j=0;j<4;++j)outer << int(p_vc[j]) << " ";
+        for(size_t j=0;j<3;++j)outer << p_v[j] << " ";
+        for(size_t j=0;j<3;++j)outer << p_vn[j] << " ";
+        for(size_t j=0;j<4;++j)outer << size_t(p_vc[j]) << " ";
         outer << endl;
     }
 
-    for(int i=0;i<n_faces;++i){
+    for(size_t i=0;i<n_faces;++i){
         auto p_fv = faces2vertices.data()+i*3;
         outer << "3 ";
-        for(int j=0;j<3;++j)outer << p_fv[j] << " ";
+        for(size_t j=0;j<3;++j)outer << p_fv[j] << " ";
         outer << endl;
     }
     outer.close();
@@ -150,8 +150,8 @@ bool writePLYFile_VF(string filename,const vector<double>&vertices,const vector<
     }
 
 
-    int n_vertices = vertices.size()/3;
-    int n_faces = faces2vertices.size()/3;
+    size_t n_vertices = vertices.size()/3;
+    size_t n_faces = faces2vertices.size()/3;
     outer << "ply" <<endl;
     outer << "format ascii 1.0"<<endl;
     outer << "element vertex " << n_vertices <<endl;
@@ -162,16 +162,16 @@ bool writePLYFile_VF(string filename,const vector<double>&vertices,const vector<
     outer << "property list uchar int vertex_indices" <<endl;
     outer << "end_header" <<endl;
 
-    for(int i=0;i<n_vertices;++i){
+    for(size_t i=0;i<n_vertices;++i){
         auto p_v = vertices.data()+i*3;
-        for(int j=0;j<3;++j)outer << p_v[j] << " ";
+        for(size_t j=0;j<3;++j)outer << p_v[j] << " ";
         outer << endl;
     }
 
-    for(int i=0;i<n_faces;++i){
+    for(size_t i=0;i<n_faces;++i){
         auto p_fv = faces2vertices.data()+i*3;
         outer << "3 ";
-        for(int j=0;j<3;++j)outer << p_fv[j] << " ";
+        for(size_t j=0;j<3;++j)outer << p_fv[j] << " ";
         outer << endl;
     }
     outer.close();
@@ -188,7 +188,7 @@ bool writePLYFile_VN(string filename,const vector<double>&vertices, const vector
         return false;
     }
 
-    int n_vertices = vertices.size()/3;
+    size_t n_vertices = vertices.size()/3;
     outer << "ply" <<endl;
     outer << "format ascii 1.0"<<endl;
     outer << "element vertex " << n_vertices <<endl;
@@ -200,11 +200,11 @@ bool writePLYFile_VN(string filename,const vector<double>&vertices, const vector
     outer << "property float nz" <<endl;
     outer << "end_header" <<endl;
 
-    for(int i=0;i<n_vertices;++i){
+    for(size_t i=0;i<n_vertices;++i){
         auto p_v = vertices.data()+i*3;
         auto p_vn = vertices_normal.data()+i*3;
-        for(int j=0;j<3;++j)outer << p_v[j] << " ";
-        for(int j=0;j<3;++j)outer << p_vn[j] << " ";
+        for(size_t j=0;j<3;++j)outer << p_v[j] << " ";
+        for(size_t j=0;j<3;++j)outer << p_vn[j] << " ";
         outer << endl;
     }
 
@@ -226,8 +226,8 @@ bool readPLYFile(string filename,  vector<double>&vertices, vector<double> &vert
     vertices_normal.clear();
     auto readVerticesAndNormal = [&vertices,&vertices_normal](stringstream &strs){
         double dvalue;
-        for(int i=0;i<3;++i){strs>>dvalue;vertices.push_back(dvalue);}
-        for(int i=0;i<3;++i){strs>>dvalue;vertices_normal.push_back(dvalue);}
+        for(size_t i=0;i<3;++i){strs>>dvalue;vertices.push_back(dvalue);}
+        for(size_t i=0;i<3;++i){strs>>dvalue;vertices_normal.push_back(dvalue);}
     };
 
     string oneline;
@@ -260,7 +260,7 @@ bool writePLYFile_CO(string filename,const vector<double>&vertices,
         cout << "Can not create output PLY file " << filename << endl;
         return false;
     }
-    int n_vertices = vertices.size()/3;
+    size_t n_vertices = vertices.size()/3;
     outer << "ply" <<endl;
     outer << "format ascii 1.0"<<endl;
     outer << "element vertex " << n_vertices <<endl;
@@ -272,12 +272,12 @@ bool writePLYFile_CO(string filename,const vector<double>&vertices,
     outer << "property uchar blue" <<endl;
     outer << "end_header" <<endl;
 
-    for(int i=0;i<n_vertices;++i){
+    for(size_t i=0;i<n_vertices;++i){
         auto p_v = vertices.data()+i*3;
 
         auto p_co = vertices_color.data() + i*3;
-        for(int j=0;j<3;++j)outer << p_v[j] << " ";
-        for(int j=0;j<3;++j)outer << to_string(p_co[j]) << " ";
+        for(size_t j=0;j<3;++j)outer << p_v[j] << " ";
+        for(size_t j=0;j<3;++j)outer << to_string(p_co[j]) << " ";
         outer << endl;
     }
 
@@ -286,6 +286,47 @@ bool writePLYFile_CO(string filename,const vector<double>&vertices,
     return true;
 }
 
+
+
+bool writePLYFile_VN_CO(string filename,const vector<double>&vertices, 
+                        const vector<double>&vertices_normal,
+                        const vector<uint8_t>&vertices_color){
+    filename = filename + ".ply";
+    ofstream outer(filename.data(), ofstream::out);
+    if (!outer.good()) {
+        cout << "Can not create output PLY file " << filename << endl;
+        return false;
+    }
+
+    int n_vertices = vertices.size()/3;
+    outer << "ply" <<endl;
+    outer << "format ascii 1.0"<<endl;
+    outer << "element vertex " << n_vertices <<endl;
+    outer << "property float x" <<endl;
+    outer << "property float y" <<endl;
+    outer << "property float z" <<endl;
+    outer << "property float nx" <<endl;
+    outer << "property float ny" <<endl;
+    outer << "property float nz" <<endl;
+    outer << "property uchar red" <<endl;
+    outer << "property uchar green" <<endl;
+    outer << "property uchar blue" <<endl;
+    outer << "end_header" <<endl;
+
+    for(int i=0;i<n_vertices;++i){
+        auto p_v = vertices.data()+i*3;
+        auto p_vn = vertices_normal.data()+i*3;
+        auto p_co = vertices_color.data() + i*3;
+        for(int j=0;j<3;++j)outer << p_v[j] << " ";
+        for(int j=0;j<3;++j)outer << p_vn[j] << " ";
+        for(int j=0;j<3;++j)outer << to_string(p_co[j]) << " ";
+        outer << endl;
+    }
+
+    outer.close();
+    cout<<"saving finish: "<<filename<<endl;
+    return true;
+}
 
 
 
@@ -302,12 +343,12 @@ bool readObjFile(string filename, vector<double>&vertices, vector<unsigned int>&
     vertices_normal.clear();
     auto readVertices = [&vertices](stringstream &strs){
         double dvalue;
-        for(int i=0;i<3;++i){strs>>dvalue;vertices.push_back(dvalue);}
+        for(size_t i=0;i<3;++i){strs>>dvalue;vertices.push_back(dvalue);}
     };
     auto readFaces = [&faces2vertices](stringstream &strs){
         string oneset,indstring;
-        int ivalue;
-        int nv = 0;
+        size_t ivalue;
+        size_t nv = 0;
         vector<int>tempvlist;
         while (strs>>oneset){
             stringstream oneset_ss( oneset );
@@ -318,7 +359,7 @@ bool readObjFile(string filename, vector<double>&vertices, vector<unsigned int>&
             tempvlist.push_back(ivalue-1);
         }
         assert(tempvlist.size()>=3);
-        for(int i=2;i<tempvlist.size();++i){
+        for(size_t i=2;i<tempvlist.size();++i){
             faces2vertices.push_back(tempvlist[0]);
             faces2vertices.push_back(tempvlist[i-1]);
             faces2vertices.push_back(tempvlist[i]);
@@ -326,7 +367,7 @@ bool readObjFile(string filename, vector<double>&vertices, vector<unsigned int>&
     };
     auto readVerticesNormal = [&vertices_normal](stringstream &strs){
         double dvalue;
-        for(int i=0;i<3;++i){strs>>dvalue;vertices_normal.push_back(dvalue);}
+        for(size_t i=0;i<3;++i){strs>>dvalue;vertices_normal.push_back(dvalue);}
     };
 
     string oneline;
@@ -451,9 +492,9 @@ bool writeObjFile(string filename,const vector<double>&vertices,const vector<uns
     }
 
     outer << setprecision(13);
-    int n_vertices = vertices.size()/3;
-    int n_faces = faces2vertices.size()/3;
-    for(int i=0;i<n_vertices;++i){
+    size_t n_vertices = vertices.size()/3;
+    size_t n_faces = faces2vertices.size()/3;
+    for(size_t i=0;i<n_vertices;++i){
         auto p_v = vertices.data()+i*3;
         outer << "v " << p_v[0] << " "<< p_v[1] << " "<< p_v[2] << endl;
     }
@@ -481,12 +522,12 @@ bool writeObjFile_vn(string filename,const vector<double>&vertices,const vector<
     }
 
     outer << setprecision(8);
-    int n_vertices = vertices.size()/3;
-    for(int i=0;i<n_vertices;++i){
+    size_t n_vertices = vertices.size()/3;
+    for(size_t i=0;i<n_vertices;++i){
         auto p_v = vertices.data()+i*3;
         outer << "v " << p_v[0] << " "<< p_v[1] << " "<< p_v[2] << endl;
     }
-    for(int i=0;i<n_vertices;++i){
+    for(size_t i=0;i<n_vertices;++i){
         auto p_vn = vn.data()+i*3;
         outer << "vn " << p_vn[0] << " "<< p_vn[1] << " "<< p_vn[2] << endl;
     }
@@ -510,17 +551,17 @@ bool writeObjFile_line(string filename, const vector<double>&vertices, const vec
 
 
 
-    int n_vertices = vertices.size()/3;
+    size_t n_vertices = vertices.size()/3;
 
-    for(int i=0;i<n_vertices;++i){
+    for(size_t i=0;i<n_vertices;++i){
         auto p_v = vertices.data()+i*3;
         outer << "v " << p_v[0] << " "<< p_v[1] << " "<< p_v[2] << endl;
     }
 
 
     {
-        int n_edges = edge2vertices.size()/2;
-        for(int i=0;i<n_edges;++i){
+        size_t n_edges = edge2vertices.size()/2;
+        for(size_t i=0;i<n_edges;++i){
             auto p_ev = edge2vertices.data()+i*2;
             outer << "l " << p_ev[0]+1<< " "<< p_ev[1]+1 << endl;
         }
@@ -531,6 +572,105 @@ bool writeObjFile_line(string filename, const vector<double>&vertices, const vec
     cout<<"saving finish: "<<filename<<endl;
     return true;
 }
+
+
+
+bool writeObjFile_line(string filename, const vector<double>&vertices, 
+                        const vector<uint8_t>& colors,
+                       const vector<unsigned int> &edge2vertices){
+
+    filename = filename + ".obj";
+    ofstream outer(filename.data(), ofstream::out);
+    if (!outer.good()) {
+        cout << "Can not create output Obj file " << filename << endl;
+        return false;
+    }
+
+    size_t n_vertices = vertices.size()/3;
+
+    for(size_t i=0;i<n_vertices;++i){
+        auto p_v = vertices.data()+i*3;
+        double c_r = double(colors[3*i]) / 255.0; 
+        double c_g = double(colors[3*i + 1]) / 255.0; 
+        double c_b = double(colors[3*i + 2]) / 255.0; 
+
+        outer << "v " << p_v[0] << " "<< p_v[1] << " "<< p_v[2]  
+                << " " << c_r  << " " << c_g << " " << c_b << endl;
+    }
+
+
+    {
+        size_t n_edges = edge2vertices.size()/2;
+        for(size_t i=0;i<n_edges;++i){
+            auto p_ev = edge2vertices.data()+i*2;
+            outer << "l " << p_ev[0]+1<< " "<< p_ev[1]+1 << endl;
+        }
+    }
+    outer.close();
+    cout<<"saving finish: "<<filename<<endl;
+    return true;
+}
+
+
+
+bool writeObjPtn_line(string filename, const vector<double>&vertices, 
+                        const vector<uint8_t>&colors,
+                       const vector<double>&normals)
+{
+    vector<double> new_vertices;
+    vector<uint8_t> new_colors;
+    vector<unsigned int> edge2vertices;
+
+    double ratio = 0.1;
+    
+    filename = filename + ".obj";
+    ofstream outer(filename.data(), ofstream::out);
+    if (!outer.good()) {
+        cout << "Can not create output Obj file " << filename << endl;
+        return false;
+    }
+
+    for(size_t i =0; i < vertices.size()/3; ++i)
+    {
+        // new_vertices.push_back(vertices[3*i]);
+        // new_vertices.push_back(vertices[3*i + 1]);
+        // new_vertices.push_back(vertices[3*i + 2]);
+        double p1_x = vertices[3*i] + ratio * normals[3*i];
+        double p1_y = vertices[3*i + 1] + ratio * normals[3*i + 1];
+        double p1_z = vertices[3*i + 2] + ratio * normals[3*i + 2];
+
+        double r = colors[3*i]/255.0; 
+        double g = colors[3*i + 1]/255.0; 
+        double b = colors[3*i + 2]/255.0; 
+
+        outer << "v " << p1_x << " "<< p1_y << " "<< p1_z  
+                << " " << r << " " << g << " " << b << endl;
+
+        p1_x = vertices[3*i] ;
+        p1_y = vertices[3*i + 1] ;
+        p1_z = vertices[3*i + 2] ;
+
+        outer << "v " << p1_x << " "<< p1_y << " "<< p1_z  
+                << " " << r << " " << g << " " << b << endl;
+
+        p1_x = vertices[3*i] - ratio * normals[3*i];
+        p1_y = vertices[3*i + 1] - ratio * normals[3*i + 1];
+        p1_z = vertices[3*i + 2] - ratio * normals[3*i + 2];
+
+        outer << "v " << p1_x << " "<< p1_y << " "<< p1_z  
+                << " " << r << " " << g << " " << b << endl;
+
+    }
+
+    for(size_t i =0; i < vertices.size()/3; ++i)
+    {
+        outer << "f " << 3*i + 1<< " "<< 3*i + 2 << " " << 3*i + 3 << endl;
+    }
+    outer.close();
+
+    // writeObjFile_line(filename, new_vertices, new_colors, edge2vertices);
+}
+
 
 
 bool readSurfFile(string filename,vector<double>&vertices,vector<unsigned int>&faces2vertices,vector<double>&vertices_field){
@@ -545,17 +685,17 @@ bool readSurfFile(string filename,vector<double>&vertices,vector<unsigned int>&f
     vertices_field.clear();
     auto readVertices = [&vertices](stringstream &strs){
         double dvalue;
-        for(int i=0;i<3;++i){strs>>dvalue;vertices.push_back(dvalue);}
+        for(size_t i=0;i<3;++i){strs>>dvalue;vertices.push_back(dvalue);}
     };
     auto readFaces = [&faces2vertices](stringstream &strs){
         int ivalue;
-        for(int i=0;i<3;++i){
+        for(size_t i=0;i<3;++i){
             strs>>ivalue;faces2vertices.push_back(ivalue-1);
         }
     };
     auto readVerticesField = [&vertices_field](stringstream &strs){
         double dvalue;
-        for(int i=0;i<3;++i){strs>>dvalue;vertices_field.push_back(dvalue);}
+        for(size_t i=0;i<3;++i){strs>>dvalue;vertices_field.push_back(dvalue);}
     };
 
     string oneline;
@@ -607,9 +747,9 @@ bool writeSurfFile(string filename,const vector<double>&vertices,const vector<un
         return false;
     }
 
-    int n_vertices = vertices.size()/3;
-    int n_faces = faces2vertices.size()/3;
-    for(int i=0;i<n_vertices;++i){
+    size_t n_vertices = vertices.size()/3;
+    size_t n_faces = faces2vertices.size()/3;
+    for(size_t i=0;i<n_vertices;++i){
         auto p_v = vertices.data()+i*3;
         outer << "v " << p_v[0] << " "<< p_v[1] << " "<< p_v[2] << endl;
     }
@@ -699,19 +839,19 @@ bool writeCurfFile(string filename, const vector<double>&vertices, const vector<
         cout<<"Fail to create output file: "<<filename<<endl;
         return false;
     }
-    int n_vertices = vertices.size()/3;
-    int n_edges = edges2vertices.size()/2;
+    size_t n_vertices = vertices.size()/3;
+    size_t n_edges = edges2vertices.size()/2;
 
     auto p_vd = vertices.data();
     auto p_evd = edges2vertices.data();
     auto p_vvecd = vertices_field.data();
     auto p_vtd = vertices_tangent.data();
-    for(int i =0; i<n_vertices;++i){
+    for(size_t i =0; i<n_vertices;++i){
         auto p_v = p_vd+i*3;
         fout<<"v "<<p_v[0]<<' '<<p_v[1]<<' '<<p_v[2]<<endl;
 
     }
-    for(int i=0;i<n_edges;++i){
+    for(size_t i=0;i<n_edges;++i){
         auto p_ev = p_evd+i*2;
         fout<<"e "<<p_ev[0]+1<<' '<<p_ev[1]+1<<endl;
     }
@@ -719,7 +859,7 @@ bool writeCurfFile(string filename, const vector<double>&vertices, const vector<
     if(vertices_field.size()!=vertices.size()){
         cout<<"Output vertices field is invalid or empty!"<<endl;
     }else{
-        for(int i =0; i<n_vertices;++i){
+        for(size_t i =0; i<n_vertices;++i){
             auto p_vvec = p_vvecd+i*3;
             fout<<"vf "<<p_vvec[0]<<' '<<p_vvec[1]<<' '<<p_vvec[2]<<endl;
         }
@@ -728,7 +868,7 @@ bool writeCurfFile(string filename, const vector<double>&vertices, const vector<
     if(vertices_tangent.size()!=vertices.size()){
         cout<<"Output vertices field is invalid or empty!"<<endl;
     }else{
-        for(int i =0; i<n_vertices;++i){
+        for(size_t i =0; i<n_vertices;++i){
             auto p_vt = p_vtd+i*3;
             fout<<"vn "<<p_vt[0]<<' '<<p_vt[1]<<' '<<p_vt[2]<<endl;
         }
@@ -807,19 +947,19 @@ bool writeVolfFile(string filename, const vector<double>&vertices, const vector<
         cout<<"Fail to create output file: "<<filename<<endl;
         return false;
     }
-    int n_vertices = vertices.size()/3;
-    int n_tets = tets2vertices.size()/4;
+    size_t n_vertices = vertices.size()/3;
+    size_t n_tets = tets2vertices.size()/4;
 
     auto p_vd = vertices.data();
     auto p_tvd = tets2vertices.data();
     auto p_vvecd = vertices_field.data();
     auto p_vnd = vertices_normal.data();
-    for(int i =0; i<n_vertices;++i){
+    for(size_t i =0; i<n_vertices;++i){
         auto p_v = p_vd+i*3;
         fout<<"v "<<p_v[0]<<' '<<p_v[1]<<' '<<p_v[2]<<endl;
 
     }
-    for(int i=0;i<n_tets;++i){
+    for(size_t i=0;i<n_tets;++i){
         auto p_tv = p_tvd+i*4;
         fout<<"tet "<<p_tv[0]+1<<' '<<p_tv[1]+1<<' '<<p_tv[2]+1<<' '<<p_tv[3]+1<<endl;
     }
@@ -827,7 +967,7 @@ bool writeVolfFile(string filename, const vector<double>&vertices, const vector<
     if(vertices_normal.size()/3!=n_vertices){
         cout<<"Output vertices normal is invalid or empty!"<<endl;
     }else{
-        for(int i =0; i<n_vertices;++i){
+        for(size_t i =0; i<n_vertices;++i){
             auto p_vn = p_vnd+i*3;
             fout<<"vn "<<p_vn[0]<<' '<<p_vn[1]<<' '<<p_vn[2]<<endl;
         }
@@ -835,7 +975,7 @@ bool writeVolfFile(string filename, const vector<double>&vertices, const vector<
     if(vertices_field.size()!=vertices.size()){
         cout<<"Output vertices field is invalid or empty!"<<endl;
     }else{
-        for(int i =0; i<n_vertices;++i){
+        for(size_t i =0; i<n_vertices;++i){
             auto p_vvec = p_vvecd+i*3;
             fout<<"vf "<<p_vvec[0]<<' '<<p_vvec[1]<<' '<<p_vvec[2]<<endl;
         }
@@ -868,9 +1008,9 @@ bool writeContourEdgeTxtFile(string filename, const vector<unsigned int>&edges2v
         return false;
     }
 
-    int numofE = edges2vertices.size()/2;
+    size_t numofE = edges2vertices.size()/2;
     fout<<numofE<<endl;
-    for(int i=0;i<numofE;++i){
+    for(size_t i=0;i<numofE;++i){
         fout<<edges2vertices[i*2]<<' '<<edges2vertices[i*2+1]<<endl;
     }
     fout.close();
@@ -886,7 +1026,7 @@ bool writeVecFile(string filename, const vector<int> &vec){
         return false;
     }
 
-    int numof = vec.size();
+    int numof = (int)vec.size();
     fout<<numof<<endl;
     if(numof==0)return true;
     for(auto a:vec)fout<<a<<endl;
@@ -936,7 +1076,7 @@ bool writeVVecFile(string filename, const vector< vector<int> > &vvec){
         return false;
     }
 
-    int numof = vvec.size();
+    int numof = (int)vvec.size();
 
     fout<<numof<<endl;
 
@@ -985,18 +1125,18 @@ bool writeVVecFile(string filename, const vector< vector<double> > &vvec){
         return false;
     }
 
-    int numof = vvec.size();
+    size_t numof = vvec.size();
 
     fout<<numof<<endl;
 
     if(numof==0)return true;
-    for(int i=0;i<numof-1;i++){
+    for(size_t i=0;i<numof-1;i++){
         fout<<vvec[i].size()<<' ';
     }
     fout<<vvec[numof-1].size()<<endl;
 
     for(auto &a:vvec){
-        for(int i=0;i<a.size()-1;i++){
+        for(size_t i=0;i<a.size()-1;i++){
             fout<<a[i]<<' ';
         }
         fout<<a[a.size()-1]<<endl;
@@ -1014,7 +1154,7 @@ bool writeVecFile(string filename, const vector<float>&vec){
         return false;
     }
 
-    int numof = vec.size();
+    size_t numof = vec.size();
     fout<<numof<<endl;
     for(auto a:vec)fout<<a<<endl;
     fout.close();
@@ -1060,23 +1200,23 @@ bool writeSufFile(string filename, const vector<double>&vertices, const vector<u
         cout << "Can not create output suf file " << filename << endl;
         return false;
     }
-    int n_vertices = vertices.size()/3;
-    int n_faces = faces2vertices.size()/3;
+    size_t n_vertices = vertices.size()/3;
+    size_t n_faces = faces2vertices.size()/3;
 
 
     outer<<n_vertices<<' '<<n_faces<<endl;
-    for(int i=0;i<n_vertices;++i){
+    for(size_t i=0;i<n_vertices;++i){
         auto p_v = vertices.data()+i*3;
         outer << p_v[0] << " "<< p_v[1] << " "<< p_v[2] << endl;
     }
-    for(int i=0;i<n_faces;++i){
+    for(size_t i=0;i<n_faces;++i){
         auto p_fv = faces2vertices.data()+i*3;
         auto p_fm = facesMat.data()+i*2;
         outer<< p_fv[0]<< " "<< p_fv[1] << " "<< p_fv[2] << " "<< p_fm[0]<< " "<<p_fm[1] <<endl;
     }
 
     outer<<CtrEdges.size()/2<<endl;
-    for(int i=0;i<CtrEdges.size()/2;++i){
+    for(size_t i=0;i<CtrEdges.size()/2;++i){
         outer<<CtrEdges[i*2]<<' '<<CtrEdges[i*2+1]<<endl;
     }
     outer.close();
@@ -1090,26 +1230,26 @@ bool writeCtrGraphFile(string filename,const vector<float>&vertices,const vector
         return false;
     }
 
-    int n_vertices = vertices.size()/3;
-    int n_plane = edge2vertices.size();
+    size_t n_vertices = vertices.size()/3;
+    size_t n_plane = edge2vertices.size();
     outer<<"n "<<n_vertices<<endl;
     auto p_vd = vertices.data();
-    for(int i=0;i<n_vertices;++i){
+    for(size_t i=0;i<n_vertices;++i){
         auto p_v = p_vd+ i*3;
         outer << "v "<<p_v[0] << " "<< p_v[1] << " "<< p_v[2] << endl;
     }
 
     outer<<"n "<<n_plane<<endl;
-    for(int i=0;i<n_plane;++i){
+    for(size_t i=0;i<n_plane;++i){
         outer<<"p ";
-        for(int j=0;j<4;++j)outer<<planepara[i][j]<<' ';
+        for(size_t j=0;j<4;++j)outer<<planepara[i][j]<<' ';
 
         auto &p_ev = edge2vertices[i];
         auto &p_em = edgeMat[i];
-        int ne = p_ev.size()/2;
+        size_t ne = p_ev.size()/2;
         outer<<ne<<endl;
 
-        for(int j=0;j<ne;++j){
+        for(size_t j=0;j<ne;++j){
             auto ind = j*2;
             outer<<"e "<<p_ev[ind]<<' '<<p_ev[ind+1]<<' '<<p_em[ind]<<' '<<p_em[ind+1]<<endl;
         }
@@ -1137,28 +1277,28 @@ bool writeCurNetFile(string filename, const vector<double> &vertices, const vect
         return false;
     }
 
-    int n_vertices = vertices.size()/3;
-    int n_plane = edge2vertices.size();
+    size_t n_vertices = vertices.size()/3;
+    size_t n_plane = edge2vertices.size();
     outer<<"n "<<n_vertices<<endl;
     auto p_vd = vertices.data();
     auto p_vnd = verticesNor.data();
-    for(int i=0;i<n_vertices;++i){
+    for(size_t i=0;i<n_vertices;++i){
         auto p_v = p_vd+ i*3;
         auto p_vn = p_vnd+i*3;
         outer << "v "<<p_v[0] << " "<< p_v[1] << " "<< p_v[2]  << " " <<p_vn[0] << " "<< p_vn[1] << " "<< p_vn[2] << endl;
     }
 
     outer<<"n "<<n_plane<<endl;
-    for(int i=0;i<n_plane;++i){
+    for(size_t i=0;i<n_plane;++i){
         outer<<"p ";
-        for(int j=0;j<4;++j)outer<<planepara[i][j]<<' ';
+        for(size_t j=0;j<4;++j)outer<<planepara[i][j]<<' ';
 
         auto &p_ev = edge2vertices[i];
         auto &p_em = edgeMat[i];
-        int ne = p_ev.size()/2;
+        size_t ne = p_ev.size()/2;
         outer<<ne<<endl;
 
-        for(int j=0;j<ne;++j){
+        for(size_t j=0;j<ne;++j){
             auto ind = j*2;
             outer<<"e "<<p_ev[ind]<<' '<<p_ev[ind+1]<<' '<<p_em[ind]<<' '<<p_em[ind+1]<<endl;
         }
@@ -1206,8 +1346,8 @@ bool readXYZnormal(string filename, vector<double>&v, vector<double>&vn){
     vn.clear();
     double val;
     while(!reader.eof()){
-        for(int i=0;i<3;++i){reader>>val;v.push_back(val);}
-        for(int i=0;i<3;++i){reader>>val;vn.push_back(val);}
+        for(size_t i=0;i<3;++i){reader>>val;v.push_back(val);}
+        for(size_t i=0;i<3;++i){reader>>val;vn.push_back(val);}
     }
     reader.close();
 
@@ -1216,14 +1356,14 @@ bool readXYZnormal(string filename, vector<double>&v, vector<double>&vn){
 
 bool writeXYZ(string filename, vector<double>&v){
 
-    int npt = v.size()/3;
+    size_t npt = v.size()/3;
     ofstream outer(filename.data(), ofstream::out);
     if (!outer.good()) {
         cout << "Can not create output file " << filename << endl;
         return false;
     }
 
-    for(int i=0;i<npt;++i){
+    for(size_t i=0;i<npt;++i){
         auto p_v = v.data()+i*3;
         outer<<p_v[0]<<' '<<p_v[1]<<' '<<p_v[2]<<endl;
     }
@@ -1234,14 +1374,14 @@ bool writeXYZ(string filename, vector<double>&v){
 
 bool writeXYZnormal(string filename, vector<double>&v, vector<double>&vn){
 
-    int npt = v.size()/3;
+    size_t npt = v.size()/3;
     ofstream outer(filename.data(), ofstream::out);
     if (!outer.good()) {
         cout << "Can not create output file " << filename << endl;
         return false;
     }
 
-    for(int i=0;i<npt;++i){
+    for(size_t i=0;i<npt;++i){
         auto p_v = v.data()+i*3;
         auto p_vn = vn.data()+i*3;
         outer<<p_v[0]<<' '<<p_v[1]<<' '<<p_v[2]<<' ';

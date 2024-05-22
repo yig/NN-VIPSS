@@ -64,12 +64,12 @@ def read_ptns(ply_path):
 
         
 def data_convert():
-    pt_dir1 = r'/home/jjxia/Documents/projects/VIPSS/data/old/walrus/input.ply'
+    pt_dir1 = r'../data/doghead200.ply'
     # pt_dir1 = r'/home/jjxia/Documents/projects/VIPSS_SP/VIPSS_M/data/test/dragon_stand/dragon32k.ply'
     ptns1 = read_ptns(pt_dir1)
     pts = ptns1[:,:3] 
     
-    f = open("data/walrus.node",'w')
+    f = open(r'../data/doghead200.node','w')
     pt_num = pts.shape[0]
     header = str(pt_num) + ' 3 0 0 \n'
     f.write(str(pt_num) + ' 3 0 0 \n')

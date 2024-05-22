@@ -8,8 +8,10 @@
 #include <ctime>
 #include <chrono>
 #include<algorithm>
+#include "readers.h"
 
 
+using namespace std;
 
 double sigma = 2.0;
 double inv_sigma_squarex2 = 1/(2 * pow(sigma, 2));
@@ -100,7 +102,7 @@ void XCube_Hessian_Kernel_2p(const double *p1, const double *p2, double *H){
 
 }
 
-void XCube_HessianDot_Kernel_2p(const double *p1, const double *p2, const double *p3, vector<double>&dotout){
+void XCube_HessianDot_Kernel_2p(const double *p1, const double *p2, const double *p3, std::vector<double>&dotout){
 
 
     double H[9];
@@ -221,7 +223,7 @@ inline double RBF_Core::Dist_Function(const double *p){
         for(int i=0;i<3;++i)kb(i+1) = p[i];
         kb(0) = 1;
     }else if(polyDeg==2){
-        vector<double>buf(4,1);
+        std::vector<double>buf(4,1);
         int ind = 0;
         kb.set_size(10);
         for(int j=0;j<3;++j)buf[j+1] = p[j];
@@ -243,9 +245,9 @@ inline double RBF_Core::Dist_Function(const double *p){
 
 }
 static RBF_Core * s_hrbf;
-double RBF_Core::Dist_Function(const R3Pt &in_pt){
-    return s_hrbf->Dist_Function(&(in_pt[0]));
-}
+//double RBF_Core::Dist_Function(const R3Pt &in_pt){
+//    return s_hrbf->Dist_Function(&(in_pt[0]));
+//}
 
 //FT RBF_Core::Dist_Function(const Point_3 in_pt){
 
@@ -257,7 +259,7 @@ void RBF_Core::SetThis(){
     s_hrbf = this;
 }
 
-void RBF_Core::Write_Surface(string fname){
+void RBF_Core::Write_Surface(std::string fname){
 
     //writeObjFile(fname,finalMesh_v,finalMesh_fv);
 
@@ -310,9 +312,9 @@ void RBF_Core::Record(){
    // cout<<"record end"<<endl;
 }
 
-void RBF_Core::AddPartition(string pname){
+void RBF_Core::AddPartition(std::string pname){
 
-    record_partition.push_back(record_method.size());
+    record_partition.push_back((int)record_method.size());
     record_partition_name.push_back(pname);
 }
 
@@ -343,7 +345,7 @@ void RBF_Core::Print_Record(){
 }
 
 
-void RBF_Core::Print_TimerRecord(string fname){
+void RBF_Core::Print_TimerRecord(std::string fname){
 
     ofstream fout(fname);
     fout<<setprecision(5);
@@ -356,7 +358,7 @@ void RBF_Core::Print_TimerRecord(string fname){
 
 }
 
-void RBF_Core::Print_TimerRecord_Single(string fname){
+void RBF_Core::Print_TimerRecord_Single(std::string fname){
 
     ofstream fout(fname);
     fout<<setprecision(5);

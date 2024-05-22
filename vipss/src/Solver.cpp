@@ -7,7 +7,10 @@
 //#include <eigen3/Eigen/CholmodSupport>
 //#include <gurobi_c++.h>
 
+using namespace std;
+
 typedef std::chrono::high_resolution_clock Clock;
+typedef unsigned int uint;
 //static GRBModel static_model;
 
 void LinearVec::set_label(int label){
@@ -60,7 +63,7 @@ int optwrapper(vector<double>&para,
 
     nlopt::result result;
     try{
-        int numOfPara = para.size();
+        int numOfPara = (int)para.size();
         //nlopt::opt myopt(nlopt::LD_CCSAQ,uint(numOfPara));
         //nlopt::opt myopt(nlopt::LD_SLSQP,uint(numOfPara));
         nlopt::opt myopt(nlopt::LD_LBFGS,uint(numOfPara));
@@ -114,7 +117,7 @@ int Solver::nloptwrapper(vector<double>&lowerbound,
     vector<double>tmp_grad(0);
     sol.init_energy = optfunc(sol.solveval,tmp_grad,funcPara);
     try{
-        int numOfPara = lowerbound.size();
+        int numOfPara = (int)lowerbound.size();
         //nlopt::opt myopt(nlopt::LD_CCSAQ,uint(numOfPara));
         nlopt::opt myopt(nlopt::LD_SLSQP,uint(numOfPara));
         //nlopt::opt myopt(nlopt::LD_VAR2,uint(numOfPara));
@@ -183,7 +186,7 @@ int Solver::nloptwrapper(vector<double>&lowerbound,
 
     sol.init_energy = optfunc(sol.solveval,tmp_grad,funcPara);
     try{
-        int numOfPara = lowerbound.size();
+        int numOfPara = (int)lowerbound.size();
         //nlopt::opt myopt(nlopt::LD_VAR1,uint(numOfPara));
         //nlopt::opt myopt(nlopt::LD_CCSAQ,uint(numOfPara));
         //nlopt::opt myopt(nlopt::LD_SLSQP,uint(numOfPara));
