@@ -17,7 +17,7 @@ namespace ORIENT {
        // orients normals.
        // note: mst_orient_normals() requires an iterator over points
        // as well as property maps to access each point's position and normal.
-       int nb_neighbors = 4;
+       int nb_neighbors = 3;
        std::list<PointVectorPair>::iterator unoriented_points_begin =
            CGAL::mst_orient_normals(points, nb_neighbors,
                                    CGAL::parameters::point_map(CGAL::First_of_pair_property_map<PointVectorPair>())

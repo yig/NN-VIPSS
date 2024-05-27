@@ -335,6 +335,7 @@ public:
 
   // Input & output routines.
   bool load_node_call(FILE* infile, int markers, int uvflag, char*);
+  bool load_node(REAL* pt_data, int pt_num);
   bool load_node(char*);
   bool load_edge(char*);
   bool load_face(char*);

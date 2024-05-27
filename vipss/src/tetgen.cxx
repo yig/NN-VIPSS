@@ -181,6 +181,22 @@ bool tetgenio::load_node_call(FILE* infile, int markers, int uvflag,
   return true;
 }
 
+
+
+bool tetgenio::load_node(REAL* pt_data, int pt_num)
+{
+  numberofpoints = pt_num;
+  pointlist = new REAL[pt_num * 3];
+  for(int i = 0; i < pt_num; ++i)
+  {
+    pointlist[3*i] = pt_data[3*i];
+    pointlist[3*i + 1] = pt_data[3*i + 1];
+    pointlist[3*i + 2] = pt_data[3*i + 2];
+  }
+  return true;
+}
+
+
 //============================================================================//
 //                                                                            //
 // load_node()    Load a list of points from a .node file.                    //

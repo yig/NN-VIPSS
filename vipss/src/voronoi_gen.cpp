@@ -13,12 +13,25 @@ typedef std::chrono::high_resolution_clock Clock;
 REAL cps = (REAL) CLOCKS_PER_SEC;
 double M_PI  = 2*acos(0.0);
 
-inline double PtDistance(double* p1, double* p2)
-{
-  return sqrt((p2[0] - p1[0]) * (p2[0] - p1[0]) +
-              (p2[1] - p1[1]) * (p2[1] - p1[1]) +
-              (p2[2] - p1[2]) * (p2[2] - p1[2]));
-}
+
+
+
+// void PtCluster::UpdateAdjacentClusters()
+// {
+//     std::set<PtCluster*> new_clusters;
+//     for(auto &cluster : adjacent_clusters)
+//     {
+//         if(cluster->merged)
+//         {
+//             if(cluster->merged_cluster != this)
+//             {
+//                 new_clusters.insert(cluster->merged_cluster);
+//             }
+//         } else {
+//             new_clusters.insert(cluster);
+//         }
+//     }
+// }
 
 void VoronoiGen::loadData(const std::string& path )
 {
@@ -27,6 +40,11 @@ void VoronoiGen::loadData(const std::string& path )
     // tetIO_.load_ply((char*)path.c_str());
     printf("load data contain %d points! \n", tetIO_.numberofpoints);
     // tetIO_.pointlist;
+}
+
+void VoronoiGen::loadData(const std::vector<double>& in_pts)
+{
+    tetIO_.load_node((double*)in_pts.data(), in_pts.size()/3);
 }
 
 void VoronoiGen::Tetrahedralize()
@@ -126,16 +144,47 @@ void VoronoiGen::BuildPtIdMap()
 {
     tetMesh_.points->traversalinit();
     tetgenmesh::point ploop = tetMesh_.pointtraverse();
-    size_t count = 0;
+    size_t pt_num_ = 0;
+    points_.clear();
     while(ploop != (tetgenmesh::point)NULL)
     {
-        point_id_map_[ploop] = count;
+        points_.push_back(ploop);
+        point_id_map_[ploop] = pt_num_;
         ploop = tetMesh_.pointtraverse();
-        count ++;
+        pt_num_ ++;
     }
-    pt_score_mat_.resize(count, count);
-    pt_adjecent_mat_.resize(count, count);
-    pt_dist_mat_.resize(count, count);
+    pt_score_mat_.resize(pt_num_, pt_num_);
+    pt_adjecent_mat_.resize(pt_num_, pt_num_);
+    pt_dist_mat_.resize(pt_num_, pt_num_);
+    printf("pt num : %d \n", pt_num_);
+    printf("point_id_map_ size : %d \n", point_id_map_.size());
+
+}
+
+void VoronoiGen::BuildAdjecentMat()
+{
+    tetMesh_.points->traversalinit();
+    tetgenmesh::point ploop = tetMesh_.pointtraverse();
+    
+    // points_.clear()
+    while(ploop != (tetgenmesh::point)NULL)
+    {
+        // points_.push_back(ploop);
+        size_t cur_p_id = point_id_map_[ploop]; 
+        // printf("cur pt id : %d \n", cur_p_id);
+        std::set<tetgenmesh::point> candidate_pts;
+        GetVertexStar(ploop, candidate_pts, 1);
+        for(auto &pt : candidate_pts)
+        {
+            if(pt == ploop) continue;
+            if(point_id_map_.find(pt) == point_id_map_.end()) continue;
+            size_t p_id = point_id_map_[pt];
+            // printf("   p _id : %d  \n", p_id);
+            pt_adjecent_mat_(cur_p_id, p_id) = 1;
+        }
+        
+        ploop = tetMesh_.pointtraverse();
+    }
 }
 
 std::vector<double> VoronoiGen::ConvertPtAndNeighborsToVect( std::set<tetgenmesh::point>& candid_pts)
@@ -205,8 +254,8 @@ void VoronoiGen::EstimateNormals()
         //     }
         // }
         PtCluster new_cluster;
-        new_cluster.key_pts.insert(ploop);
-        new_cluster.group_pts = candidate_pts_;
+        new_cluster.key_pts_.insert(ploop);
+        new_cluster.group_pts_ = candidate_pts_;
 
         
         point_cluster_map_[ploop] = new_cluster;
@@ -441,7 +490,7 @@ void VoronoiGen::MergeCluster()
             auto &cluster = point_cluster_map_[ele.first];
             tetgenmesh::point max_pt = tetgenmesh::point(NULL);
             double max_score = 0;
-            for(auto& pt : cluster.group_pts)
+            for(auto& pt : cluster.group_pts_)
             {
                 if(pt == ele.first) continue;
                 if(pt_score_map_.find(pt) != pt_score_map_.end())
@@ -457,11 +506,11 @@ void VoronoiGen::MergeCluster()
             {
                 visited_pts.insert(max_pt);
                 auto &max_cluster = point_cluster_map_[max_pt];
-                cluster.group_pts.insert(max_cluster.group_pts.begin(), max_cluster.group_pts.end());
-                cluster.key_pts.insert(max_cluster.key_pts.begin(), max_cluster.key_pts.end());
+                cluster.group_pts_.insert(max_cluster.group_pts_.begin(), max_cluster.group_pts_.end());
+                cluster.key_pts_.insert(max_cluster.key_pts_.begin(), max_cluster.key_pts_.end());
                 point_cluster_map_[max_pt] = cluster;
 
-                auto vts = ConvertPtAndNeighborsToVect(cluster.group_pts);
+                auto vts = ConvertPtAndNeighborsToVect(cluster.group_pts_);
                 // printf("vipss vts size : %d \n", vts.size()/3);
                 vipss_api_.run_vipss(vts);
    
@@ -472,7 +521,7 @@ void VoronoiGen::MergeCluster()
                 // printf("cur group_pts size : %d \n", cluster.group_pts.size());
                 
                 PtNCluster cur_cluster;
-                BuildPtNCluster(cluster.group_pts, vipss_api_.normals_, cur_cluster);
+                BuildPtNCluster(cluster.group_pts_, vipss_api_.normals_, cur_cluster);
 
                 // printf("cur cluster size : %d \n", cur_cluster.size());
                 // for(auto& k_pt : cluster.group_pts)
@@ -483,7 +532,7 @@ void VoronoiGen::MergeCluster()
                 //         printf("contianed pt : %f %f %f \n", k_pt[0], k_pt[1], k_pt[2]);
                 //     }
                 // }
-                for(auto k_pt : cluster.key_pts)
+                for(auto k_pt : cluster.key_pts_)
                 {
                     arma::vec3 new_normal;
                     if(cur_cluster.find(k_pt) != cur_cluster.end()) 
@@ -522,10 +571,7 @@ void VoronoiGen::CalculatePtColors()
     max_score = 2.0 * min_angle_; 
     for(auto &ele : pt_normal_map_)
     {
-        // if(abs(ele.first[0]) < 1e-12 && abs(ele.first[1]) < 1e-12 && abs(ele.first[2]) < 1e-12)
-        // {
-        //     continue;
-        // }
+
         auto cur_pt = ele.first;
         auto score = pt_score_map_[cur_pt];
         score = min(score, max_score);
@@ -539,6 +585,8 @@ void VoronoiGen::CalculatePtColors()
         colors_.push_back(c_b);
     }
 }
+
+
 
 
 void VoronoiGen::Run()
@@ -571,4 +619,26 @@ void VoronoiGen::Run()
     writeObjPtn_line(pt_line_path1, vertices_, colors_, normals_);
 
 
+}
+
+
+std::unordered_map<tetgenmesh::point, cluster::PtCluster> VoronoiGen::BuildAllClusters()
+{
+    tetMesh_.points->traversalinit();
+    tetgenmesh::point ploop = tetMesh_.pointtraverse();
+    auto t1 = Clock::now();
+    size_t id = 0;
+    std::unordered_map<tetgenmesh::point, PtCluster> pt_cluster_map;
+    while(ploop != (tetgenmesh::point)NULL)
+    {
+        candidate_pts_.clear();
+        GetVertexStar(ploop, candidate_pts_, 1);
+        if(candidate_pts_.find(ploop) != candidate_pts_.end()) candidate_pts_.erase(ploop);
+        cluster::PtCluster new_cluster;
+        new_cluster.key_pts_.insert(ploop);
+        new_cluster.group_pts_ = candidate_pts_;
+        pt_cluster_map[ploop] = new_cluster;
+        ploop = tetMesh_.pointtraverse();
+    }
+    return pt_cluster_map;
 }
