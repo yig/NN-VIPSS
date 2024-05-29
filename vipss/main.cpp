@@ -3,6 +3,8 @@
 #include "src/rbfcore.h"
 #include "src/readers.h"
 #include "src/voronoi_gen.h"
+#include "src/pt_vipss.h"
+#include "src/local_vipss.hpp"
 
 using namespace std;
 
@@ -17,6 +19,38 @@ void test_voronoi()
     v_gen.Run();
 }
 
+void test_local_vipss()
+{
+    std::string data_dir =  "../data/";
+    
+    LocalVipss l_vp;
+    l_vp.filename_ = "fertility";
+    l_vp.out_dir_ = data_dir + l_vp.filename_ + "/";
+    std::string path = data_dir + l_vp.filename_ + "/" + l_vp.filename_ + ".ply";
+
+    l_vp.Init(path);
+    l_vp.Run();
+
+}
+
+void test_pt_vipss()
+{
+    std::string path = "../data/doghead200/doghead200";
+    // std::string path = "../../data/doghead_wire/doghead_wire";
+    // VoronoiGen v_gen;
+    // v_gen.filename_ = "doghead200";
+    // v_gen.out_dir_ = "../data/doghead200/";
+    // v_gen.loadData(path);
+    // v_gen.Run();
+
+    PtVipss p_vipss;
+    printf("start to init p_vipss! \n");
+    p_vipss.Init(path);
+    p_vipss.out_name_ = "doghead200";
+    p_vipss.out_dir_ = "../data/doghead200/";
+
+    p_vipss.Run();
+}
 
 
 void SplitPath(const std::string& fullfilename,std::string &filepath);
@@ -25,7 +59,9 @@ RBF_Paras Set_RBF_PARA();
 int main(int argc, char** argv)
 {
 
-    test_voronoi();
+    // test_voronoi();
+    // test_pt_vipss();
+    test_local_vipss();
     return 0;
     cout << argc << endl;
 

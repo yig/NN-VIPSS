@@ -37,6 +37,8 @@ class LocalVipss {
         void flipClusterNormalsByScores();
 
         void flipClusterNormalsByMinST();
+
+        void GetClusterCenters();
         
         void Run();
     
@@ -61,6 +63,8 @@ class LocalVipss {
 
         std::vector<tetgenmesh::point> points_; 
         std::vector<double> normals_;
+
+        std::vector<tetgenmesh::point> cluster_centers_;
 
         size_t pt_num_;
         std::vector<std::pair<int, double>> cluster_id_scores_;

@@ -267,6 +267,52 @@ void LocalVipss::CalculateClusterScores()
 
 }
 
+void LocalVipss::GetClusterCenters()
+{
+    if(cluster_centers_.empty())
+    {
+        for(size_t i = 0; i < cluster_cores_mat_.n_rows; ++i)
+        {
+            tetgenmesh::point new_p = new double[3];
+            new_p[0] =0;
+            new_p[1] =0;
+            new_p[2] =0;
+            cluster_centers_.push_back(new_p);
+        } 
+    } else {
+        for(size_t i = 0; i < cluster_cores_mat_.n_rows; ++i)
+        {
+            tetgenmesh::point& cur_p = cluster_centers_[i];
+            cur_p[0] =0;
+            cur_p[1] =0;
+            cur_p[2] =0;
+        } 
+    }
+    
+    for(size_t i = 0; i < cluster_cores_mat_.n_rows; ++i)
+    {
+        tetgenmesh::point& new_p = cluster_centers_[i];
+        arma::sp_irowvec cores_pt = cluster_cores_mat_.row(i);
+        const arma::sp_irowvec::const_iterator start = cores_pt.begin();
+        const arma::sp_irowvec::const_iterator end = cores_pt.end();
+        int count = 0;
+        for(auto iter = start; iter != end; ++iter)
+        {
+            size_t pt_id = iter.internal_col;
+            new_p[0] += points_[pt_id][0];
+            new_p[1] += points_[pt_id][1];
+            new_p[2] += points_[pt_id][2];
+            count ++;
+        }
+        if(count > 0)
+        {
+            new_p[0] /= double(count);
+            new_p[1] /= double(count);
+            new_p[2] /= double(count);
+        }
+    }
+}
+
 void LocalVipss::MergeClusters()
 {
     std::set<int> visited_clusters;
@@ -288,14 +334,18 @@ void LocalVipss::MergeClusters()
             const arma::sp_rowvec::const_iterator end = c_scores_row.end();
             double max_score = 0;
             int max_id = -1;
+            auto cur_center = cluster_centers_[ele.first];
             for(auto iter = start; iter != end; iter++)
             {
                 if(visited_clusters.find(iter.internal_col) == visited_clusters.end())
                 {
-                    if(*iter > max_score)
+                    double cur_dist = PtDistance(cluster_centers_[iter.internal_col], cur_center);
+                    cur_dist = cur_dist > 1e-10? cur_dist: 1e-10;
+                    double cur_score = *iter/cur_dist;
+                    if(cur_score > max_score)
                     {
                         max_id = iter.internal_col;
-                        max_score = *iter;
+                        max_score = cur_score;
                     }
                 }
             }
@@ -607,6 +657,7 @@ void LocalVipss::Run()
     while(merged_cluster_size_ > 0)
     {
         auto tt0 = Clock::now();
+        GetClusterCenters();
         MergeClusters();
         auto tt1 = Clock::now();
         double merge_time = std::chrono::nanoseconds(tt1 - tt0).count()/1e9;
