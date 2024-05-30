@@ -11,7 +11,7 @@
 typedef std::chrono::high_resolution_clock Clock;
 
 REAL cps = (REAL) CLOCKS_PER_SEC;
-double M_PI  = 2*acos(0.0);
+// double M_PI  = 2*acos(0.0);
 
 
 
@@ -156,8 +156,8 @@ void VoronoiGen::BuildPtIdMap()
     pt_score_mat_.resize(pt_num_, pt_num_);
     pt_adjecent_mat_.resize(pt_num_, pt_num_);
     pt_dist_mat_.resize(pt_num_, pt_num_);
-    printf("pt num : %d \n", pt_num_);
-    printf("point_id_map_ size : %d \n", point_id_map_.size());
+    printf("pt num : %zu \n", pt_num_);
+    printf("point_id_map_ size : %zu \n", point_id_map_.size());
 
 }
 
@@ -312,7 +312,7 @@ void VoronoiGen::CalculateScores()
             if(pt_score_mat_(cur_id, s_id) != 0.0) continue;
             auto& s_n = pt_ele.second;
             auto& ori_n = pt_normal_map_[s_pt];
-            double val = min(1.0, abs(arma::dot(ori_n, s_n)));
+            double val = std::min(1.0, abs(arma::dot(ori_n, s_n)));
             double angle = acos (val) * 180.0 / M_PI ;
             if(point_cluster_normal_map_.find(s_pt) == point_cluster_normal_map_.end()) continue;
 
@@ -322,16 +322,16 @@ void VoronoiGen::CalculateScores()
             }   
 
             auto cur_n_s = point_cluster_normal_map_[s_pt][cur_pt];
-            double val_re = min(1.0, abs(arma::dot(cur_n_s, cur_n)));
+            double val_re = std::min(1.0, abs(arma::dot(cur_n_s, cur_n)));
             double angle_re = acos (val_re) * 180.0 / M_PI ;
-            double max_angle = max(angle, angle_re);
+            double max_angle = std::max(angle, angle_re);
             // printf("val : %f, val re: %f \n", val, val_re);
 
             pt_score_mat_(cur_id, s_id) = max_angle;
             pt_score_mat_(s_id, cur_id) = max_angle;
             
             double cur_dist = PtDistance(cur_pt, s_pt);
-            cur_dist = max(1e-8, cur_dist);
+            cur_dist = std::max(1e-8, cur_dist);
             pt_dist_mat_(cur_id, s_id) = cur_dist;
             pt_dist_mat_(s_id, cur_id) = cur_dist;
         }
@@ -574,7 +574,7 @@ void VoronoiGen::CalculatePtColors()
 
         auto cur_pt = ele.first;
         auto score = pt_score_map_[cur_pt];
-        score = min(score, max_score);
+        score = std::min(score, max_score);
 
         uint8_t c_r = uint8_t(score / max_score * 255);
         uint8_t c_g = 0;

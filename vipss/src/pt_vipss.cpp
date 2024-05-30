@@ -176,7 +176,7 @@ void PtVipss::Run()
     // UpdatePtsAndNormals();
     // OutPutNormals(out_path);
 
-    printf("save path : %s", out_path);
+    printf("save path : %s", out_path.c_str());
 
 
     int iter = 0;

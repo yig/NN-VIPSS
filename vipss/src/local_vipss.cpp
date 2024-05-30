@@ -26,13 +26,13 @@ void LocalVipss::Init(const std::string & path)
     adjacent_mat_ = voro_gen_.pt_adjecent_mat_;
     points_ = voro_gen_.points_;
 
-    printf("adjacent mat rows : %d, cols : %d \n", adjacent_mat_.n_rows, adjacent_mat_.n_cols);
+    printf("adjacent mat rows : %lld, cols : %lld \n", adjacent_mat_.n_rows, adjacent_mat_.n_cols);
     pt_num_ = points_.size();
 
     cluster_cores_mat_.resize(pt_num_, pt_num_);
     cluster_cores_mat_.eye();
     
-    printf("input point size : %d \n", pt_num_);
+    printf("input point size : %zu \n", pt_num_);
 
     vipss_api_.Set_RBF_PARA();
     vipss_api_.is_surfacing_ = false;
@@ -317,7 +317,7 @@ void LocalVipss::MergeClusters()
 {
     std::set<int> visited_clusters;
     std::vector<size_t> merged_cluster_ids;
-    printf("cluster scores num : %d \n", cluster_id_scores_.size());
+    printf("cluster scores num : %zu \n", cluster_id_scores_.size());
     for(auto &ele : cluster_id_scores_)
     {
         if(visited_clusters.find(ele.first) != visited_clusters.end())
@@ -339,9 +339,9 @@ void LocalVipss::MergeClusters()
             {
                 if(visited_clusters.find(iter.internal_col) == visited_clusters.end())
                 {
-                    double cur_dist = PtDistance(cluster_centers_[iter.internal_col], cur_center);
-                    cur_dist = cur_dist > 1e-10? cur_dist: 1e-10;
-                    double cur_score = *iter/cur_dist;
+                    // double cur_dist = PtDistance(cluster_centers_[iter.internal_col], cur_center);
+                    // cur_dist = cur_dist > 1e-10? cur_dist: 1e-10;
+                    double cur_score = *iter;
                     if(cur_score > max_score)
                     {
                         max_id = iter.internal_col;
