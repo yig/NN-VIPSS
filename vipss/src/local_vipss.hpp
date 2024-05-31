@@ -37,9 +37,10 @@ class LocalVipss {
         void flipClusterNormalsByScores();
 
         void flipClusterNormalsByMinST();
-
         void GetClusterCenters();
-        
+        void BuildClusterMST();
+        void FlipClusterNormalsByMST();
+        void WriteVipssTimeLog();
         void Run();
     
     public:
@@ -53,8 +54,9 @@ class LocalVipss {
         arma::sp_imat adjacent_mat_;
         arma::sp_imat cluster_cores_mat_;
         arma::sp_imat cluster_adjacent_mat_;
-        arma::sp_mat cluster_scores_mat_;
+        arma::sp_imat cluster_MST_mat_;
 
+        arma::sp_mat cluster_scores_mat_;
         arma::sp_imat cluster_adjacent_pt_mat_;
         
         arma::sp_mat cluster_normal_x_;
@@ -78,6 +80,12 @@ class LocalVipss {
         std::string filename_ = "local_vipss"; 
 
         bool flip_normal_ = false;
+        std::vector<double> out_pts_;
+        std::vector<double> out_normals_;
 
+        double user_lambda_ = 0.0;
+
+        std::vector<std::pair<size_t, double>> vipss_time_stats_;
+        std::vector<std::vector<std::pair<size_t, double>>> cluster_ptn_vipss_time_stats_;
 
 };

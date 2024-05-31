@@ -41,9 +41,11 @@ public:
     inline int Dim() const { return 1; }
 
     /// Does a check that int is in bounds, i.e., 0
-    inline Coord& operator[] ( const int DECLAREVAR(i) ) { ASSERT(i == 0); return d; }
+    // inline Coord& operator[] ( const int i ) { ASSERT(i == 0); return d; }
+    inline Coord& operator[] ( const int i ) { ASSERT(i == 0); return d; }
     /// Does a check that int is in bounds, i.e., 0 
-    inline const Coord& operator[] ( const int DECLAREVAR(i) ) const { ASSERT(i == 0); return d; }
+    // inline const Coord& operator[] ( const int i ) const { ASSERT(i == 0); return d; }
+    inline const Coord& operator[] ( const int i) const { ASSERT(i == 0); return d; }
     //@}
 
     /**@name Assignment operators */
@@ -117,9 +119,11 @@ public:
     /**@name Access grants */
     //@{
     /// Does a check that int is in bounds, i.e., 0 
-    inline Coord& operator[] ( const int DECLAREVAR(i) ) { ASSERT(i == 0); return d; }
+    // inline Coord& operator[] ( const int i ) { ASSERT(i == 0); return d; }
+    inline Coord& operator[] ( const int i ) { ASSERT(i == 0); return d; }
     /// Does a check that int is in bounds, i.e., 0 
-    inline const Coord& operator[] ( const int DECLAREVAR(i) ) const { ASSERT(i == 0); return d; }
+    // inline const Coord& operator[] ( const int i ) const { ASSERT(i == 0); return d; }
+    inline const Coord& operator[] ( const int i ) const { ASSERT(i == 0); return d; }
     //@}
 
     /**@name Assignment operators */
@@ -187,9 +191,9 @@ public:
     /**@name Access grants */
     //@{
     /// Does a check that int is in bounds, i.e., 0 
-    inline Coord& operator[] ( const int DECLAREVAR(i) ) { ASSERT( i == 0 ); return u; }
+    inline Coord& operator[] ( const int i ) { ASSERT( i == 0 ); return u; }
     /// Does a check that int is in bounds, i.e., 0 
-    inline const Coord& operator[] ( const int DECLAREVAR(i) ) const { ASSERT(i == 0); return u; }
+    inline const Coord& operator[] ( const int i ) const { ASSERT(i == 0); return u; }
     //@}
 
     /**@name Assignment operators */
