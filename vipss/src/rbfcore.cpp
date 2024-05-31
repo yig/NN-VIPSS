@@ -245,9 +245,9 @@ inline double RBF_Core::Dist_Function(const double *p){
 
 }
 static RBF_Core * s_hrbf;
-//double RBF_Core::Dist_Function(const R3Pt &in_pt){
-//    return s_hrbf->Dist_Function(&(in_pt[0]));
-//}
+double RBF_Core::Dist_Function(const R3Pt &in_pt){
+   return s_hrbf->Dist_Function(&(in_pt[0]));
+}
 
 //FT RBF_Core::Dist_Function(const Point_3 in_pt){
 

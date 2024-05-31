@@ -507,6 +507,20 @@ int RBF_Core::Opt_Hermite_PredictNormal_UnitNormal(){
     return 1;
 }
 
+void RBF_Core::Set_RBFCoefWithInitNormal(const std::vector<double>& Vn)
+{
+    newnormals = Vn;
+    arma::vec y(npt*4);
+    for(size_t i=0;i<npt;++i)y(i) = 0;
+    for(size_t i=0;i<npt;++i){
+        y(npt+i) = newnormals[i*3];
+        y(npt+i+npt) = newnormals[i*3+1];
+        y(npt+i+npt*2) = newnormals[i*3+2];
+    }
+    Set_RBFCoef(y);
+}
+
+
 void RBF_Core::Set_RBFCoef(arma::vec &y){
     if(open_debug_log)
     cout<<"Set_RBFCoef"<<endl;
@@ -524,9 +538,8 @@ void RBF_Core::Set_RBFCoef(arma::vec &y){
         a = Minv*y;
         b = Ninv.t()*y;
 
+        // a.save("a.txt", arma::arma_ascii);
     }
-
-
 }
 
 

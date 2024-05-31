@@ -93,14 +93,14 @@ void RBF_Core::OptNormal(int method){
 
 void RBF_Core::Surfacing(int method, int n_voxels_1d){
 
-    /*n_evacalls = 0;
+    n_evacalls = 0;
     Surfacer sf;
 
-    surf_time = sf.Surfacing_Implicit(pts,n_voxels_1d,false,RBF_Core::Dist_Function);
+    surf_time = sf.Surfacing_Implicit(pts,n_voxels_1d,false, RBF_Core::Dist_Function);
 
     sf.WriteSurface(finalMesh_v,finalMesh_fv);
     if(open_debug_log)
-    cout<<"n_evacalls: "<<n_evacalls<<"   ave: "<<surf_time/n_evacalls<<endl;*/
+    cout<<"n_evacalls: "<<n_evacalls<<"   ave: "<<surf_time/n_evacalls<<endl;
 
 
 }

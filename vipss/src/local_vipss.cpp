@@ -824,7 +824,6 @@ void LocalVipss::Run()
     WriteVipssTimeLog();
     vipss_api_.is_surfacing_ = true;
     // vipss_api_.user_lambda_ = 0.0;
-    
     vipss_api_.run_vipss(out_pts_, out_normals_);
     printf("total time used : %f \n", total_time);
 }

@@ -16,8 +16,8 @@ void RBF_API::Set_RBF_PARA(){
     para.Hermite_weight_smoothness = 0.0;
     para.Hermite_ls_weight = 0;
     para.Hermite_designcurve_weight = 0.0;
-    // para.Method = RBF_METHOD::Hermite_UnitNormal;
-    para.Method = RBF_METHOD::FastHermite;
+    para.Method = RBF_METHOD::Hermite_UnitNormal;
+    // para.Method = RBF_METHOD::FastHermite;
 
     para.InitMethod = initmethod;
     para.user_lamnbda = 0;
@@ -36,9 +36,9 @@ void RBF_API::run_vipss(std::vector<double> &Vs)
     // std::cout << "start inject data "<< std::endl;
     RBF_Core rbf_core_;
     rbf_core_.InjectData(Vs, para_);
-    std::cout << "finish inject data "<< std::endl;
+    // std::cout << "finish inject data "<< std::endl;
     rbf_core_.BuildK(para_);
-    std::cout << "finish build K "<< std::endl;
+    // std::cout << "finish build K "<< std::endl;
     rbf_core_.InitNormal(para_);
     rbf_core_.OptNormal(0);
     
@@ -59,7 +59,7 @@ void RBF_API::run_vipss(std::vector<double> &Vs, size_t key_ptn)
 {
     para_.user_lamnbda = user_lambda_;
     RBF_Core rbf_core_;
-    rbf_core_.key_npt = key_ptn;
+    // rbf_core_.key_npt = key_ptn;
     rbf_core_.InjectData(Vs, para_);
     rbf_core_.BuildK(para_);
     // std::cout << "finish build K "<< std::endl;

@@ -116,7 +116,7 @@ public:
     std::vector<uint>edges;
     std::vector<int>labels;
 
-private:
+public:
 
     std::vector<double>initnormals;
     std::vector<double>initnormals_uninorm;
@@ -213,7 +213,7 @@ public:
     inline double Dist_Function(const double *p);
 
 public:
-    //static double Dist_Function(const R3Pt &in_pt);
+    static double Dist_Function(const R3Pt &in_pt);
     //static FT Dist_Function(const Point_3 in_pt);
     int n_evacalls;
 public:
@@ -258,6 +258,7 @@ public:
 
 
     void Set_RBFCoef(arma::vec &y);
+    void Set_RBFCoefWithInitNormal(const std::vector<double>& Vn);
 
     void Set_Actual_Hermite_LSCoef(double hermite_ls);
     void Set_HermiteApprox_Lamnda(double hermite_ls);
