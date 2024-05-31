@@ -742,6 +742,72 @@ void LocalVipss::WriteVipssTimeLog()
     printf("Vipss total time : %f \n", time_sum);
 }
 
+void LocalVipss::SaveCluster()
+{
+    for(size_t i = 0; i < cluster_cores_mat_.n_rows; ++i)
+    {
+        arma::sp_irowvec cur_row = cluster_cores_mat_.row(i);
+        if(cur_row.n_nonzero < 3) continue;
+        
+        const arma::sp_irowvec::const_iterator start = cur_row.begin();
+        const arma::sp_irowvec::const_iterator end = cur_row.end();
+        std::set<P3tr> key_pts;
+        for(auto iter = start; iter != end; ++iter)
+        {
+            key_pts.insert(points_[iter.internal_col]);
+        } 
+        std::vector<P3tr> nei_pts;
+        arma::sp_irowvec cur_pt_row = cluster_adjacent_pt_mat_.row(i);
+        const arma::sp_irowvec::const_iterator pt_start = cur_pt_row.begin();
+        const arma::sp_irowvec::const_iterator pt_end = cur_pt_row.end();
+        for(auto iter = pt_start; iter != pt_end; ++iter)
+        {
+            auto cur_pt = points_[iter.internal_col];
+            if(key_pts.find(cur_pt) == key_pts.end())
+            {
+                nei_pts.push_back(cur_pt);
+            }
+        }
+        std::vector<P3tr> key_pts_vec(key_pts.begin(), key_pts.end());
+        std::string out_path = out_dir_ + filename_ + "_cluster_" + std::to_string(i);
+        SaveClusterPts(out_path, key_pts_vec, nei_pts);
+    }
+}
+
+void LocalVipss::SaveClusterPts(const std::string& path,
+                            const std::vector<P3tr>& key_pts, 
+                            const std::vector<P3tr>& nei_pts)
+{
+    std::vector<double> pts;
+    std::vector<uint8_t> colors;
+    size_t key_num = key_pts.size();
+    size_t nei_num = nei_pts.size();
+    pts.resize(3*(key_num + nei_num));
+    colors.resize(3*(key_num + nei_num));
+    for(size_t i = 0; i < key_num + nei_num; ++i)
+    {
+        if(i < key_num)
+        {
+            pts[3*i] = key_pts[i][0];
+            pts[3*i + 1] = key_pts[i][1];
+            pts[3*i + 2] = key_pts[i][2];
+            colors[3*i] = 255;
+            colors[3*i + 1] = 0;
+            colors[3*i + 2] = 0;
+        } else {
+            size_t id = i - key_num;
+            pts[3*id] = key_pts[id][0];
+            pts[3*id + 1] = key_pts[id][1];
+            pts[3*id + 2] = key_pts[id][2];
+            colors[3*id] = 0;
+            colors[3*id + 1] = 0;
+            colors[3*id + 2] = 255;
+        } 
+    }
+    writePLYFile_CO(path, pts, colors);
+}
+
+
 
 void LocalVipss::Run()
 {

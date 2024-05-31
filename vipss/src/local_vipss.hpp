@@ -6,7 +6,7 @@
 
 class LocalVipss {
 
-    
+    typedef tetgenmesh::point P3tr;
 
     public:
         LocalVipss() {};
@@ -41,6 +41,10 @@ class LocalVipss {
         void BuildClusterMST();
         void FlipClusterNormalsByMST();
         void WriteVipssTimeLog();
+        void SaveCluster();
+        void SaveClusterPts(const std::string& path,
+                            const std::vector<P3tr>& key_pts, 
+                            const std::vector<P3tr>& nei_pts);
         void Run();
     
     public:
