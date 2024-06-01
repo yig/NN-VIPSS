@@ -65,21 +65,23 @@ std::vector<size_t> LocalVipss::GetClusterCoreIds(size_t cluster_id)
 std::vector<size_t> LocalVipss::GetClusterPtIds(size_t cluster_id)
 {
     // arma::sp_ivec cluster_core_ids = cluster_cores_mat_.row(cluster_id);
-    
-
     // arma::sp_ivec cluster_pt_ids = adjacent_mat_ * cluster_core_ids;
-    size_t nozero_count = cluster_adjacent_pt_mat_.n_nonzero;
-
+    std::vector<size_t> pt_ids;
+    std::set<size_t> key_ids;
+    arma::sp_irowvec cluster_core_ids = cluster_cores_mat_.row(cluster_id);
+    arma::sp_irowvec::const_iterator c_start = cluster_core_ids.begin();
+    arma::sp_irowvec::const_iterator c_end = cluster_core_ids.end();
+    for (auto i = c_start; i != c_end; ++i )
+    {
+        pt_ids.push_back(i.internal_col);
+        key_ids.insert(i.internal_col);
+    }
     arma::sp_irowvec cluster_pt_ids = cluster_adjacent_pt_mat_.row(cluster_id);
-
-    // printf("cluster_pt_ids no zero count : %d \n", cluster_pt_ids.n_nonzero);
-
     arma::sp_irowvec::const_iterator start = cluster_pt_ids.begin();
     arma::sp_irowvec::const_iterator end = cluster_pt_ids.end();
-    std::vector<size_t> pt_ids;
     for ( arma::sp_irowvec::const_iterator i = start; i != end; ++i )
     {
-        // printf("i pos : %d \n", i.internal_pos);
+        if(key_ids.find(i.internal_col) != key_ids.end()) continue;
         pt_ids.push_back(i.internal_col);
     }
     return pt_ids;
@@ -119,7 +121,10 @@ void LocalVipss::CalculateClusterNormals(size_t cluster_id)
     auto cluster_vts = GetClusterVerticesFromIds(cluster_pt_ids);
     // printf("cluster pt size : % \n", cluster_vts.size()/3);
     auto t1 = Clock::now();
-    vipss_api_.run_vipss(cluster_vts);
+    // vipss_api_.run_vipss(cluster_vts, cluster_pt_ids.size());
+    arma::sp_irowvec cluster_core_ids = cluster_cores_mat_.row(cluster_id);
+    size_t key_ptn = cluster_core_ids.n_nonzero;
+    vipss_api_.run_vipss(cluster_vts, key_ptn);
     auto t2 = Clock::now();
 
     double vipss_time = std::chrono::nanoseconds(t2 - t1).count()/1e9;

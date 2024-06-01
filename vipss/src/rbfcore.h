@@ -92,9 +92,8 @@ class RBF_Core{
 
 public:
 
-
-
     size_t npt;
+    size_t key_npt;
     int polyDeg = 2;
     int bsize;
 
@@ -123,7 +122,7 @@ public:
 
 public:
     std::vector<double>newnormals;
-
+    std::vector<double>out_normals_;
 
 public:
     std::vector<double>coff_cos;
@@ -184,6 +183,7 @@ public:
     double Hermite_weight_smoothness;
     double Hermite_ls_weight_inject, User_Lamnbda_inject;
     double Hermite_designcurve_weight;
+    
 
     double ls_coef;
     void (*Kernal_Gradient_Function_2p)(const double *p1, const double *p2, double *G);
@@ -200,15 +200,14 @@ private:
     std::unordered_map<int,std::unordered_map<int, std::vector<double> > >mp_RBF_OptNormal;
 
 public:
-
     RBF_Core();
     ~RBF_Core(){};
     RBF_Core(RBF_Kernal kernal);
     void Init(RBF_Kernal kernal);
+    void EstimateNormals();
 
 
 public:
-
     double Dist_Function(const double x, const double y, const double z);
     inline double Dist_Function(const double *p);
 
@@ -219,9 +218,7 @@ public:
 public:
     void SetThis();
 public:
-
     void SetSigma(double x);
-
 
 public:
 

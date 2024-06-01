@@ -203,13 +203,13 @@ inline double RBF_Core::Dist_Function(const double *p){
     double *p_pts = pts.data();
     static arma::vec kern(npt), kb;
     if(isHermite){
-        kern.set_size(npt*4);
+        kern.set_size(npt + 3 * key_npt);
         double G[3];
         for(int i=0;i<npt;++i)kern(i) = Kernal_Function_2p(p_pts+i*3, p);
-        for(int i=0;i<npt;++i){
+        for(int i=0;i<key_npt;++i){
             Kernal_Gradient_Function_2p(p,p_pts+i*3,G);
             //for(int j=0;j<3;++j)kern(npt+i*3+j) = -G[j];
-            for(int j=0;j<3;++j)kern(npt+i+j*npt) = G[j];
+            for(int j=0;j<3;++j)kern(npt+i+j*key_npt) = G[j];
         }
     }else{
         kern.set_size(npt);
@@ -380,5 +380,32 @@ void RBF_Core::Clear_TimerRecord(){
     callfunc_timev.clear();
     invM_timev.clear();
     setK_timev.clear();
+}
 
+void RBF_Core::EstimateNormals()
+{
+    double delt = 0.00001;
+    out_normals_.resize(npt*3);
+    for(size_t i = 0; i < npt; ++i)
+    {
+        double x = pts[i * 3];
+        double y = pts[i * 3 + 1];
+        double z = pts[i * 3 + 2];
+        R3Pt curPxN(x - delt, y, z);
+        R3Pt curPxO(x + delt, y, z);
+        double dx = (Dist_Function(curPxO) - Dist_Function(curPxN))/ (2 * delt);
+
+        R3Pt curPyN(x, y - delt, z);
+        R3Pt curPyO(x, y + delt, z);
+        double dy = (Dist_Function(curPyO) - Dist_Function(curPyN))/ (2 * delt);
+
+        R3Pt curPzN(x, y, z - delt);
+        R3Pt curPzO(x, y, z + delt);
+        double dz = (Dist_Function(curPzO) - Dist_Function(curPzN))/ (2 * delt);
+
+        double len = std::max(sqrt(dx * dx + dy * dy + dz * dz), 1e-8);
+        out_normals_[3*i] = dx / len;
+        out_normals_[3*i + 1] = dy / len;
+        out_normals_[3*i + 2] = dz / len;
+    }
 }

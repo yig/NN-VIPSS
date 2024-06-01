@@ -93,8 +93,9 @@ void RBF_Core::Set_HermiteRBF(std::vector<double>&pts){
     //for(auto a:pts)cout<<a<<' ';cout<<endl;
     isHermite = true;
 
-    a.set_size(npt*4);
-    M.set_size(npt*4,npt*4);
+    size_t m_dim = npt + 3 * key_npt;
+    a.set_size(m_dim);
+    M.set_size(m_dim,m_dim);
     double *p_pts = pts.data();
     for(int i=0;i<npt;++i){
         for(int j=i;j<npt;++j){
@@ -108,22 +109,22 @@ void RBF_Core::Set_HermiteRBF(std::vector<double>&pts){
 
     double G[3];
     for(int i=0;i<npt;++i){
-        for(int j=0;j<npt;++j){
+        for(int j=0;j<key_npt;++j){
 
             Kernal_Gradient_Function_2p(p_pts+i*3, p_pts+j*3, G);
             //            int jind = j*3+npt;
             //            for(int k=0;k<3;++k)M(i,jind+k) = -G[k];
             //            for(int k=0;k<3;++k)M(jind+k,i) = G[k];
 
-            for(int k=0;k<3;++k)M(i,npt+j+k*npt) = G[k];
-            for(int k=0;k<3;++k)M(npt+j+k*npt,i) = G[k];
+            for(int k=0;k<3;++k)M(i,npt+j+k*key_npt) = G[k];
+            for(int k=0;k<3;++k)M(npt+j+k*key_npt,i) = G[k];
 
         }
     }
 
     double H[9];
-    for(int i=0;i<npt;++i){
-        for(int j=i;j<npt;++j){
+    for(int i=0;i<key_npt;++i){
+        for(int j=i;j<key_npt;++j){
 
             Kernal_Hessian_Function_2p(p_pts+i*3, p_pts+j*3, H);
             //            int iind = i*3+npt;
@@ -134,25 +135,25 @@ void RBF_Core::Set_HermiteRBF(std::vector<double>&pts){
 
             for(int k=0;k<3;++k)
                 for(int l=0;l<3;++l)
-                    M(npt+j+l*npt,npt+i+k*npt) = M(npt+i+k*npt,npt+j+l*npt) = -H[k*3+l];
+                    M(npt+j+l*key_npt,npt+i+k*key_npt) = M(npt+i+k*key_npt,npt+j+l*key_npt) = -H[k*3+l];
         }
     }
 
     //cout<<std::setprecision(5)<<std::fixed<<M<<endl;
 
     bsize= 4;
-    N.zeros(npt*4,4);
+    N.zeros(m_dim, 4);
     b.set_size(4);
 
     for(int i=0;i<npt;++i){
         N(i,0) = 1;
         for(int j=0;j<3;++j)N(i,j+1) = pts[i*3+j];
     }
-    for(int i=0;i<npt;++i){
+    for(int i=0;i<key_npt;++i){
         //        int ind = i*3+npt;
         //        for(int j=0;j<3;++j)N(ind+j,j+1) = 1;
 
-        for(int j=0;j<3;++j)N(npt+i+j*npt,j+1) = -1;
+        for(int j=0;j<3;++j)N(npt+i+j*key_npt,j+1) = -1;
     }
 
     //cout<<N<<endl;
@@ -280,10 +281,12 @@ void RBF_Core::Set_Hermite_PredictNormal(std::vector<double>&pts){
     }else{
         // if(open_debug_log)
         // cout<<"using new formula"<<endl;
-        bigM.zeros((npt+1)*4,(npt+1)*4);
-        bigM.submat(0,0,npt*4-1,npt*4-1) = M;
-        bigM.submat(0,npt*4,(npt)*4-1, (npt+1)*4-1) = N;
-        bigM.submat(npt*4,0,(npt+1)*4-1, (npt)*4-1) = N.t();
+
+        size_t m_dim = npt + 3* key_npt;
+        bigM.zeros(m_dim + 4, m_dim + 4);
+        bigM.submat(0,0,m_dim-1,m_dim-1) = M;
+        bigM.submat(0,m_dim,m_dim-1, m_dim + 3) = N;
+        bigM.submat(m_dim,0,m_dim + 3, m_dim-1) = N.t();
 
         //for(int i=0;i<4;++i)bigM(i+(npt)*4,i+(npt)*4) = 1;
 
@@ -292,15 +295,15 @@ void RBF_Core::Set_Hermite_PredictNormal(std::vector<double>&pts){
         if(open_debug_log)
         cout<<"bigMinv: "<<(setK_time= std::chrono::nanoseconds(Clock::now() - t2).count()/1e9)<<endl;
 		bigM.clear();
-        Minv = bigMinv.submat(0,0,npt*4-1,npt*4-1);
-        Ninv = bigMinv.submat(0,npt*4,(npt)*4-1, (npt+1)*4-1);
+        Minv = bigMinv.submat(0,0,m_dim-1,m_dim-1);
+        Ninv = bigMinv.submat(0,m_dim,m_dim-1, m_dim + 3);
 
         bigMinv.clear();
         //K = Minv - Ninv *(N.t()*Minv);
         K = Minv;
         K00 = K.submat(0,0,npt-1,npt-1);
-        K01 = K.submat(0,npt,npt-1,npt*4-1);
-        K11 = K.submat( npt, npt, npt*4-1, npt*4-1 );
+        K01 = K.submat(0,npt,npt-1,m_dim-1);
+        K11 = K.submat( npt, npt, m_dim-1, m_dim-1 );
 
         M.clear();N.clear();
         // cout<<"K11: "<<K11.n_cols<<endl;
@@ -334,7 +337,8 @@ void RBF_Core::Set_Hermite_PredictNormal(std::vector<double>&pts){
 void RBF_Core::SetInitnormal_Uninorm(){
 
     initnormals_uninorm = initnormals;
-    for(int i=0;i<npt;++i)MyUtility::normalize(initnormals_uninorm.data()+i*3);
+    for(int i=0;i<key_npt;++i)MyUtility::normalize(initnormals_uninorm.data()+i*3);
+    initnormals = initnormals_uninorm;
 
 }
 
@@ -360,17 +364,18 @@ int RBF_Core::Solve_Hermite_PredictNormal_UnitNorm(){
 
     int smalleig = 0;
 
-    initnormals.resize(npt*3);
-    arma::vec y(npt*4);
+    initnormals.resize(key_npt*3);
+    arma::vec y(npt + 3 * key_npt);
     for(int i=0;i<npt;++i)y(i) = 0;
-    for(int i=0;i<npt*3;++i)y(i+npt) = eigvec(i,smalleig);
-    for(int i=0;i<npt;++i){
+    
+    for(int i=0;i<key_npt*3;++i)y(i+npt) = eigvec(i,smalleig);
+
+    for(int i=0;i<key_npt;++i){
         initnormals[i*3]   = y(npt+i);
-        initnormals[i*3+1] = y(npt+i+npt);
-        initnormals[i*3+2] = y(npt+i+npt*2);
+        initnormals[i*3+1] = y(npt+i+key_npt);
+        initnormals[i*3+2] = y(npt+i+key_npt*2);
         //MyUtility::normalize(normals.data()+i*3);
     }
-
 
     SetInitnormal_Uninorm();
     if(open_debug_log)
@@ -389,7 +394,8 @@ double optfunc_Hermite(const std::vector<double>&x, std::vector<double>&grad, vo
 
     auto t1 = Clock::now();
     RBF_Core *drbf = reinterpret_cast<RBF_Core*>(fdata);
-    size_t n = drbf->npt;
+    // size_t n = drbf->npt;
+    size_t n = drbf->key_npt;
     arma::vec arma_x(n*3);
 
     //(  sin(a)cos(b), sin(a)sin(b), cos(a)  )  a =>[0, pi], b => [-pi, pi];
@@ -450,10 +456,10 @@ double optfunc_Hermite(const std::vector<double>&x, std::vector<double>&grad, vo
 
 int RBF_Core::Opt_Hermite_PredictNormal_UnitNormal(){
 
+    
+    sol.solveval.resize(key_npt * 2);
 
-    sol.solveval.resize(npt * 2);
-
-    for(size_t i=0;i<npt;++i){
+    for(size_t i=0;i<key_npt;++i){
         double *veccc = initnormals.data()+i*3;
         {
             //MyUtility::normalize(veccc);
@@ -465,9 +471,9 @@ int RBF_Core::Opt_Hermite_PredictNormal_UnitNormal(){
     //cout<<"smallvec: "<<smallvec<<endl;
 
     if(1){
-        std::vector<double>upper(npt*2);
-        std::vector<double>lower(npt*2);
-        for(int i=0;i<npt;++i){
+        std::vector<double>upper(key_npt*2);
+        std::vector<double>lower(key_npt*2);
+        for(int i=0;i<key_npt;++i){
             upper[i*2] = 2 * my_PI;
             upper[i*2 + 1] = 2 * my_PI;
 
@@ -487,15 +493,15 @@ int RBF_Core::Opt_Hermite_PredictNormal_UnitNormal(){
         //for(int i=0;i<npt;++i)cout<< sol.solveval[i]<<' ';cout<<endl;
 
     }
-    newnormals.resize(npt*3);
-    arma::vec y(npt*4);
+    newnormals.resize(key_npt*3);
+    arma::vec y(npt + 3 * key_npt);
     for(size_t i=0;i<npt;++i)y(i) = 0;
-    for(size_t i=0;i<npt;++i){
+    for(size_t i=0;i<key_npt;++i){
 
         double a = sol.solveval[i*2], b = sol.solveval[i*2+1];
         newnormals[i*3]   = y(npt+i) = sin(a) * cos(b);
-        newnormals[i*3+1] = y(npt+i+npt) = sin(a) * sin(b);
-        newnormals[i*3+2] = y(npt+i+npt*2) = cos(a);
+        newnormals[i*3+1] = y(npt+i+key_npt) = sin(a) * sin(b);
+        newnormals[i*3+2] = y(npt+i+key_npt*2) = cos(a);
         MyUtility::normalize(newnormals.data()+i*3);
     }
 
@@ -509,13 +515,14 @@ int RBF_Core::Opt_Hermite_PredictNormal_UnitNormal(){
 
 void RBF_Core::Set_RBFCoefWithInitNormal(const std::vector<double>& Vn)
 {
+    
     newnormals = Vn;
-    arma::vec y(npt*4);
+    arma::vec y(npt + 3 * key_npt);
     for(size_t i=0;i<npt;++i)y(i) = 0;
-    for(size_t i=0;i<npt;++i){
+    for(size_t i=0;i<key_npt;++i){
         y(npt+i) = newnormals[i*3];
-        y(npt+i+npt) = newnormals[i*3+1];
-        y(npt+i+npt*2) = newnormals[i*3+2];
+        y(npt+i+key_npt) = newnormals[i*3+1];
+        y(npt+i+key_npt*2) = newnormals[i*3+2];
     }
     Set_RBFCoef(y);
 }
@@ -601,8 +608,6 @@ int RBF_Core::Lamnbda_Search_GlobalEigen(){
     newnormals = opt_normallist[minind];
 	return 1;
 }
-
-
 
 
 void RBF_Core::Print_LamnbdaSearchTest(std::string fname){

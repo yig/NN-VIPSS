@@ -75,8 +75,7 @@ void RBF_Core::OptNormal(int method){
     if(open_debug_log)
     cout<<"OptNormal"<<endl;
     auto t1 = Clock::now();
-
-
+  
     switch(curMethod){
 
     case Hermite_UnitNormal:

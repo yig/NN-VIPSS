@@ -51,6 +51,7 @@ void RBF_API::run_vipss(std::vector<double> &Vs)
     if(is_outputtime_){
         rbf_core_.Print_TimerRecord_Single(outpath_ +"_time.txt");
     }
+    // printf("newnormals size : %zu -----------\n", rbf_core_.newnormals.size());
     normals_ = rbf_core_.newnormals;
     // rbf_core_.clear();
 }
@@ -59,12 +60,20 @@ void RBF_API::run_vipss(std::vector<double> &Vs, size_t key_ptn)
 {
     para_.user_lamnbda = user_lambda_;
     RBF_Core rbf_core_;
-    // rbf_core_.key_npt = key_ptn;
+    rbf_core_.key_npt = key_ptn;
     rbf_core_.InjectData(Vs, para_);
     rbf_core_.BuildK(para_);
     // std::cout << "finish build K "<< std::endl;
-    rbf_core_.InitNormal(para_);
-    rbf_core_.OptNormal(0);
+    if(key_ptn == 1)
+    {
+        rbf_core_.Solve_Hermite_PredictNormal_UnitNorm();
+        rbf_core_.Set_RBFCoefWithInitNormal(rbf_core_.initnormals);
+    } else {
+        rbf_core_.InitNormal(para_);
+        rbf_core_.OptNormal(0);
+    }
+
+    rbf_core_.EstimateNormals();
     
     if(is_surfacing_){
         rbf_core_.Write_Hermite_NormalPrediction(outpath_ + "_normal", 1);
@@ -74,7 +83,9 @@ void RBF_API::run_vipss(std::vector<double> &Vs, size_t key_ptn)
     if(is_outputtime_){
         rbf_core_.Print_TimerRecord_Single(outpath_ +"_time.txt");
     }
-    normals_ = rbf_core_.newnormals;
+    // printf("newnormals size : %zu -----------\n", rbf_core_.newnormals.size());
+    // printf("newnormals size : %zu -----------\n", rbf_core_.out_normals_.size());
+    normals_ = rbf_core_.out_normals_;
 
 }
 
@@ -83,6 +94,7 @@ void RBF_API::run_vipss(std::vector<double> &Vs, std::vector<double> &Vn)
     para_.user_lamnbda = user_lambda_;
     // std::cout << "start inject data "<< std::endl;
     RBF_Core rbf_core_;
+    rbf_core_.key_npt = Vs.size()/3;
     rbf_core_.InjectData(Vs, para_);
     // std::cout << "finish inject data "<< std::endl;
     rbf_core_.BuildK(para_);
