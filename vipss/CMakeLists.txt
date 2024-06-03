@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(vipss)
 
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -O3 ")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -O3 -pg")
 
 find_package(NLopt REQUIRED)
 # set(NLopt_LIB_DIR "")
