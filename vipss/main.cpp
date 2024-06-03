@@ -24,9 +24,13 @@ void test_local_vipss()
     std::string data_dir =  "../../data/";
     
     LocalVipss l_vp;
-    l_vp.filename_ = "kitten";
+    l_vp.filename_ = "fertility";
     l_vp.out_dir_ = data_dir + l_vp.filename_ + "/";
     std::string path = data_dir + l_vp.filename_ + "/" + l_vp.filename_ + ".ply";
+
+    l_vp.angle_threshold_ = 30;
+    l_vp.user_lambda_ = 0.0;
+    
 
     l_vp.Init(path);
     l_vp.Run();

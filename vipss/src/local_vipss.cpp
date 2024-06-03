@@ -155,7 +155,25 @@ void LocalVipss::InitNormalWithVipss()
 
 double M_PI2  = 2*acos(0.0);
 
-double LocalVipss::CalculateScores(std::vector<arma::vec3>& a_normals, std::vector<arma::vec3>& b_normals)
+double LocalVipss::CalculateScores(const arma::mat& a_normals, const arma::mat& b_normals)
+{
+    arma::mat dot_mat = a_normals % b_normals;
+    arma::colvec dot_sum = arma::sum(dot_mat, 1);
+    double min_project_p = dot_sum.min();
+    double min_project_n = -1.0 * dot_sum.max();
+
+    flip_normal_ = false;
+    if(min_project_n > min_project_p)
+    {
+        flip_normal_ = true;
+        min_project_p = min_project_n;
+    }
+    min_project_p = std::min(1.0, std::max(-1.0, min_project_p));
+    double angle = acos (min_project_p) * 180.0 / M_PI2 ;
+    return angle;
+}
+
+double LocalVipss::CalculateScores(const std::vector<arma::vec3>& a_normals, const std::vector<arma::vec3>& b_normals)
 {
 
     double min_project_p = 1.0;
@@ -189,32 +207,69 @@ double LocalVipss::CalculateClusterPairScore(size_t c_a, size_t c_b)
     auto core_ids_a = GetClusterCoreIds(c_a);
     auto core_ids_b = GetClusterCoreIds(c_b);
 
-    std::vector<arma::vec3> a_normals;
-    std::vector<arma::vec3> b_normals;
-
+    std::vector<size_t> valid_ids;
     for(auto id : core_ids_a)
     {
         if(cluster_normal_x_(c_b, id) != 0)
         {
-            arma::vec3 cur_n_b{cluster_normal_x_(c_b, id), cluster_normal_y_(c_b, id), cluster_normal_z_(c_b, id)};
-            b_normals.push_back(cur_n_b);
-            arma::vec3 cur_n_a{cluster_normal_x_(c_a, id), cluster_normal_y_(c_a, id), cluster_normal_z_(c_a, id)};
-            a_normals.push_back(cur_n_a);
+            valid_ids.push_back(id); 
         }
     }
-
     for(auto id : core_ids_b)
     {
         if(cluster_normal_x_(c_a, id) != 0)
         {
-            arma::vec3 cur_n_b{cluster_normal_x_(c_b, id), cluster_normal_y_(c_b, id), cluster_normal_z_(c_b, id)};
-            b_normals.push_back(cur_n_b);
-            arma::vec3 cur_n_a{cluster_normal_x_(c_a, id), cluster_normal_y_(c_a, id), cluster_normal_z_(c_a, id)};
-            a_normals.push_back(cur_n_a);
+            valid_ids.push_back(id); 
         }
     }
 
-    return CalculateScores(a_normals, b_normals);   
+    size_t p_size = valid_ids.size();
+    arma::mat normal_ma(p_size, 3);
+    arma::mat normal_mb(p_size, 3);
+
+// #pragma omp parallel shared(normal_ma)
+// #pragma omp parallel shared(normal_mb)
+// #pragma omp for
+    for(size_t i = 0; i < valid_ids.size(); ++i)
+    {
+        size_t id =  valid_ids[i];
+        normal_ma(i, 0) =  cluster_normal_x_(c_a, id);
+        normal_ma(i, 1) =  cluster_normal_y_(c_a, id);
+        normal_ma(i, 2) =  cluster_normal_z_(c_a, id);
+
+        normal_mb(i, 0) =  cluster_normal_x_(c_b, id);
+        normal_mb(i, 1) =  cluster_normal_y_(c_b, id);
+        normal_mb(i, 2) =  cluster_normal_z_(c_b, id);
+    }
+    
+    return CalculateScores(normal_ma, normal_mb);
+
+    // std::vector<arma::vec3> a_normals;
+    // std::vector<arma::vec3> b_normals;
+
+    // for(auto id : core_ids_a)
+    // {
+    //     if(cluster_normal_x_(c_b, id) != 0)
+    //     {
+    //         arma::vec3 cur_n_b{cluster_normal_x_(c_b, id), cluster_normal_y_(c_b, id), cluster_normal_z_(c_b, id)};
+    //         b_normals.push_back(cur_n_b);
+    //         arma::vec3 cur_n_a{cluster_normal_x_(c_a, id), cluster_normal_y_(c_a, id), cluster_normal_z_(c_a, id)};
+    //         a_normals.push_back(cur_n_a);
+    //     }
+    // }
+
+    // for(auto id : core_ids_b)
+    // {
+    //     if(cluster_normal_x_(c_a, id) != 0)
+    //     {
+    //         arma::vec3 cur_n_b{cluster_normal_x_(c_b, id), cluster_normal_y_(c_b, id), cluster_normal_z_(c_b, id)};
+    //         b_normals.push_back(cur_n_b);
+    //         arma::vec3 cur_n_a{cluster_normal_x_(c_a, id), cluster_normal_y_(c_a, id), cluster_normal_z_(c_a, id)};
+    //         a_normals.push_back(cur_n_a);
+    //     }
+    // }
+
+    // return CalculateScores(a_normals, b_normals);   
 
 }
 

@@ -51,8 +51,8 @@ class LocalVipss {
         void AppendRow(arma::sp_imat& in_mat,  arma::sp_irowvec& append_row);
         void AppendCol(arma::sp_imat& in_mat,  arma::sp_icolvec& append_row);
 
-        double CalculateScores(std::vector<arma::vec3>& a_normals, std::vector<arma::vec3>& b_normals);
-
+        double CalculateScores(const std::vector<arma::vec3>& a_normals, const std::vector<arma::vec3>& b_normals);
+        double CalculateScores(const arma::mat& a_normals, const arma::mat& b_normals);
     public:
         VoronoiGen voro_gen_;
         arma::sp_imat adjacent_mat_;

@@ -91,7 +91,7 @@ int optwrapper(vector<double>&para,
         std::cout << "Obj: "<< std::setprecision(10) << finEnergy << std::endl;
     }
     catch(std::exception &e) {
-        std::cout << "nlopt failed: " << e.what() << std::endl;
+        // std::cout << "nlopt failed: " << e.what() << std::endl;
     }
 
 
@@ -157,7 +157,7 @@ int Solver::nloptwrapper(vector<double>&lowerbound,
         // std::cout << "Obj: "<< std::setprecision(10) << sol.energy << std::endl;
     }
     catch(std::exception &e) {
-        std::cout << "nlopt failed: " << e.what() << std::endl;
+        // std::cout << "nlopt failed: " << e.what() << std::endl;
     }
 
 
@@ -206,24 +206,17 @@ int Solver::nloptwrapper(vector<double>&lowerbound,
         //myopt.set_precond_min_objective(optfuncModify, pre, &funcPara);
         //myopt.set_min_objective(optfunc, &funcPara);
 
-
         auto t1 = Clock::now();
-
         result = myopt.optimize(sol.solveval, sol.energy);
-
         auto t2 = Clock::now();
-
         // cout << "nlopt time: " << (sol.time = std::chrono::nanoseconds(t2 - t1).count()/1e9) <<endl;
-
-
-
 
         sol.Statue = (result >= nlopt::SUCCESS);
         // cout<<"Statu: "<<result<<endl;
         // std::cout << "Obj: "<< std::setprecision(10) << sol.init_energy << " -> " <<sol.energy << std::endl;
     }
     catch(std::exception &e) {
-        std::cout << "nlopt failed: " << e.what() << std::endl;
+        // std::cout << "nlopt failed: " << e.what() << std::endl;
     }
 
 
