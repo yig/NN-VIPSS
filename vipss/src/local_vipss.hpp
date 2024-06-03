@@ -14,8 +14,9 @@ class LocalVipss {
 
         void Init(const std::string & path);
         std::vector<size_t> GetClusterPtIds(size_t cluster_id);
-        std::vector<size_t> GetClusterCoreIds(size_t cluster_id);
-        std::vector<double> GetClusterVerticesFromIds(const std::vector<size_t>& pt_ids); 
+
+        inline std::vector<size_t> GetClusterCoreIds(size_t cluster_id);
+        inline std::vector<double> GetClusterVerticesFromIds(const std::vector<size_t>& pt_ids); 
         std::vector<double> GetClusterVertices(size_t cluster_id);
 
         size_t GetClusterIdFromCorePtId(const size_t pid);
