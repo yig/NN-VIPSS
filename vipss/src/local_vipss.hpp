@@ -20,25 +20,23 @@ class LocalVipss {
         std::vector<double> GetClusterVertices(size_t cluster_id) const;
 
         size_t GetClusterIdFromCorePtId(const size_t pid);
-
         void CalculateClusterNormals(size_t cluster_id);
         void InitNormalWithVipss();
         void UpdateClusterNormals();
 
-        inline double CalculateClusterPairScore(size_t c_a, size_t c_b) const;
+        inline double CalculateClusterPairScore(size_t c_a, size_t c_b, bool& flip) const;
         // double CalculateClusterPairScore(size_t c_a, size_t c_b);
-
         void BuildClusterAdjacentMat();
         void CalculateSingleClusterNeiScores(size_t i);
 
-        void CalculateClusterNeiScores();
+        void CalculateClusterNeiScores(bool is_init = false);
         void CalculateClusterScores();
         void MergeClusters();
         void UpdateClusterScoreMat();
         void OuputPtN(const std::string& out_path, bool orient_normal = false);
-        void flipClusterNormalsByScores();
+        void FlipClusterNormalsByScores();
 
-        void flipClusterNormalsByMinST();
+        void FlipClusterNormalsByMinST();
         void GetClusterCenters();
         void BuildClusterMST();
         void FlipClusterNormalsByMST();
@@ -55,11 +53,12 @@ class LocalVipss {
         void BuidClusterCoresPtIds();
         void UpdateClusterCoresPtIds();
 
+        void InitSingleClusterNeiScores(size_t i);
         inline double CalculateScores(const std::vector<arma::vec3>& a_normals, const std::vector<arma::vec3>& b_normals) const;
         inline double CalculateScores(const arma::mat& a_normals, const arma::mat& b_normals) const;
 
         inline bool IsFlipNormal(const arma::mat& a_normals, const arma::mat& b_normals) const;
-        inline double FlipClusterNormal(size_t c_a, size_t c_b) const;
+        inline bool FlipClusterNormal(size_t c_a, size_t c_b) const;
     
     public:
         VoronoiGen voro_gen_;
@@ -70,6 +69,7 @@ class LocalVipss {
 
         arma::sp_mat cluster_scores_mat_;
         arma::sp_imat cluster_adjacent_pt_mat_;
+        arma::sp_imat cluster_adjacent_flip_mat_;
         
         arma::sp_mat cluster_normal_x_;
         arma::sp_mat cluster_normal_y_;
@@ -81,22 +81,25 @@ class LocalVipss {
         std::vector<tetgenmesh::point> cluster_centers_;
         size_t pt_num_;
         std::vector<std::pair<int, double>> cluster_id_scores_;
-
+        // arma::vec cluster_scores_vec_;
+        std::vector<double> cluster_scores_vec_;
+        std::set<size_t> update_score_cluster_ids_;
         RBF_API vipss_api_;
 
         double angle_threshold_= 30;
         size_t merged_cluster_size_ = 1;
-
         std::string out_dir_ = "./";
         std::string filename_ = "local_vipss"; 
 
         bool flip_normal_ = false;
         std::vector<double> out_pts_;
         std::vector<double> out_normals_;
-
         double user_lambda_ = 0.0;
-
         std::vector<std::pair<size_t, double>> vipss_time_stats_;
         std::vector<std::vector<std::pair<size_t, double>>> cluster_ptn_vipss_time_stats_;
+        const double M_PI2  = 2*acos(0.0);
+        const double Anlge_PI_Rate = 180 / M_PI2;
 
+        size_t max_iter_ = 30;
+        bool use_hrbf_surface_ = false;
 };

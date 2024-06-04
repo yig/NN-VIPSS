@@ -386,7 +386,15 @@ void RBF_Core::EstimateNormals()
 {
     double delt = 0.00001;
     out_normals_.resize(npt*3);
-    for(size_t i = 0; i < npt; ++i)
+
+    for(size_t i = 0; i < key_npt; ++i)
+    {
+        out_normals_[3*i] = -1.0 * newnormals[3*i];
+        out_normals_[3*i + 1] = -1.0 * newnormals[3*i + 1];
+        out_normals_[3*i + 2] = -1.0 * newnormals[3*i + 2];
+    }
+
+    for(size_t i = key_npt; i < npt; ++i)
     {
         double x = pts[i * 3];
         double y = pts[i * 3 + 1];

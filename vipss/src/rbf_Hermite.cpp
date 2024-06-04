@@ -540,7 +540,9 @@ void RBF_Core::Set_RBFCoef(arma::vec &y){
         a = Minv * (y - N*b);
     }else{
 
-        if(User_Lamnbda>0)y.subvec(0,npt-1) = -User_Lamnbda*dI*K01*y.subvec(npt,npt*4-1);
+        // if(User_Lamnbda>0)y.subvec(0,npt-1) = -User_Lamnbda*dI*K01*y.subvec(npt,npt*4-1);
+
+        if(User_Lamnbda>0)y.subvec(0,npt-1) = -User_Lamnbda*dI*K01*y.subvec(npt,npt + 3* key_npt-1);
 
         a = Minv*y;
         b = Ninv.t()*y;
