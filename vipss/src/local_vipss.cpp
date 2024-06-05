@@ -450,39 +450,42 @@ void LocalVipss::InitSingleClusterNeiScores(size_t i)
 {
     // const arma::sp_imat::iterator start = cluster_adjacent_mat_.row(i).begin();
     // const arma::sp_irowvec::const_iterator end = cluster_adjacent_mat_.row(i).end();
-    const arma::sp_irowvec& nei = cluster_adjacent_mat_.row(i);
-    const arma::sp_irowvec::const_iterator start = nei.begin();
-    const arma::sp_irowvec::const_iterator end = nei.end();
-    
+    // const arma::sp_irowvec& nei = cluster_adjacent_mat_.row(i);
+    // const arma::sp_irowvec::const_iterator start = nei.begin();
+    // const arma::sp_irowvec::const_iterator end = nei.end();
+    auto cur_pt = points_[i];
+    auto nei_pts = voro_gen_.point_cluster_pts_map_[cur_pt];
     double sum = 0;
     int count = 0;
-    for(auto iter = start; iter != end; ++ iter)
+    arma::mat cur_i_mat(2, 3);
+    arma::mat cur_n_mat(2, 3);
+    cur_i_mat(0, 0) = cluster_normal_x_(i, i);
+    cur_i_mat(0, 1) = cluster_normal_y_(i, i);
+    cur_i_mat(0, 2) = cluster_normal_z_(i, i);
+    for(auto n_pt : nei_pts)
     {
-        size_t n_pos = iter.internal_col;
-        if(i == n_pos) continue;
-        count ++;
+        if(n_pt == cur_pt) continue;
+        size_t n_pos = voro_gen_.point_id_map_[n_pt];
         if(cluster_scores_mat_(i, n_pos) != 0) 
         {
-            sum += cluster_scores_mat_(i, n_pos);
             continue;
-        } 
+        }
+        cur_i_mat(1, 0) = cluster_normal_x_(i, n_pos);
+        cur_i_mat(1, 1) = cluster_normal_y_(i, n_pos);
+        cur_i_mat(1, 2) = cluster_normal_z_(i, n_pos);
 
-        // arma::vec3 n_ii {cluster_normal_x_(i, i), cluster_normal_y_(i, i), cluster_normal_z_(i, i)};
-        // arma::vec3 n_in {cluster_normal_x_(i, n_pos), cluster_normal_y_(i, n_pos), cluster_normal_z_(i, n_pos)};
+        cur_n_mat(0, 0) = cluster_normal_x_(n_pos, i);
+        cur_n_mat(0, 1) = cluster_normal_y_(n_pos, i);
+        cur_n_mat(0, 2) = cluster_normal_z_(n_pos, i);
 
-        // arma::vec3 n_ni {cluster_normal_x_(n_pos, i), cluster_normal_y_(n_pos, i), cluster_normal_z_(n_pos, i)};
-        // arma::vec3 n_nn {cluster_normal_x_(n_pos, n_pos), cluster_normal_y_(n_pos, n_pos), cluster_normal_z_(n_pos, n_pos)};
+        cur_n_mat(1, 0) = cluster_normal_x_(n_pos, n_pos);
+        cur_n_mat(1, 1) = cluster_normal_y_(n_pos, n_pos);
+        cur_n_mat(1, 2) = cluster_normal_z_(n_pos, n_pos);
 
-        double d_ii_ni = cluster_normal_x_(i, i) * cluster_normal_x_(n_pos, i) + 
-                        cluster_normal_y_(i, i) * cluster_normal_y_(n_pos, i) +
-                        cluster_normal_z_(i, i) * cluster_normal_z_(n_pos, i);
-        
-        double d_in_nn = cluster_normal_x_(i, n_pos) * cluster_normal_x_(n_pos, n_pos) + 
-                        cluster_normal_y_(i, n_pos) * cluster_normal_y_(n_pos, n_pos) +
-                        cluster_normal_z_(i, n_pos) * cluster_normal_z_(n_pos, n_pos);
-
-        double s1 = std::min(d_ii_ni, d_in_nn);
-        double s2 = std::min(-d_ii_ni, -d_in_nn);
+        arma::mat dot_res = cur_i_mat % cur_n_mat;
+        arma::vec dot_sum = arma::sum(dot_res, 1); 
+        double s1 = dot_sum.min();
+        double s2 = -dot_sum.max();
         if(s2 > s1) 
         {
             s1 = s2;
@@ -494,8 +497,54 @@ void LocalVipss::InitSingleClusterNeiScores(size_t i)
         // printf("cluster id : %d \n", i);
         cluster_scores_mat_(i, n_pos) = score;
         cluster_scores_mat_(n_pos, i) = score;
-        sum += score;
     }
+
+    // for(auto iter = start; iter != end; ++ iter)
+    // {
+    //     size_t n_pos = iter.internal_col;
+    //     if(i == n_pos) continue;
+    //     count ++;
+    //     if(cluster_scores_mat_(i, n_pos) != 0) 
+    //     {
+    //         sum += cluster_scores_mat_(i, n_pos);
+    //         continue;
+    //     }
+    //     cur_i_mat(1, 0) = cluster_normal_x_(i, n_pos);
+    //     cur_i_mat(1, 1) = cluster_normal_y_(i, n_pos);
+    //     cur_i_mat(1, 2) = cluster_normal_z_(i, n_pos);
+
+    //     cur_n_mat(0, 0) = cluster_normal_x_(n_pos, i);
+    //     cur_n_mat(0, 1) = cluster_normal_y_(n_pos, i);
+    //     cur_n_mat(0, 2) = cluster_normal_z_(n_pos, i);
+
+    //     cur_n_mat(1, 0) = cluster_normal_x_(n_pos, n_pos);
+    //     cur_n_mat(1, 1) = cluster_normal_y_(n_pos, n_pos);
+    //     cur_n_mat(1, 2) = cluster_normal_z_(n_pos, n_pos);
+
+    //     // double d_ii_ni = cluster_normal_x_(i, i) * cluster_normal_x_(n_pos, i) + 
+    //     //                 cluster_normal_y_(i, i) * cluster_normal_y_(n_pos, i) +
+    //     //                 cluster_normal_z_(i, i) * cluster_normal_z_(n_pos, i);
+        
+    //     // double d_in_nn = cluster_normal_x_(i, n_pos) * cluster_normal_x_(n_pos, n_pos) + 
+    //     //                 cluster_normal_y_(i, n_pos) * cluster_normal_y_(n_pos, n_pos) +
+    //     //                 cluster_normal_z_(i, n_pos) * cluster_normal_z_(n_pos, n_pos);
+    //     arma::mat dot_res = cur_i_mat % cur_n_mat;
+    //     arma::vec dot_sum = arma::sum(dot_res, 1); 
+    //     double s1 = dot_sum.min();
+    //     double s2 = -dot_sum.max();
+    //     if(s2 > s1) 
+    //     {
+    //         s1 = s2;
+    //         cluster_adjacent_flip_mat_(i, n_pos) = 1;
+    //         cluster_adjacent_flip_mat_(n_pos, i) = 1;
+    //     }
+    //     double score = std::min(1.0, std::max(-1.0, s1));
+    //     score = acos(score) * Anlge_PI_Rate ;
+    //     // printf("cluster id : %d \n", i);
+    //     cluster_scores_mat_(i, n_pos) = score;
+    //     cluster_scores_mat_(n_pos, i) = score;
+    //     sum += score;
+    // }
     // if(count > 0)
     // {
     //     cluster_scores_vec_[i] = sum / double(count);
@@ -578,8 +627,8 @@ void LocalVipss::CalculateClusterScores()
     // auto t1 = Clock::now();
     // double average_score_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
     // printf("finish average_score_time time : %f ! \n", average_score_time);
-
     // atuo t0 = Clock::now();
+
     cluster_scores_vec_ = arma::sum(cluster_scores_mat_,1);
     // arma::sp_colvec non_zero_count_mat(cluster_scores_vec_.n_rows);
     // arma::sp_imat new_pt_mat = cluster_cores_mat_ + cluster_adjacent_pt_mat_;
