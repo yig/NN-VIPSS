@@ -109,6 +109,7 @@ void VoronoiGen::GetVertexStar(tetgenmesh::point &p_st,
         {
             continue;
         }
+        if(point_id_map_.find(pt) == point_id_map_.end()) continue;
         // if(abs(pt[0]) <= 1e-3 && abs(pt[1]) < 1e-3 && abs(pt[2]) < 1e-3)
         // {
         //     // printf("zero pt : %f %f %f \n", pt[0], pt[1], pt[2]);
@@ -174,6 +175,7 @@ void VoronoiGen::BuildAdjecentMat()
         // printf("cur pt id : %d \n", cur_p_id);
         std::set<tetgenmesh::point> candidate_pts;
         GetVertexStar(ploop, candidate_pts, 1);
+        point_cluster_pts_map_[ploop] = candidate_pts;
         for(auto &pt : candidate_pts)
         {
             if(pt == ploop) continue;

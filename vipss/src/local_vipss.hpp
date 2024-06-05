@@ -14,6 +14,8 @@ class LocalVipss {
 
         void Init(const std::string & path);
         inline std::vector<size_t> GetClusterPtIds(size_t cluster_id) const;
+        inline void GetInitClusterPtIds(size_t cluster_id, 
+        std::vector<double>& pts, std::vector<size_t>& pt_ids);
 
         inline std::vector<size_t> GetClusterCoreIds(size_t cluster_id) const;
         inline std::vector<double> GetClusterVerticesFromIds(const std::vector<size_t>& pt_ids) const; 
@@ -75,6 +77,7 @@ class LocalVipss {
         arma::sp_mat cluster_normal_y_;
         arma::sp_mat cluster_normal_z_;
 
+
         std::vector<tetgenmesh::point> points_; 
         std::vector<double> normals_;
         std::vector<std::vector<size_t>> cluster_core_pt_ids_;
@@ -82,7 +85,8 @@ class LocalVipss {
         size_t pt_num_;
         std::vector<std::pair<int, double>> cluster_id_scores_;
         // arma::vec cluster_scores_vec_;
-        std::vector<double> cluster_scores_vec_;
+        // std::vector<double> cluster_scores_vec_;
+        arma::sp_colvec cluster_scores_vec_;
         std::set<size_t> update_score_cluster_ids_;
         RBF_API vipss_api_;
 

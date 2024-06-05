@@ -88,6 +88,37 @@ void LocalVipss::UpdateClusterCoresPtIds()
     }
 }
 
+inline void LocalVipss::GetInitClusterPtIds(size_t cluster_id, 
+        std::vector<double>& pts, std::vector<size_t>& pt_ids)
+{
+    auto& cluster_pts_map = voro_gen_.point_cluster_pts_map_;
+    auto& cluster_pt_id_map = voro_gen_.point_id_map_;
+    // auto& points = voro_gen_.points_;
+    // printf("cluster id %d, points size %d \n ", cluster_id, points_.size()/3);
+    tetgenmesh::point cur_ptr = points_[cluster_id];
+    auto cluster_pts = voro_gen_.point_cluster_pts_map_[cur_ptr];
+
+    pt_ids.push_back(cluster_id);
+    pts.push_back(cur_ptr[0]);
+    pts.push_back(cur_ptr[1]);
+    pts.push_back(cur_ptr[2]);
+
+    for(auto& ptr: cluster_pts)
+    {
+        if(ptr == cur_ptr) continue;
+        if(cluster_pt_id_map.find(ptr) == cluster_pt_id_map.end()) continue;
+        // if()
+        // std::cout << " pt addr : " << ptr << std::endl;
+        size_t c_id = cluster_pt_id_map[ptr];
+        // printf("cur pt id %d \n", c_id);
+        pt_ids.push_back(c_id);
+        // printf("cur_ptr %f, %f, %f \n ", ptr[0], ptr[1], ptr[2]);
+        pts.push_back(ptr[0]);
+        pts.push_back(ptr[1]);
+        pts.push_back(ptr[2]);
+    }
+}
+
 inline std::vector<size_t> LocalVipss::GetClusterPtIds(size_t cluster_id) const
 {
     // arma::sp_ivec cluster_core_ids = cluster_cores_mat_.row(cluster_id);
@@ -172,10 +203,36 @@ void LocalVipss::InitNormalWithVipss()
     printf("cluster num : %zu \n", cluster_num);
     
     vipss_time_stats_.clear();
+    double vipss_sum = 0;
+    auto t_init = Clock::now();
+
     for(size_t i =0; i < cluster_num; ++i)
     {
-        CalculateClusterNormals(i);
+        std::vector<double> vts;
+        std::vector<size_t> p_ids;
+        GetInitClusterPtIds(i, vts, p_ids);
+        // printf("vt size : %d , p ids : %d \n", vts.size(), p_ids.size());
+        auto t1 = Clock::now();
+        vipss_api_.run_vipss(vts, 1);
+        auto t2 = Clock::now();
+        double vipss_time = std::chrono::nanoseconds(t2 - t1).count()/1e9;
+        vipss_sum += vipss_time;
+        vipss_time_stats_.emplace_back(std::pair<size_t, double>(p_ids.size(), vipss_time));
+
+        for(size_t p_id = 0; p_id < p_ids.size(); ++p_id)
+        {
+            size_t col = p_ids[p_id];
+            cluster_normal_x_(i, col) = vipss_api_.normals_[3* p_id];
+            cluster_normal_y_(i, col) = vipss_api_.normals_[3* p_id + 1];
+            cluster_normal_z_(i, col) = vipss_api_.normals_[3* p_id + 2];
+        }
     }
+    auto t_init2 = Clock::now();
+    double all_init_time = std::chrono::nanoseconds(t_init2 - t_init).count()/1e9;
+    printf("all init time : %f \n", all_init_time);
+
+    printf("all init vipss time : %f \n", vipss_sum);
+
     cluster_ptn_vipss_time_stats_.push_back(vipss_time_stats_);
 }
 
@@ -439,10 +496,10 @@ void LocalVipss::InitSingleClusterNeiScores(size_t i)
         cluster_scores_mat_(n_pos, i) = score;
         sum += score;
     }
-    if(count > 0)
-    {
-        cluster_scores_vec_[i] = sum / double(count);
-    }
+    // if(count > 0)
+    // {
+    //     cluster_scores_vec_[i] = sum / double(count);
+    // }
 }
 
 
@@ -478,15 +535,15 @@ void LocalVipss::CalculateSingleClusterNeiScores(size_t i)
         update_score_cluster_ids_.insert(n_pos);
         sum += score;
     }
-    double new_cluster_score = sum / (double(count) + 1e-8);
-    cluster_scores_vec_.push_back(new_cluster_score);
+    // double new_cluster_score = sum / (double(count) + 1e-8);
+    // cluster_scores_vec_.push_back(new_cluster_score);
     // printf("--------- CalculateClusterPairScore count : %d \n", count);
 }   
 
 void LocalVipss::CalculateClusterNeiScores(bool is_init)
 {
     size_t c_num = cluster_adjacent_mat_.n_rows;
-    cluster_scores_vec_.resize(c_num);
+    // cluster_scores_vec_.resize(c_num);
     for(size_t i = 0; i < c_num; ++i)
     {
         if(is_init)
@@ -505,19 +562,39 @@ void LocalVipss::CalculateClusterScores()
     // cluster_id_scores_.clear();
     // cluster_id_scores_.resize(c_num);
 
-    auto t0 = Clock::now();
+    // auto t0 = Clock::now();
+    // arma::sp_colvec score_sum = arma::sum(cluster_scores_mat_,1);
+    // for(auto id :update_score_cluster_ids_)
+    // {
+    //     if(cluster_scores_vec_.size() <= id)
+    //     printf("id : %d \n", id);
+    //     // double sum = arma::sum(cluster_scores_mat_.row(id));
+    //     cluster_scores_vec_[id] = score_sum(id) / 
+    //         (double(cluster_scores_mat_.row(id).n_nonzero) + 1e-10);
 
-    for(auto id :update_score_cluster_ids_)
-    {
-        if(cluster_scores_vec_.size() <= id)
-        printf("id : %d \n", id);
-        // double sum = arma::sum(cluster_scores_mat_.row(id));
-        cluster_scores_vec_[id] = arma::sum(cluster_scores_mat_.row(id)) / 
-            (double(cluster_scores_mat_.row(id).n_nonzero) + 1e-10);
-    }
-    auto t1 = Clock::now();
-    double average_score_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
-    printf("finish average_score_time time : %f ! \n", average_score_time);
+    //     // cluster_scores_vec_[id] = arma::mean(arma::nonzeros(cluster_scores_mat_.row(id)));
+    // }
+
+    // auto t1 = Clock::now();
+    // double average_score_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
+    // printf("finish average_score_time time : %f ! \n", average_score_time);
+
+    // atuo t0 = Clock::now();
+    cluster_scores_vec_ = arma::sum(cluster_scores_mat_,1);
+    // arma::sp_colvec non_zero_count_mat(cluster_scores_vec_.n_rows);
+    // arma::sp_imat new_pt_mat = cluster_cores_mat_ + cluster_adjacent_pt_mat_;
+    // new_pt_mat /= new_pt_mat;
+    arma::sp_mat new_pt_mat = cluster_scores_mat_;
+    new_pt_mat.for_each([](arma::sp_mat::elem_type& value){value = 1.0;});
+    arma::sp_colvec count_mat =  arma::sum(new_pt_mat, 1);
+    arma::vec lower_col(c_num, arma::fill::ones);
+    lower_col *= 1e-8;
+    count_mat += lower_col;
+    // count_mat.save("colsum", arma::csv_ascii);
+    cluster_scores_vec_ /= count_mat;
+    // t1 = Clock::now();
+    // average_score_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
+    // printf("finish average_score_time time 222------- : %f ! \n", average_score_time);
 
     // for(size_t i = 0; i < c_num; ++i)
     // {
@@ -587,17 +664,20 @@ void LocalVipss::GetClusterCenters()
 
 void LocalVipss::MergeClusters()
 {
+    printf(" start to init merge cluster \n");
     std::set<int> visited_clusters;
     std::vector<size_t> merged_cluster_ids;
     // printf("cluster scores num : %zu \n", cluster_id_scores_.size());
-    auto &cluster_scores = cluster_scores_vec_;
-    std::vector<size_t> indices(cluster_scores_vec_.size());
-    std::iota(indices.begin(), indices.end(), 0);
-    std::sort(indices.begin(), indices.end(), [cluster_scores](size_t a , size_t b)
-    {
-        return cluster_scores[a] > cluster_scores[b];
-    });
-
+    // auto &cluster_scores = cluster_scores_vec_;
+    // std::vector<size_t> indices(cluster_scores_vec_.size());
+    // std::iota(indices.begin(), indices.end(), 0);
+    // std::sort(indices.begin(), indices.end(), [cluster_scores](size_t a , size_t b)
+    // {
+    //     return cluster_scores[a] > cluster_scores[b];
+    // });
+    arma::vec c_scores(cluster_scores_vec_);
+    // arma::colvec c_scores = arma::conv_to<arma::colvec>::from(cluster_scores_vec_);
+    arma::uvec indices = arma::sort_index(c_scores, "descend");
     printf("cluster scores indices num : %zu \n", indices.size());
     // for(auto &ele : cluster_id_scores_)
     for(auto& id : indices)
@@ -678,7 +758,7 @@ void LocalVipss::MergeClusters()
         cluster_adjacent_flip_mat_.shed_col(id);
 
         cluster_core_pt_ids_.erase(std::next(cluster_core_pt_ids_.begin(), id));
-        cluster_scores_vec_.erase(std::next(cluster_scores_vec_.begin(), id));
+        // cluster_scores_vec_.erase(std::next(cluster_scores_vec_.begin(), id));
     }
 }
 
@@ -1131,11 +1211,15 @@ void LocalVipss::Run()
 
     auto t2 = Clock::now();
     CalculateClusterNeiScores(true);
-    // CalculateClusterScores();
-
     auto t3 = Clock::now();
     double scores_time = std::chrono::nanoseconds(t3 - t2).count()/1e9;
-    printf("finish init cluster scores time : %f ! \n", scores_time);
+    printf("finish init cluster neigh scores time : %f ! \n", scores_time);
+
+    CalculateClusterScores();
+
+    auto t34 = Clock::now();
+    double cluster_scores_time = std::chrono::nanoseconds(t34 - t3).count()/1e9;
+    printf("finish calculate cluster scores time : %f ! \n", cluster_scores_time);
 
     total_time += scores_time;
     size_t iter_num = 1;

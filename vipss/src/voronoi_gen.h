@@ -101,6 +101,7 @@ class VoronoiGen{
         
         std::unordered_map<tetgenmesh::point, size_t> point_id_map_;
         std::unordered_map<tetgenmesh::point, PtCluster> point_cluster_map_;
+        std::unordered_map<tetgenmesh::point, P_Set> point_cluster_pts_map_;
         std::unordered_map<tetgenmesh::point, PtNCluster> point_cluster_normal_map_;
         std::unordered_map<tetgenmesh::point, double> pt_score_map_;
 
