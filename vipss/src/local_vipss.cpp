@@ -641,21 +641,49 @@ void LocalVipss::MergeClusters()
                 merged_cluster_ids.push_back(id);
                 merged_cluster_ids.push_back(max_id);
 
-                arma::sp_icolvec new_cluster_cores = cluster_cores_mat_.col(id) + cluster_cores_mat_.col(max_id);
-                AppendCol(cluster_cores_mat_, new_cluster_cores);
+                // arma::sp_icolvec new_cluster_cores = cluster_cores_mat_.col(id) + cluster_cores_mat_.col(max_id);
+                // AppendCol(cluster_cores_mat_, new_cluster_cores);
 
-                arma::sp_icolvec adjacent_pts_col = cluster_adjacent_pt_mat_.col(id) + cluster_adjacent_pt_mat_.col(max_id);
-                AppendCol(cluster_adjacent_pt_mat_, adjacent_pts_col);
+                // arma::sp_icolvec adjacent_pts_col = cluster_adjacent_pt_mat_.col(id) + cluster_adjacent_pt_mat_.col(max_id);
+                // AppendCol(cluster_adjacent_pt_mat_, adjacent_pts_col);
                 
-                arma::sp_irowvec adj_row = cluster_adjacent_mat_.row(id) + cluster_adjacent_mat_.row(max_id);
-                AppendRow(cluster_adjacent_mat_, adj_row);
-                arma::sp_icolvec adj_col = cluster_adjacent_mat_.col(id) + cluster_adjacent_mat_.col(max_id);
-                AppendCol(cluster_adjacent_mat_, adj_col);
+                // arma::sp_irowvec adj_row = cluster_adjacent_mat_.row(id) + cluster_adjacent_mat_.row(max_id);
+                // AppendRow(cluster_adjacent_mat_, adj_row);
+                // arma::sp_icolvec adj_col = cluster_adjacent_mat_.col(id) + cluster_adjacent_mat_.col(max_id);
+                // AppendCol(cluster_adjacent_mat_, adj_col);
             }
         }
-        
     }
-    
+
+    size_t merged_pair_num = merged_cluster_ids.size() / 2;
+    if(merged_pair_num > 0)
+    {
+        size_t c_num = cluster_cores_mat_.n_cols;
+        size_t pt_num = cluster_cores_mat_.n_rows;
+
+        arma::sp_imat new_cluster_cores_mat(pt_num, c_num + merged_pair_num); 
+        new_cluster_cores_mat.cols(0, c_num-1) = cluster_cores_mat_.cols(0, c_num-1);
+        cluster_cores_mat_ = new_cluster_cores_mat;    
+        arma::sp_imat new_cluster_adjacent_pt_mat(pt_num, c_num + merged_pair_num);
+        new_cluster_adjacent_pt_mat.cols(0, c_num-1) = cluster_adjacent_pt_mat_.cols(0, c_num-1);
+        cluster_adjacent_pt_mat_ = new_cluster_adjacent_pt_mat;
+
+        arma::sp_imat new_cluster_adjacent_mat(c_num + merged_pair_num, c_num + merged_pair_num);
+        new_cluster_adjacent_mat(0, 0, arma::size(c_num, c_num)) = 
+            cluster_adjacent_mat_(0, 0, arma::size(c_num, c_num));
+        cluster_adjacent_mat_ = new_cluster_adjacent_mat;
+
+        for(size_t i = 0; i < merged_pair_num; ++i)
+        {
+            size_t ca = merged_cluster_ids[2 * i];
+            size_t cb = merged_cluster_ids[2 * i + 1];
+            cluster_cores_mat_.col(c_num + i) = cluster_cores_mat_.col(ca) + cluster_cores_mat_.col(cb);
+            cluster_adjacent_pt_mat_.col(c_num + i) = cluster_adjacent_pt_mat_.col(ca) + cluster_adjacent_pt_mat_.col(cb);
+            cluster_adjacent_mat_.row(c_num + i) = cluster_adjacent_mat_.row(ca) + cluster_adjacent_mat_.row(cb);
+            cluster_adjacent_mat_.col(c_num + i) = cluster_adjacent_mat_.col(ca) + cluster_adjacent_mat_.col(cb);
+        }
+    }
+        
     merged_cluster_size_ = merged_cluster_ids.size();
     std::sort(merged_cluster_ids.begin(), merged_cluster_ids.end(), std::greater<>());
     // arma::uvec delete_ids = merged_cluster_ids;
@@ -663,19 +691,13 @@ void LocalVipss::MergeClusters()
     {
         cluster_cores_mat_.shed_col(id);
         cluster_adjacent_pt_mat_.shed_col(id);
-
         cluster_scores_mat_.shed_row(id);
         cluster_scores_mat_.shed_col(id);
-
         cluster_adjacent_mat_.shed_row(id);
         cluster_adjacent_mat_.shed_col(id);
-
         cluster_normal_x_.shed_col(id);
         cluster_normal_y_.shed_col(id);
         cluster_normal_z_.shed_col(id);
-
-        // cluster_adjacent_flip_mat_.shed_row(id);
-        // cluster_adjacent_flip_mat_.shed_col(id);
 
         cluster_core_pt_ids_.erase(std::next(cluster_core_pt_ids_.begin(), id));
         // cluster_scores_vec_.erase(std::next(cluster_scores_vec_.begin(), id));
@@ -713,7 +735,7 @@ void LocalVipss::UpdateClusterScoreMat()
 
     // auto t0 = Clock::now();
     arma::sp_mat new_scores_mat(c_num, c_num);
-    new_scores_mat(0, 0, arma::size(s_rows -1, s_cols -1)) = cluster_scores_mat_(0, 0, arma::size(s_rows -1, s_cols -1));
+    new_scores_mat(0, 0, arma::size(s_rows, s_cols)) = cluster_scores_mat_(0, 0, arma::size(s_rows, s_cols));
     cluster_scores_mat_ = new_scores_mat;
 
     // arma::sp_imat new_cluster_adjacent_flip_mat(c_num, c_num);
