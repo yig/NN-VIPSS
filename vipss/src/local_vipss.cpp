@@ -133,13 +133,13 @@ inline std::vector<size_t> LocalVipss::GetClusterPtIds(size_t cluster_id) const
         pt_ids.push_back(i.row());
         key_ids.insert(i.row());
     }
-    const arma::sp_irowvec& cluster_pt_ids = cluster_adjacent_pt_mat_.row(cluster_id);
-    arma::sp_irowvec::const_iterator start = cluster_pt_ids.begin();
-    arma::sp_irowvec::const_iterator end = cluster_pt_ids.end();
-    for ( arma::sp_irowvec::const_iterator i = start; i != end; ++i )
+    arma::sp_imat cluster_pt_ids (cluster_adjacent_pt_mat_.col(cluster_id));
+    arma::sp_imat::const_iterator start = cluster_pt_ids.begin();
+    arma::sp_imat::const_iterator end = cluster_pt_ids.end();
+    for ( auto i = start; i != end; ++i )
     {
-        if(key_ids.find(i.internal_col) != key_ids.end()) continue;
-        pt_ids.push_back(i.internal_col);
+        if(key_ids.find(i.row()) != key_ids.end()) continue;
+        pt_ids.push_back(i.row());
     }
     return pt_ids;
 }
@@ -432,7 +432,7 @@ void LocalVipss::InitSingleClusterNeiScores(size_t i)
     {
         if(n_pt == cur_pt) continue;
         size_t n_pos = voro_gen_.point_id_map_[n_pt];
-        if(cluster_scores_mat_(i, n_pos) != 0) 
+        if(cluster_scores_mat_(n_pos, i) != 0) 
         {
             continue;
         }
@@ -461,8 +461,8 @@ void LocalVipss::InitSingleClusterNeiScores(size_t i)
         double score = std::min(1.0, std::max(-1.0, s1));
         score = acos(score) * Anlge_PI_Rate ;
         // printf("cluster id : %d \n", i);
-        cluster_scores_mat_(i, n_pos) = score;
         cluster_scores_mat_(n_pos, i) = score;
+        cluster_scores_mat_(i, n_pos) = score;
     }
 }
 
@@ -483,7 +483,6 @@ void LocalVipss::CalculateSingleClusterNeiScores(size_t i)
         count ++;
         if(cluster_scores_mat_(i, n_pos) != 0) 
         {
-            // sum += cluster_scores_mat_(i, n_pos);
             continue;
         }
         bool flip_normal = false;
@@ -521,29 +520,10 @@ void LocalVipss::CalculateClusterNeiScores(bool is_init)
 
 void LocalVipss::CalculateClusterScores()
 {
-    size_t c_num = cluster_scores_mat_.n_rows;
-    
-    // cluster_id_scores_.clear();
-    // cluster_id_scores_.resize(c_num);
+    size_t c_num = cluster_scores_mat_.n_cols;
 
-    // auto t0 = Clock::now();
-    // arma::sp_colvec score_sum = arma::sum(cluster_scores_mat_,1);
-    // for(auto id :update_score_cluster_ids_)
-    // {
-    //     if(cluster_scores_vec_.size() <= id)
-    //     printf("id : %d \n", id);
-    //     // double sum = arma::sum(cluster_scores_mat_.row(id));
-    //     cluster_scores_vec_[id] = score_sum(id) / 
-    //         (double(cluster_scores_mat_.row(id).n_nonzero) + 1e-10);
-
-    //     // cluster_scores_vec_[id] = arma::mean(arma::nonzeros(cluster_scores_mat_.row(id)));
-    // }
-
-    // auto t1 = Clock::now();
-    // double average_score_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
-    // printf("finish average_score_time time : %f ! \n", average_score_time);
-    // atuo t0 = Clock::now();
-
+    // arma::sp_vec scores_vec(arma::sum(cluster_scores_mat_,0));
+    // cluster_scores_vec_ = arma::sp_colvec(scores_vec);
     cluster_scores_vec_ = arma::sum(cluster_scores_mat_,1);
     // arma::sp_colvec non_zero_count_mat(cluster_scores_vec_.n_rows);
     // arma::sp_imat new_pt_mat = cluster_cores_mat_ + cluster_adjacent_pt_mat_;
@@ -559,25 +539,6 @@ void LocalVipss::CalculateClusterScores()
     // t1 = Clock::now();
     // average_score_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
     // printf("finish average_score_time time 222------- : %f ! \n", average_score_time);
-
-    // for(size_t i = 0; i < c_num; ++i)
-    // {
-    //     double score = score_sum(i) / double(cluster_scores_mat_.row(i).n_nonzero);
-    //     cluster_id_scores_[i] = std::pair<int, double>(i, score);
-    // }
-
-
-    // for(size_t i = 0; i < c_num; ++i)
-    // {
-    //     double score = score_sum(i) / double(cluster_scores_mat_.row(i).n_nonzero);
-    //     cluster_id_scores_.push_back(std::pair<int, double>(i, score));
-    // }
-
-    // std::sort(cluster_id_scores_.begin(), cluster_id_scores_.end(), 
-    //         [](std::pair<int, double>& a, std::pair<int, double> &b)
-    //         {
-    //             return a.second > b.second;
-    //         });
 }
 
 void LocalVipss::GetClusterCenters()
@@ -653,22 +614,22 @@ void LocalVipss::MergeClusters()
         visited_clusters.insert(id);
         if(cluster_scores_vec_[id] > angle_threshold_) 
         {
-            const arma::sp_rowvec& c_scores_row = cluster_scores_mat_.row(id);
-            const arma::sp_rowvec::const_iterator start = c_scores_row.begin();
-            const arma::sp_rowvec::const_iterator end = c_scores_row.end();
+            const arma::sp_mat c_scores_vec(cluster_scores_mat_.col(id));
+            const arma::sp_mat::const_iterator start = c_scores_vec.begin();
+            const arma::sp_mat::const_iterator end = c_scores_vec.end();
             double max_score = 0;
             int max_id = -1;
             // auto cur_center = cluster_centers_[ele.first];
             for(auto iter = start; iter != end; ++iter)
             {
-                if(visited_clusters.find(iter.internal_col) == visited_clusters.end())
+                if(visited_clusters.find(iter.row()) == visited_clusters.end())
                 {
                     // double cur_dist = PtDistance(cluster_centers_[iter.internal_col], cur_center);
                     // cur_dist = cur_dist > 1e-10? cur_dist: 1e-10;
                     double cur_score = *iter;
                     if(cur_score > max_score)
                     {
-                        max_id = iter.internal_col;
+                        max_id = iter.row();
                         max_score = cur_score;
                     }
                 }
@@ -683,8 +644,8 @@ void LocalVipss::MergeClusters()
                 arma::sp_icolvec new_cluster_cores = cluster_cores_mat_.col(id) + cluster_cores_mat_.col(max_id);
                 AppendCol(cluster_cores_mat_, new_cluster_cores);
 
-                arma::sp_irowvec adjacent_pts_row = cluster_adjacent_pt_mat_.row(id) + cluster_adjacent_pt_mat_.row(max_id);
-                AppendRow(cluster_adjacent_pt_mat_, adjacent_pts_row);
+                arma::sp_icolvec adjacent_pts_col = cluster_adjacent_pt_mat_.col(id) + cluster_adjacent_pt_mat_.col(max_id);
+                AppendCol(cluster_adjacent_pt_mat_, adjacent_pts_col);
                 
                 arma::sp_irowvec adj_row = cluster_adjacent_mat_.row(id) + cluster_adjacent_mat_.row(max_id);
                 AppendRow(cluster_adjacent_mat_, adj_row);
@@ -701,7 +662,7 @@ void LocalVipss::MergeClusters()
     for(size_t id : merged_cluster_ids)
     {
         cluster_cores_mat_.shed_col(id);
-        cluster_adjacent_pt_mat_.shed_row(id);
+        cluster_adjacent_pt_mat_.shed_col(id);
 
         cluster_scores_mat_.shed_row(id);
         cluster_scores_mat_.shed_col(id);
@@ -750,9 +711,6 @@ void LocalVipss::UpdateClusterScoreMat()
     size_t s_rows = cluster_scores_mat_.n_rows;
     size_t s_cols = cluster_scores_mat_.n_cols;
 
-    // printf("cluster_scores_mat_ size %d updated to %d \n", s_rows, c_num);
-
-    // printf("00cluster_scores_mat_ rows : %d , cols : %d \n", cluster_scores_mat_.n_rows, cluster_scores_mat_.n_cols);
     // auto t0 = Clock::now();
     arma::sp_mat new_scores_mat(c_num, c_num);
     new_scores_mat(0, 0, arma::size(s_rows -1, s_cols -1)) = cluster_scores_mat_(0, 0, arma::size(s_rows -1, s_cols -1));
@@ -767,7 +725,6 @@ void LocalVipss::UpdateClusterScoreMat()
     // double update_score_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
     // printf("finish update_score_time time : %f ! \n", update_score_time);
 
-    // printf("cluster_scores_mat_ rows : %d , cols : %d \n", cluster_scores_mat_.n_rows, cluster_scores_mat_.n_cols);
     
     // printf("cluster_adjacent_mat_ rows : %d , cols : %d \n", cluster_adjacent_mat_.n_rows, cluster_adjacent_mat_.n_cols);
     
@@ -901,7 +858,7 @@ void LocalVipss::BuildClusterMST()
             if(visited_vids.find(n_id) != visited_vids.end()) continue;
             if(n_id == cur_pid) continue;
             C_Edege edge(cur_pid, n_id);
-            edge.score_ = cluster_scores_mat_(cur_pid, n_id);
+            edge.score_ = cluster_scores_mat_(n_id, cur_pid);
             edge_priority_queue.push(edge);
         }
     }

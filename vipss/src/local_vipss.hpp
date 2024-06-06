@@ -43,6 +43,7 @@ class LocalVipss {
         void BuildClusterMST();
         void FlipClusterNormalsByMST();
         void WriteVipssTimeLog();
+        void SaveClusterCorePts(const std::string& path);
         void SaveCluster();
         void SaveClusterPts(const std::string& path,
                             const std::vector<P3tr>& key_pts, 
@@ -106,4 +107,5 @@ class LocalVipss {
 
         size_t max_iter_ = 30;
         bool use_hrbf_surface_ = false;
+        int volume_dim_ = 100;
 };
