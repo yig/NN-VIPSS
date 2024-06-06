@@ -189,10 +189,10 @@ void LocalVipss::CalculateClusterNormals(size_t cluster_id)
 
     for(size_t p_id = 0; p_id < cluster_pt_ids.size(); ++p_id)
     {
-        size_t col = cluster_pt_ids[p_id];
-        cluster_normal_x_(cluster_id, col) = vipss_api_.normals_[3* p_id];
-        cluster_normal_y_(cluster_id, col) = vipss_api_.normals_[3* p_id + 1];
-        cluster_normal_z_(cluster_id, col) = vipss_api_.normals_[3* p_id + 2];
+        size_t v_id = cluster_pt_ids[p_id];
+        cluster_normal_x_(v_id, cluster_id) = vipss_api_.normals_[3* p_id];
+        cluster_normal_y_(v_id, cluster_id) = vipss_api_.normals_[3* p_id + 1];
+        cluster_normal_z_(v_id, cluster_id) = vipss_api_.normals_[3* p_id + 2];
     }
 }
 
@@ -221,10 +221,10 @@ void LocalVipss::InitNormalWithVipss()
 
         for(size_t p_id = 0; p_id < p_ids.size(); ++p_id)
         {
-            size_t col = p_ids[p_id];
-            cluster_normal_x_(i, col) = vipss_api_.normals_[3* p_id];
-            cluster_normal_y_(i, col) = vipss_api_.normals_[3* p_id + 1];
-            cluster_normal_z_(i, col) = vipss_api_.normals_[3* p_id + 2];
+            size_t v_id = p_ids[p_id];
+            cluster_normal_x_(v_id, i) = vipss_api_.normals_[3* p_id];
+            cluster_normal_y_(v_id, i) = vipss_api_.normals_[3* p_id + 1];
+            cluster_normal_z_(v_id, i) = vipss_api_.normals_[3* p_id + 2];
         }
     }
     auto t_init2 = Clock::now();
@@ -315,14 +315,14 @@ inline bool LocalVipss::FlipClusterNormal(size_t c_a, size_t c_b) const
     std::vector<size_t> valid_ids;
     for(auto id : core_ids_a)
     {
-        if(cluster_normal_x_(c_b, id) != 0)
+        if(cluster_normal_x_(id, c_b) != 0)
         {
             valid_ids.push_back(id); 
         }
     }
     for(auto id : core_ids_b)
     {
-        if(cluster_normal_x_(c_a, id) != 0)
+        if(cluster_normal_x_(id, c_a) != 0)
         {
             valid_ids.push_back(id); 
         }
@@ -334,13 +334,13 @@ inline bool LocalVipss::FlipClusterNormal(size_t c_a, size_t c_b) const
     for(size_t i = 0; i < valid_ids.size(); ++i)
     {
         size_t id =  valid_ids[i];
-        normal_ma(i, 0) =  cluster_normal_x_(c_a, id);
-        normal_ma(i, 1) =  cluster_normal_y_(c_a, id);
-        normal_ma(i, 2) =  cluster_normal_z_(c_a, id);
+        normal_ma(i, 0) =  cluster_normal_x_(id, c_a);
+        normal_ma(i, 1) =  cluster_normal_y_(id, c_a);
+        normal_ma(i, 2) =  cluster_normal_z_(id, c_a);
 
-        normal_mb(i, 0) =  cluster_normal_x_(c_b, id);
-        normal_mb(i, 1) =  cluster_normal_y_(c_b, id);
-        normal_mb(i, 2) =  cluster_normal_z_(c_b, id);
+        normal_mb(i, 0) =  cluster_normal_x_(id, c_b);
+        normal_mb(i, 1) =  cluster_normal_y_(id, c_b);
+        normal_mb(i, 2) =  cluster_normal_z_(id, c_b);
     }
     
     return IsFlipNormal(normal_ma, normal_mb);
@@ -353,14 +353,14 @@ inline double LocalVipss::CalculateClusterPairScore(size_t c_a, size_t c_b, bool
     std::vector<size_t> valid_ids;
     for(auto id : core_ids_a)
     {
-        if(cluster_normal_x_(c_b, id) != 0)
+        if(cluster_normal_x_(id, c_b) != 0)
         {
             valid_ids.push_back(id); 
         }
     }
     for(auto id : core_ids_b)
     {
-        if(cluster_normal_x_(c_a, id) != 0)
+        if(cluster_normal_x_(id, c_a) != 0)
         {
             valid_ids.push_back(id); 
         }
@@ -372,13 +372,13 @@ inline double LocalVipss::CalculateClusterPairScore(size_t c_a, size_t c_b, bool
     for(size_t i = 0; i < valid_ids.size(); ++i)
     {
         size_t id =  valid_ids[i];
-        normal_ma(i, 0) =  cluster_normal_x_(c_a, id);
-        normal_ma(i, 1) =  cluster_normal_y_(c_a, id);
-        normal_ma(i, 2) =  cluster_normal_z_(c_a, id);
+        normal_ma(i, 0) =  cluster_normal_x_(id, c_a);
+        normal_ma(i, 1) =  cluster_normal_y_(id, c_a);
+        normal_ma(i, 2) =  cluster_normal_z_(id, c_a);
 
-        normal_mb(i, 0) =  cluster_normal_x_(c_b, id);
-        normal_mb(i, 1) =  cluster_normal_y_(c_b, id);
-        normal_mb(i, 2) =  cluster_normal_z_(c_b, id);
+        normal_mb(i, 0) =  cluster_normal_x_(id, c_b);
+        normal_mb(i, 1) =  cluster_normal_y_(id, c_b);
+        normal_mb(i, 2) =  cluster_normal_z_(id, c_b);
     }
 
     arma::mat dot_mat = normal_ma % normal_mb;
@@ -398,35 +398,7 @@ inline double LocalVipss::CalculateClusterPairScore(size_t c_a, size_t c_b, bool
     double angle = acos (min_project_p) * Anlge_PI_Rate ;
 
     return angle;
-    
-    // return CalculateScores(normal_ma, normal_mb);
-
-    // std::vector<arma::vec3> a_normals;
-    // std::vector<arma::vec3> b_normals;
-
-    // for(auto id : core_ids_a)
-    // {
-    //     if(cluster_normal_x_(c_b, id) != 0)
-    //     {
-    //         arma::vec3 cur_n_b{cluster_normal_x_(c_b, id), cluster_normal_y_(c_b, id), cluster_normal_z_(c_b, id)};
-    //         b_normals.push_back(cur_n_b);
-    //         arma::vec3 cur_n_a{cluster_normal_x_(c_a, id), cluster_normal_y_(c_a, id), cluster_normal_z_(c_a, id)};
-    //         a_normals.push_back(cur_n_a);
-    //     }
-    // }
-
-    // for(auto id : core_ids_b)
-    // {
-    //     if(cluster_normal_x_(c_a, id) != 0)
-    //     {
-    //         arma::vec3 cur_n_b{cluster_normal_x_(c_b, id), cluster_normal_y_(c_b, id), cluster_normal_z_(c_b, id)};
-    //         b_normals.push_back(cur_n_b);
-    //         arma::vec3 cur_n_a{cluster_normal_x_(c_a, id), cluster_normal_y_(c_a, id), cluster_normal_z_(c_a, id)};
-    //         a_normals.push_back(cur_n_a);
-    //     }
-    // }
-
-    // return CalculateScores(a_normals, b_normals);   
+       
 
 }
 
@@ -470,13 +442,13 @@ void LocalVipss::InitSingleClusterNeiScores(size_t i)
         {
             continue;
         }
-        cur_i_mat(1, 0) = cluster_normal_x_(i, n_pos);
-        cur_i_mat(1, 1) = cluster_normal_y_(i, n_pos);
-        cur_i_mat(1, 2) = cluster_normal_z_(i, n_pos);
+        cur_i_mat(1, 0) = cluster_normal_x_(n_pos, i);
+        cur_i_mat(1, 1) = cluster_normal_y_(n_pos, i);
+        cur_i_mat(1, 2) = cluster_normal_z_(n_pos, i);
 
-        cur_n_mat(0, 0) = cluster_normal_x_(n_pos, i);
-        cur_n_mat(0, 1) = cluster_normal_y_(n_pos, i);
-        cur_n_mat(0, 2) = cluster_normal_z_(n_pos, i);
+        cur_n_mat(0, 0) = cluster_normal_x_(i, n_pos);
+        cur_n_mat(0, 1) = cluster_normal_y_(i, n_pos);
+        cur_n_mat(0, 2) = cluster_normal_z_(i, n_pos);
 
         cur_n_mat(1, 0) = cluster_normal_x_(n_pos, n_pos);
         cur_n_mat(1, 1) = cluster_normal_y_(n_pos, n_pos);
@@ -498,57 +470,6 @@ void LocalVipss::InitSingleClusterNeiScores(size_t i)
         cluster_scores_mat_(i, n_pos) = score;
         cluster_scores_mat_(n_pos, i) = score;
     }
-
-    // for(auto iter = start; iter != end; ++ iter)
-    // {
-    //     size_t n_pos = iter.internal_col;
-    //     if(i == n_pos) continue;
-    //     count ++;
-    //     if(cluster_scores_mat_(i, n_pos) != 0) 
-    //     {
-    //         sum += cluster_scores_mat_(i, n_pos);
-    //         continue;
-    //     }
-    //     cur_i_mat(1, 0) = cluster_normal_x_(i, n_pos);
-    //     cur_i_mat(1, 1) = cluster_normal_y_(i, n_pos);
-    //     cur_i_mat(1, 2) = cluster_normal_z_(i, n_pos);
-
-    //     cur_n_mat(0, 0) = cluster_normal_x_(n_pos, i);
-    //     cur_n_mat(0, 1) = cluster_normal_y_(n_pos, i);
-    //     cur_n_mat(0, 2) = cluster_normal_z_(n_pos, i);
-
-    //     cur_n_mat(1, 0) = cluster_normal_x_(n_pos, n_pos);
-    //     cur_n_mat(1, 1) = cluster_normal_y_(n_pos, n_pos);
-    //     cur_n_mat(1, 2) = cluster_normal_z_(n_pos, n_pos);
-
-    //     // double d_ii_ni = cluster_normal_x_(i, i) * cluster_normal_x_(n_pos, i) + 
-    //     //                 cluster_normal_y_(i, i) * cluster_normal_y_(n_pos, i) +
-    //     //                 cluster_normal_z_(i, i) * cluster_normal_z_(n_pos, i);
-        
-    //     // double d_in_nn = cluster_normal_x_(i, n_pos) * cluster_normal_x_(n_pos, n_pos) + 
-    //     //                 cluster_normal_y_(i, n_pos) * cluster_normal_y_(n_pos, n_pos) +
-    //     //                 cluster_normal_z_(i, n_pos) * cluster_normal_z_(n_pos, n_pos);
-    //     arma::mat dot_res = cur_i_mat % cur_n_mat;
-    //     arma::vec dot_sum = arma::sum(dot_res, 1); 
-    //     double s1 = dot_sum.min();
-    //     double s2 = -dot_sum.max();
-    //     if(s2 > s1) 
-    //     {
-    //         s1 = s2;
-    //         cluster_adjacent_flip_mat_(i, n_pos) = 1;
-    //         cluster_adjacent_flip_mat_(n_pos, i) = 1;
-    //     }
-    //     double score = std::min(1.0, std::max(-1.0, s1));
-    //     score = acos(score) * Anlge_PI_Rate ;
-    //     // printf("cluster id : %d \n", i);
-    //     cluster_scores_mat_(i, n_pos) = score;
-    //     cluster_scores_mat_(n_pos, i) = score;
-    //     sum += score;
-    // }
-    // if(count > 0)
-    // {
-    //     cluster_scores_vec_[i] = sum / double(count);
-    // }
 }
 
 
@@ -799,9 +720,9 @@ void LocalVipss::MergeClusters()
         cluster_adjacent_mat_.shed_row(id);
         cluster_adjacent_mat_.shed_col(id);
 
-        cluster_normal_x_.shed_row(id);
-        cluster_normal_y_.shed_row(id);
-        cluster_normal_z_.shed_row(id);
+        cluster_normal_x_.shed_col(id);
+        cluster_normal_y_.shed_col(id);
+        cluster_normal_z_.shed_col(id);
 
         // cluster_adjacent_flip_mat_.shed_row(id);
         // cluster_adjacent_flip_mat_.shed_col(id);
@@ -877,22 +798,22 @@ void LocalVipss::UpdateClusterNormals()
 
     // printf("cluster num : %zu , s_rows : %zu, s_cols: %zu \n", c_num, s_rows, s_cols);
 
-    arma::sp_mat new_normal_x(c_num, s_cols);
-    arma::sp_mat new_normal_y(c_num, s_cols);
-    arma::sp_mat new_normal_z(c_num, s_cols);
+    arma::sp_mat new_normal_x(s_rows, c_num);
+    arma::sp_mat new_normal_y(s_rows, c_num);
+    arma::sp_mat new_normal_z(s_rows, c_num);
 
     if(s_rows > 0)
     {
-        new_normal_x.rows(0, s_rows-1) = cluster_normal_x_.rows(0, s_rows-1);
-        new_normal_y.rows(0, s_rows-1) = cluster_normal_y_.rows(0, s_rows-1);
-        new_normal_z.rows(0, s_rows-1) = cluster_normal_z_.rows(0, s_rows-1);
+        new_normal_x.cols(0, s_cols-1) = cluster_normal_x_.cols(0, s_cols-1);
+        new_normal_y.cols(0, s_cols-1) = cluster_normal_y_.cols(0, s_cols-1);
+        new_normal_z.cols(0, s_cols-1) = cluster_normal_z_.cols(0, s_cols-1);
     }
     cluster_normal_x_ = new_normal_x;
     cluster_normal_y_ = new_normal_y;
     cluster_normal_z_ = new_normal_z;
 
     vipss_time_stats_.clear();
-    for(size_t i = s_rows; i < c_num; ++i)
+    for(size_t i = s_cols; i < c_num; ++i)
     {
         CalculateClusterNormals(i);
     }
@@ -948,9 +869,9 @@ void LocalVipss::FlipClusterNormalsByScores()
             // if(cluster_adjacent_flip_mat_(cur_cid, n_cid) == 1)
             if(FlipClusterNormal(cur_cid, n_cid))
             {
-                cluster_normal_x_.row(n_cid) *= -1.0;
-                cluster_normal_y_.row(n_cid) *= -1.0;
-                cluster_normal_z_.row(n_cid) *= -1.0;
+                cluster_normal_x_.col(n_cid) *= -1.0;
+                cluster_normal_y_.col(n_cid) *= -1.0;
+                cluster_normal_z_.col(n_cid) *= -1.0;
             }
             cluster_queued_ids.push(n_cid);
         }
@@ -1038,9 +959,9 @@ void LocalVipss::FlipClusterNormalsByMST()
             if(FlipClusterNormal(cur_cid, n_cid))
             // if(cluster_adjacent_flip_mat_(cur_cid, n_cid) > 0)
             {
-                cluster_normal_x_.row(n_cid) *= -1.0;
-                cluster_normal_y_.row(n_cid) *= -1.0;
-                cluster_normal_z_.row(n_cid) *= -1.0;
+                cluster_normal_x_.col(n_cid) *= -1.0;
+                cluster_normal_y_.col(n_cid) *= -1.0;
+                cluster_normal_z_.col(n_cid) *= -1.0;
             }
             cluster_queued_ids.push(n_cid);
         }
@@ -1128,9 +1049,9 @@ void LocalVipss::OuputPtN(const std::string& out_path, bool orient_normal)
             pts.push_back(pt[0]);
             pts.push_back(pt[1]);
             pts.push_back(pt[2]);
-            normals.push_back(cluster_normal_x_(i, p_id));
-            normals.push_back(cluster_normal_y_(i, p_id));
-            normals.push_back(cluster_normal_z_(i, p_id));
+            normals.push_back(cluster_normal_x_(p_id, i));
+            normals.push_back(cluster_normal_y_(p_id, i));
+            normals.push_back(cluster_normal_z_(p_id, i));
         }
     }
     printf("out pt size : %zu \n", pts.size() / 3);
