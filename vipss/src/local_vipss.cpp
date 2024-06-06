@@ -437,7 +437,7 @@ void LocalVipss::BuildClusterAdjacentMat()
     printf("adjacent no zero count : %llu \n", adjacent_mat_.n_nonzero);
     cluster_adjacent_mat_ = adjacent_mat_ * cluster_cores_mat_;
     cluster_adjacent_pt_mat_ = adjacent_mat_ * cluster_cores_mat_ + cluster_cores_mat_;
-    cluster_adjacent_flip_mat_.resize(cluster_cores_mat_.n_rows, cluster_cores_mat_.n_rows); 
+    // cluster_adjacent_flip_mat_.resize(cluster_cores_mat_.n_rows, cluster_cores_mat_.n_rows); 
     // printf("11 adjacent mat rows : %d, cols : %d \n", adjacent_mat_.n_rows, adjacent_mat_.n_cols);
     // for(size_t i = 0; i < pt_num_; ++i)
     // {
@@ -489,8 +489,8 @@ void LocalVipss::InitSingleClusterNeiScores(size_t i)
         if(s2 > s1) 
         {
             s1 = s2;
-            cluster_adjacent_flip_mat_(i, n_pos) = 1;
-            cluster_adjacent_flip_mat_(n_pos, i) = 1;
+            // cluster_adjacent_flip_mat_(i, n_pos) = 1;
+            // cluster_adjacent_flip_mat_(n_pos, i) = 1;
         }
         double score = std::min(1.0, std::max(-1.0, s1));
         score = acos(score) * Anlge_PI_Rate ;
@@ -568,21 +568,21 @@ void LocalVipss::CalculateSingleClusterNeiScores(size_t i)
         count ++;
         if(cluster_scores_mat_(i, n_pos) != 0) 
         {
-            sum += cluster_scores_mat_(i, n_pos);
+            // sum += cluster_scores_mat_(i, n_pos);
             continue;
         }
         bool flip_normal = false;
         double score = CalculateClusterPairScore(i, n_pos, flip_normal);
-        if(flip_normal)
-        {
-            cluster_adjacent_flip_mat_(i, n_pos) = 1;
-            cluster_adjacent_flip_mat_(n_pos, i) = 1;
-        }
+        // if(flip_normal)
+        // {
+        //     cluster_adjacent_flip_mat_(i, n_pos) = 1;
+        //     cluster_adjacent_flip_mat_(n_pos, i) = 1;
+        // }
         // printf("cluster id : %d \n", i);
         cluster_scores_mat_(i, n_pos) = score;
         cluster_scores_mat_(n_pos, i) = score;
         update_score_cluster_ids_.insert(n_pos);
-        sum += score;
+        // sum += score;
     }
     // double new_cluster_score = sum / (double(count) + 1e-8);
     // cluster_scores_vec_.push_back(new_cluster_score);
@@ -803,8 +803,8 @@ void LocalVipss::MergeClusters()
         cluster_normal_y_.shed_row(id);
         cluster_normal_z_.shed_row(id);
 
-        cluster_adjacent_flip_mat_.shed_row(id);
-        cluster_adjacent_flip_mat_.shed_col(id);
+        // cluster_adjacent_flip_mat_.shed_row(id);
+        // cluster_adjacent_flip_mat_.shed_col(id);
 
         cluster_core_pt_ids_.erase(std::next(cluster_core_pt_ids_.begin(), id));
         // cluster_scores_vec_.erase(std::next(cluster_scores_vec_.begin(), id));
@@ -848,10 +848,10 @@ void LocalVipss::UpdateClusterScoreMat()
     new_scores_mat(0, 0, arma::size(s_rows -1, s_cols -1)) = cluster_scores_mat_(0, 0, arma::size(s_rows -1, s_cols -1));
     cluster_scores_mat_ = new_scores_mat;
 
-    arma::sp_imat new_cluster_adjacent_flip_mat(c_num, c_num);
-    new_cluster_adjacent_flip_mat(0, 0, arma::size(s_rows -1, s_cols -1)) =
-             cluster_adjacent_flip_mat_(0, 0, arma::size(s_rows -1, s_cols -1));
-    cluster_adjacent_flip_mat_ = new_cluster_adjacent_flip_mat;
+    // arma::sp_imat new_cluster_adjacent_flip_mat(c_num, c_num);
+    // new_cluster_adjacent_flip_mat(0, 0, arma::size(s_rows -1, s_cols -1)) =
+    //          cluster_adjacent_flip_mat_(0, 0, arma::size(s_rows -1, s_cols -1));
+    // cluster_adjacent_flip_mat_ = new_cluster_adjacent_flip_mat;
 
     // auto t1 = Clock::now();
     // double update_score_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
