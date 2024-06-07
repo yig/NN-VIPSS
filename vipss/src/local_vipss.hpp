@@ -48,6 +48,9 @@ class LocalVipss {
         void SaveClusterPts(const std::string& path,
                             const std::vector<P3tr>& key_pts, 
                             const std::vector<P3tr>& nei_pts);
+        
+        void SaveClusterCorePts(const std::string& path,
+                            const std::vector<std::vector<P3tr>>& key_pts);
         void Run();
 
     public:
@@ -108,4 +111,5 @@ class LocalVipss {
         size_t max_iter_ = 30;
         bool use_hrbf_surface_ = false;
         int volume_dim_ = 100;
+        int top_k_ = 5;
 };

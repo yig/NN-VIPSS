@@ -200,7 +200,7 @@ void LocalVipss::CalculateClusterNormals(size_t cluster_id)
 void LocalVipss::InitNormalWithVipss()
 {
     size_t cluster_num = cluster_cores_mat_.n_cols;
-    printf("cluster num : %zu \n", cluster_num);
+    // printf("cluster num : %zu \n", cluster_num);
     
     vipss_time_stats_.clear();
     double vipss_sum = 0;
@@ -469,16 +469,16 @@ void LocalVipss::InitSingleClusterNeiScores(size_t i)
 
 void LocalVipss::CalculateSingleClusterNeiScores(size_t i)
 {
-    const arma::sp_irowvec& nei = cluster_adjacent_mat_.row(i);
-    const arma::sp_irowvec::const_iterator start = nei.begin();
-    const arma::sp_irowvec::const_iterator end = nei.end();
+    arma::sp_imat nei(cluster_adjacent_mat_.col(i));
+    const arma::sp_imat::const_iterator start = nei.begin();
+    const arma::sp_imat::const_iterator end = nei.end();
     // printf("cluster id : %d \n", i);
 
     int count = 0;
     double sum = 0;
     for(auto iter = start; iter != end; ++ iter)
     {
-        size_t n_pos = iter.internal_col;
+        size_t n_pos = iter.row();
         if(i == n_pos) continue;
         count ++;
         if(cluster_scores_mat_(i, n_pos) != 0) 
@@ -591,7 +591,7 @@ void LocalVipss::MergeClusters()
 {
     printf(" start to init merge cluster \n");
     std::set<int> visited_clusters;
-    std::vector<size_t> merged_cluster_ids;
+    std::vector<arma::uword> merged_cluster_ids;
     // printf("cluster scores num : %zu \n", cluster_id_scores_.size());
     // auto &cluster_scores = cluster_scores_vec_;
     // std::vector<size_t> indices(cluster_scores_vec_.size());
@@ -655,6 +655,7 @@ void LocalVipss::MergeClusters()
         }
     }
 
+    auto t00 = Clock::now();
     size_t merged_pair_num = merged_cluster_ids.size() / 2;
     if(merged_pair_num > 0)
     {
@@ -681,13 +682,26 @@ void LocalVipss::MergeClusters()
             cluster_adjacent_pt_mat_.col(c_num + i) = cluster_adjacent_pt_mat_.col(ca) + cluster_adjacent_pt_mat_.col(cb);
             cluster_adjacent_mat_.row(c_num + i) = cluster_adjacent_mat_.row(ca) + cluster_adjacent_mat_.row(cb);
             cluster_adjacent_mat_.col(c_num + i) = cluster_adjacent_mat_.col(ca) + cluster_adjacent_mat_.col(cb);
+        // cluster_adjacent_mat_.insert
         }
     }
+    auto t01 = Clock::now();
+    double append_data_time = std::chrono::nanoseconds(t01 - t00).count()/1e9;
+    printf("------finish append_data_time time : %f ! \n", append_data_time);
         
     merged_cluster_size_ = merged_cluster_ids.size();
     std::sort(merged_cluster_ids.begin(), merged_cluster_ids.end(), std::greater<>());
-    // arma::uvec delete_ids = merged_cluster_ids;
-    for(size_t id : merged_cluster_ids)
+
+    auto t000 = Clock::now();
+    // arma::uvec delete_ids(merged_cluster_ids);
+
+    // // (merged_cluster_ids.begin(), merged_cluster_ids.end());
+    // // arma::uvec delete_ids = merged_cluster_ids;
+    // cluster_normal_x_.shed_cols(delete_ids);
+    // cluster_normal_y_.shed_cols(delete_ids);
+    // cluster_normal_z_.shed_cols(delete_ids);
+    
+    for(auto id : merged_cluster_ids)
     {
         cluster_cores_mat_.shed_col(id);
         cluster_adjacent_pt_mat_.shed_col(id);
@@ -698,10 +712,14 @@ void LocalVipss::MergeClusters()
         cluster_normal_x_.shed_col(id);
         cluster_normal_y_.shed_col(id);
         cluster_normal_z_.shed_col(id);
-
         cluster_core_pt_ids_.erase(std::next(cluster_core_pt_ids_.begin(), id));
         // cluster_scores_vec_.erase(std::next(cluster_scores_vec_.begin(), id));
     }
+
+    auto t001 = Clock::now();
+    double update_score_time = std::chrono::nanoseconds(t001 - t000).count()/1e9;
+    printf("------finish update shed rows and cols time : %f ! \n", update_score_time);
+
 }
 
 void LocalVipss::AppendRow(arma::sp_imat& in_mat,  arma::sp_irowvec& append_row)
@@ -770,12 +788,14 @@ void LocalVipss::UpdateClusterNormals()
     arma::sp_mat new_normal_y(s_rows, c_num);
     arma::sp_mat new_normal_z(s_rows, c_num);
 
-    if(s_rows > 0)
+    if(s_cols > 0)
     {
         new_normal_x.cols(0, s_cols-1) = cluster_normal_x_.cols(0, s_cols-1);
         new_normal_y.cols(0, s_cols-1) = cluster_normal_y_.cols(0, s_cols-1);
         new_normal_z.cols(0, s_cols-1) = cluster_normal_z_.cols(0, s_cols-1);
     }
+    // printf("00 cluster num : %zu , s_rows : %zu, s_cols: %zu \n", c_num, s_rows, s_cols);
+
     cluster_normal_x_ = new_normal_x;
     cluster_normal_y_ = new_normal_y;
     cluster_normal_z_ = new_normal_z;
@@ -870,13 +890,13 @@ void LocalVipss::BuildClusterMST()
         }
 
         size_t cur_pid = cur_e.c_b_ ;
-        const arma::sp_irowvec& adj_row = cluster_adjacent_mat_.row(cur_pid);
+        const arma::sp_imat& adj_row = cluster_adjacent_mat_.col(cur_pid);
         // printf("row %d contains no zero num : %d \n", cur_pid, adj_row.n_nonzero);
-        const arma::sp_irowvec::const_iterator start = adj_row.begin();
-        const arma::sp_irowvec::const_iterator end = adj_row.end();
+        const arma::sp_imat::const_iterator start = adj_row.begin();
+        const arma::sp_imat::const_iterator end = adj_row.end();
         for(auto iter = start; iter != end; ++iter)
         {
-            size_t n_id = iter.internal_col;
+            size_t n_id = iter.row();
             if(visited_vids.find(n_id) != visited_vids.end()) continue;
             if(n_id == cur_pid) continue;
             C_Edege edge(cur_pid, n_id);
@@ -909,12 +929,12 @@ void LocalVipss::FlipClusterNormalsByMST()
         cluster_queued_ids.pop();
         if(visited_cluster_ids.find(cur_cid) != visited_cluster_ids.end()) continue;
 
-        const arma::sp_irowvec& adj_row = cluster_MST_mat_.row(cur_cid);
-        const arma::sp_irowvec::const_iterator start = adj_row.begin();
-        const arma::sp_irowvec::const_iterator end = adj_row.end();
+        const arma::sp_imat& adj_row = cluster_MST_mat_.col(cur_cid);
+        const arma::sp_imat::const_iterator start = adj_row.begin();
+        const arma::sp_imat::const_iterator end = adj_row.end();
         for(auto iter = start; iter != end; ++iter)
         {   
-            size_t n_cid = iter.internal_col;
+            size_t n_cid = iter.row();
             if(flipped_cluster_ids.find(n_cid) != flipped_cluster_ids.end()) continue;
             flipped_cluster_ids.insert(n_cid);
             // CalculateClusterPairScore(cur_cid, n_cid);
@@ -936,63 +956,63 @@ void LocalVipss::FlipClusterNormalsByMST()
     }
 }
 
-void LocalVipss::FlipClusterNormalsByMinST()
-{
-    size_t pt_num = adjacent_mat_.n_rows;
-    std::set<std::string> visited_edge_ids;
-    std::vector<C_Edege> tree_edges;
+// void LocalVipss::FlipClusterNormalsByMinST()
+// {
+//     size_t pt_num = adjacent_mat_.n_rows;
+//     std::set<std::string> visited_edge_ids;
+//     std::vector<C_Edege> tree_edges;
 
-    auto cmp = [](C_Edege& left, C_Edege& right) { return left.score_ > right.score_; };
-    std::priority_queue<C_Edege, std::vector<C_Edege>, decltype(cmp)> edge_priority_queue(cmp);
+//     auto cmp = [](C_Edege& left, C_Edege& right) { return left.score_ > right.score_; };
+//     std::priority_queue<C_Edege, std::vector<C_Edege>, decltype(cmp)> edge_priority_queue(cmp);
  
-    C_Edege st_e(0,0);
-    edge_priority_queue.push(st_e);
-    std::set<size_t> visited_vids;
-    while(!edge_priority_queue.empty())
-    {
-        C_Edege cur_e = edge_priority_queue.top();
-        edge_priority_queue.pop();
+//     C_Edege st_e(0,0);
+//     edge_priority_queue.push(st_e);
+//     std::set<size_t> visited_vids;
+//     while(!edge_priority_queue.empty())
+//     {
+//         C_Edege cur_e = edge_priority_queue.top();
+//         edge_priority_queue.pop();
 
-        if(visited_vids.find(cur_e.c_b_ ) != visited_vids.end()) continue;
-        visited_vids.insert(cur_e.c_b_);
-        if(cur_e.c_a_ != cur_e.c_b_)
-        {
-            tree_edges.push_back(cur_e);
-        }
+//         if(visited_vids.find(cur_e.c_b_ ) != visited_vids.end()) continue;
+//         visited_vids.insert(cur_e.c_b_);
+//         if(cur_e.c_a_ != cur_e.c_b_)
+//         {
+//             tree_edges.push_back(cur_e);
+//         }
 
-        size_t cur_pid = cur_e.c_b_ ;
-        const arma::sp_irowvec& adj_row = adjacent_mat_.row(cur_pid);
-        // printf("row %d contains no zero num : %d \n", cur_pid, adj_row.n_nonzero);
-        const arma::sp_irowvec::const_iterator start = adj_row.begin();
-        const arma::sp_irowvec::const_iterator end = adj_row.end();
-        for(auto iter = start; iter != end; ++iter)
-        {
-            size_t n_id = iter.internal_col;
-            if(visited_vids.find(n_id) != visited_vids.end()) continue;
-            if(n_id == cur_pid) continue;
-            C_Edege edge(cur_pid, n_id);
-            edge.score_ = PtDistance(points_[cur_pid], points_[n_id]);
-            edge_priority_queue.push(edge);
-        }
-    }
+//         size_t cur_pid = cur_e.c_b_ ;
+//         const arma::sp_irowvec& adj_row = adjacent_mat_.row(cur_pid);
+//         // printf("row %d contains no zero num : %d \n", cur_pid, adj_row.n_nonzero);
+//         const arma::sp_irowvec::const_iterator start = adj_row.begin();
+//         const arma::sp_irowvec::const_iterator end = adj_row.end();
+//         for(auto iter = start; iter != end; ++iter)
+//         {
+//             size_t n_id = iter.internal_col;
+//             if(visited_vids.find(n_id) != visited_vids.end()) continue;
+//             if(n_id == cur_pid) continue;
+//             C_Edege edge(cur_pid, n_id);
+//             edge.score_ = PtDistance(points_[cur_pid], points_[n_id]);
+//             edge_priority_queue.push(edge);
+//         }
+//     }
 
-    std::string out_tree_path = out_dir_ + filename_ + "tree.obj";
-    std::vector<double> vts ;
-    for(auto& p : points_)
-    {
-        vts.push_back(p[0]);
-        vts.push_back(p[1]);
-        vts.push_back(p[2]);
-    }
-    std::vector<unsigned int> edges_out;
-    for(auto& e : tree_edges) 
-    {
-        edges_out.push_back(e.c_a_);
-        edges_out.push_back(e.c_b_);
-    }
+//     std::string out_tree_path = out_dir_ + filename_ + "tree.obj";
+//     std::vector<double> vts ;
+//     for(auto& p : points_)
+//     {
+//         vts.push_back(p[0]);
+//         vts.push_back(p[1]);
+//         vts.push_back(p[2]);
+//     }
+//     std::vector<unsigned int> edges_out;
+//     for(auto& e : tree_edges) 
+//     {
+//         edges_out.push_back(e.c_a_);
+//         edges_out.push_back(e.c_b_);
+//     }
 
-    writeObjFile_line(out_tree_path,vts, edges_out);
-}
+//     writeObjFile_line(out_tree_path,vts, edges_out);
+// }
 
 void LocalVipss::OuputPtN(const std::string& out_path, bool orient_normal)
 {
@@ -1055,70 +1075,116 @@ void LocalVipss::WriteVipssTimeLog()
     printf("Vipss total time : %f \n", time_sum);
 }
 
-// void LocalVipss::SaveCluster()
-// {
-//     for(size_t i = 0; i < cluster_cores_mat_.n_rows; ++i)
-//     {
-//         const arma::sp_irowvec& cur_row = cluster_cores_mat_.row(i);
-//         if(cur_row.n_nonzero < 3) continue;
+void LocalVipss::SaveCluster()
+{
+    std::vector<std::vector<P3tr>> key_pts_vec;
+    for(size_t i = 0; i < cluster_cores_mat_.n_cols; ++i)
+    {
+        const arma::sp_imat& cur_row(cluster_cores_mat_.col(i));
+        if(cur_row.n_nonzero < 3) continue;
         
-//         const arma::sp_irowvec::const_iterator start = cur_row.begin();
-//         const arma::sp_irowvec::const_iterator end = cur_row.end();
-//         std::set<P3tr> key_pts;
-//         for(auto iter = start; iter != end; ++iter)
-//         {
-//             key_pts.insert(points_[iter.internal_col]);
-//         } 
-//         std::vector<P3tr> nei_pts;
-//         const arma::sp_irowvec& cur_pt_row = cluster_adjacent_pt_mat_.row(i);
-//         const arma::sp_irowvec::const_iterator pt_start = cur_pt_row.begin();
-//         const arma::sp_irowvec::const_iterator pt_end = cur_pt_row.end();
-//         for(auto iter = pt_start; iter != pt_end; ++iter)
-//         {
-//             auto cur_pt = points_[iter.internal_col];
-//             if(key_pts.find(cur_pt) == key_pts.end())
-//             {
-//                 nei_pts.push_back(cur_pt);
-//             }
-//         }
-//         std::vector<P3tr> key_pts_vec(key_pts.begin(), key_pts.end());
-//         std::string out_path = out_dir_ + filename_ + "_cluster_" + std::to_string(i);
-//         // SaveClusterPts(out_path, key_pts_vec, nei_pts);
-//     }
-// }
+        const arma::sp_imat::const_iterator start = cur_row.begin();
+        const arma::sp_imat::const_iterator end = cur_row.end();
+        std::set<P3tr> key_pts;
+        for(auto iter = start; iter != end; ++iter)
+        {
+            key_pts.insert(points_[iter.row()]);
+        } 
+        
+        key_pts_vec.push_back(std::vector<P3tr>(key_pts.begin(), key_pts.end()) );
+        // std::vector<P3tr> nei_pts;
+        // const arma::sp_irowvec& cur_pt_row = cluster_adjacent_pt_mat_.row(i);
+        // const arma::sp_irowvec::const_iterator pt_start = cur_pt_row.begin();
+        // const arma::sp_irowvec::const_iterator pt_end = cur_pt_row.end();
+        // for(auto iter = pt_start; iter != pt_end; ++iter)
+        // {
+        //     auto cur_pt = points_[iter.internal_col];
+        //     if(key_pts.find(cur_pt) == key_pts.end())
+        //     {
+        //         nei_pts.push_back(cur_pt);
+        //     }
+        // }
+        // std::vector<P3tr> key_pts_vec(key_pts.begin(), key_pts.end());
+        // SaveClusterPts(out_path, key_pts_vec, nei_pts);
+    }
+    std::sort(key_pts_vec.begin(), key_pts_vec.end(), [](const auto& a, const auto& b)
+    {
+        return a.size() > b.size();
+    });
+    std::vector<std::vector<P3tr>> top_k_key_pts_vec;
+    for(size_t i = 0; i < top_k_ && i < key_pts_vec.size(); ++i)
+    {
+        top_k_key_pts_vec.push_back(key_pts_vec[i]);
+    }
+    std::string out_path = out_dir_ + filename_ + "_cluster_core_pts";
+    SaveClusterCorePts(out_path, top_k_key_pts_vec);
 
-// void LocalVipss::SaveClusterPts(const std::string& path,
-//                             const std::vector<P3tr>& key_pts, 
-//                             const std::vector<P3tr>& nei_pts)
-// {
-//     std::vector<double> pts;
-//     std::vector<uint8_t> colors;
-//     size_t key_num = key_pts.size();
-//     size_t nei_num = nei_pts.size();
-//     pts.resize(3*(key_num + nei_num));
-//     colors.resize(3*(key_num + nei_num));
-//     for(size_t i = 0; i < key_num + nei_num; ++i)
-//     {
-//         if(i < key_num)
-//         {
-//             pts[3*i] = key_pts[i][0];
-//             pts[3*i + 1] = key_pts[i][1];
-//             pts[3*i + 2] = key_pts[i][2];
-//             colors[3*i] = 255;
-//             colors[3*i + 1] = 0;
-//             colors[3*i + 2] = 0;
-//         } else {
-//             size_t id = i - key_num;
-//             pts[3*id] = key_pts[id][0];
-//             pts[3*id + 1] = key_pts[id][1];
-//             pts[3*id + 2] = key_pts[id][2];
-//             colors[3*id] = 0;
-//             colors[3*id + 1] = 0;
-//             colors[3*id + 2] = 255;
-//         } 
-//     }
-//     writePLYFile_CO(path, pts, colors);
-// }
+}
+
+
+
+void LocalVipss::SaveClusterPts(const std::string& path,
+                            const std::vector<P3tr>& key_pts, 
+                            const std::vector<P3tr>& nei_pts)
+{
+    std::vector<double> pts;
+    std::vector<uint8_t> colors;
+    size_t key_num = key_pts.size();
+    size_t nei_num = nei_pts.size();
+    pts.resize(3*(key_num + nei_num));
+    colors.resize(3*(key_num + nei_num));
+    for(size_t i = 0; i < key_num + nei_num; ++i)
+    {
+        if(i < key_num)
+        {
+            pts[3*i] = key_pts[i][0];
+            pts[3*i + 1] = key_pts[i][1];
+            pts[3*i + 2] = key_pts[i][2];
+            colors[3*i] = 255;
+            colors[3*i + 1] = 0;
+            colors[3*i + 2] = 0;
+        } else {
+            size_t id = i - key_num;
+            pts[3*id] = nei_pts[id][0];
+            pts[3*id + 1] = nei_pts[id][1];
+            pts[3*id + 2] = nei_pts[id][2];
+            colors[3*id] = 0;
+            colors[3*id + 1] = 0;
+            colors[3*id + 2] = 255;
+        } 
+    }
+    writePLYFile_CO(path, pts, colors);
+}
+
+void LocalVipss::SaveClusterCorePts(const std::string& path,
+                            const std::vector<std::vector<P3tr>>& key_pts_vec)
+{
+    std::vector<double> pts;
+    std::vector<uint8_t> colors;
+    int k = key_pts_vec.size();
+    float step = 255.0 / k * 2.0;
+    std::vector<int> red_steps;
+    std::vector<int> blue_steps;
+    for(size_t i = 0; i < k; ++i)
+    {
+        uint8_t red = i < k / 2.0 ? uint8_t(std::abs(255 - step * i)) : 0;
+        uint8_t green = uint8_t(150 - std::abs(float(128 - step *i)));
+        uint8_t blue = i > k / 2.0 ? uint8_t(255 - step * (k-i-1 )) :  0;
+        
+        const auto& key_pts = key_pts_vec[i];
+        for(auto pt : key_pts)
+        {
+            pts.push_back(pt[0]);
+            pts.push_back(pt[1]);
+            pts.push_back(pt[2]);
+            colors.push_back(red);
+            colors.push_back(green);
+            colors.push_back(blue);
+        }
+    }
+    writePLYFile_CO(path, pts, colors);  
+}
+
 
 
 
@@ -1166,7 +1232,8 @@ void LocalVipss::Run()
     size_t iter_num = 1;
     while(merged_cluster_size_ > 0)
     {
-
+        iter_num ++;
+        if(iter_num > max_iter_) break;
         auto tt0 = Clock::now();
         // GetClusterCenters();
         MergeClusters();
@@ -1188,6 +1255,8 @@ void LocalVipss::Run()
         printf("update_normal time : %f ! \n", update_normal_time);
         
         total_time += update_normal_time;
+
+        if(cluster_cores_mat_.n_cols <= 1) break;
         // printf("cluster_adjacent_mat_ number : %d \n", cluster_adjacent_mat_.n_rows);
         auto tt4 = Clock::now();
         update_score_cluster_ids_.clear();
@@ -1208,8 +1277,7 @@ void LocalVipss::Run()
         // OuputPtN(init_ptn_path_iter);
         // std::string init_ptn_path_iter2 = out_dir_ + filename_ + "_orient_ptn" + std::to_string(iter_num);
         // OuputPtN(init_ptn_path_iter2, true);
-        iter_num ++;
-        if(iter_num >= max_iter_) break;
+        
     }
 
     auto ti00 = Clock::now();
@@ -1217,8 +1285,7 @@ void LocalVipss::Run()
     auto ti11 = Clock::now();
     double MST_time = std::chrono::nanoseconds(ti11 - ti00).count()/1e9;
     total_time += MST_time;
-    printf("normal MST_time time used : %f \n", MST_time);
- 
+    printf("normal MST_time time used : %f \n", MST_time); 
     auto ti0 = Clock::now();
     FlipClusterNormalsByMST();
     // FlipClusterNormalsByScores();
@@ -1229,9 +1296,9 @@ void LocalVipss::Run()
     // flipClusterNormalsByScores();
     std::string init_ptn_path_iter = out_dir_ + filename_ + "_flipped" + std::to_string(iter_num);
     OuputPtN(init_ptn_path_iter);
+    SaveCluster();
     WriteVipssTimeLog();
     printf("total time used : %f \n", total_time);
-
     if(use_hrbf_surface_)
     {
         vipss_api_.is_surfacing_ = true;
