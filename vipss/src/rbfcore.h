@@ -229,6 +229,7 @@ public:
 
 public:
     void Set_HermiteRBF(std::vector<double>&pts);
+    void BuildUnitVipssMat(std::vector<double>&pts);
     int Solve_HermiteRBF(std::vector<double>&vn);
 
 public:

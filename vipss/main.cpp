@@ -5,6 +5,7 @@
 #include "src/voronoi_gen.h"
 #include "src/pt_vipss.h"
 #include "src/local_vipss.hpp"
+#include "src/vipss_unit.hpp"
 
 using namespace std;
 
@@ -24,38 +25,30 @@ void test_local_vipss()
     std::string data_dir =  "../../data/";
     
     LocalVipss l_vp;
-    l_vp.filename_ = "walrus";
+    l_vp.filename_ = "arma";
     // l_vp.filename_ = "planck";
     l_vp.out_dir_ = data_dir + l_vp.filename_ + "/";
     std::string path = data_dir + l_vp.filename_ + "/" + l_vp.filename_ + ".ply";
 
     l_vp.angle_threshold_ = 25;
-    l_vp.user_lambda_ = 0.003;
+    l_vp.user_lambda_ = 0.0;
     l_vp.max_iter_ = 30;
-    l_vp.use_hrbf_surface_ = true;
+    l_vp.use_hrbf_surface_ = false;
+    l_vp.volume_dim_ = 100;
     l_vp.Init(path);
     l_vp.Run();
 }
 
-void test_pt_vipss()
+void test_vipss_unit()
 {
-    std::string path = "../data/doghead200/doghead200";
-    // std::string path = "../../data/doghead_wire/doghead_wire";
-    // VoronoiGen v_gen;
-    // v_gen.filename_ = "doghead200";
-    // v_gen.out_dir_ = "../data/doghead200/";
-    // v_gen.loadData(path);
-    // v_gen.Run();
-
-    PtVipss p_vipss;
-    printf("start to init p_vipss! \n");
-    p_vipss.Init(path);
-    p_vipss.out_name_ = "doghead200";
-    p_vipss.out_dir_ = "../data/doghead200/";
-
-    p_vipss.Run();
+    VIPSSUnit vu;
+    vu.data_dir_ = "../../data/";
+    vu.file_name_ = "kitten_h004";
+    vu.lambda_ = 0.01;
+    vu.use_hrbf_surface_ = true;
+    vu.Run();
+    return;
 }
-
 
 void SplitPath(const std::string& fullfilename,std::string &filepath);
 void SplitFileName (const std::string& fullfilename,std::string &filepath,std::string &filename,std::string &extname);
@@ -65,11 +58,10 @@ int main(int argc, char** argv)
 
     // test_voronoi();
     // test_pt_vipss();
-    test_local_vipss();
+    // test_local_vipss();
+    test_vipss_unit();
     return 0;
     cout << argc << endl;
-
-
 
     string infilename;
     string outpath, pcname, ext, inpath;

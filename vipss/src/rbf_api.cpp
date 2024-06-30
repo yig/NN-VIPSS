@@ -106,7 +106,7 @@ void RBF_API::run_vipss(std::vector<double> &Vs, std::vector<double> &Vn)
     rbf_core_.Set_RBFCoefWithInitNormal(Vn);
 
     if(is_surfacing_){
-        rbf_core_.Write_Hermite_NormalPrediction(outpath_ + "_normal", 1);
+        // rbf_core_.Write_Hermite_NormalPrediction(outpath_ + "_normal", 1);
         rbf_core_.Surfacing(0,n_voxel_line_);
         rbf_core_.Write_Surface(outpath_ +"_surface");
     }
@@ -114,4 +114,16 @@ void RBF_API::run_vipss(std::vector<double> &Vs, std::vector<double> &Vn)
         rbf_core_.Print_TimerRecord_Single(outpath_ +"_time.txt");
     }
     normals_ = rbf_core_.newnormals;
+}
+
+
+void RBF_API::build_unit_vipss(std::vector<double> &Vs)
+{
+    para_.user_lamnbda = user_lambda_;
+    // std::cout << "start inject data "<< std::endl;
+    
+    rbf_core_.key_npt = Vs.size()/3;
+    rbf_core_.InjectData(Vs, para_);
+    rbf_core_.BuildUnitVipssMat(Vs);
+    // printf("minv rows %d, cols %d", rbf_core_.Minv.n_rows, rbf_core_.Minv.n_cols);
 }

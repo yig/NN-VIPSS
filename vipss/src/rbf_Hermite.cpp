@@ -84,6 +84,35 @@ bool RBF_Core::Write_Hermite_NormalPrediction(std::string fname, int mode){
     return 1;
 }
 
+void RBF_Core::BuildUnitVipssMat(std::vector<double>&pts)
+{
+    key_npt = npt;
+    Init(XCube);
+    Set_HermiteRBF(pts);
+    size_t m_dim = npt + 3* key_npt;
+    bigM.zeros(m_dim + 4, m_dim + 4);
+    bigM.submat(0,0,m_dim-1,m_dim-1) = M;
+    bigM.submat(0,m_dim,m_dim-1, m_dim + 3) = N;
+    bigM.submat(m_dim,0,m_dim + 3, m_dim-1) = N.t();
+
+    //for(int i=0;i<4;++i)bigM(i+(npt)*4,i+(npt)*4) = 1;
+
+    auto t2 = Clock::now();
+    bigMinv = inv(bigM);
+    if(open_debug_log)
+    cout<<"bigMinv: "<<(setK_time= std::chrono::nanoseconds(Clock::now() - t2).count()/1e9)<<endl;
+    bigM.clear();
+    Minv = bigMinv.submat(0,0,m_dim-1,m_dim-1);
+    // Ninv = bigMinv.submat(0,m_dim,m_dim-1, m_dim + 3);
+    bigMinv.clear();
+    //K = Minv - Ninv *(N.t()*Minv);
+    // K = Minv;
+    // K00 = K.submat(0,0,npt-1,npt-1);
+    // K01 = K.submat(0,npt,npt-1,m_dim-1);
+    // K11 = K.submat( npt, npt, m_dim-1, m_dim-1 );
+    M.clear();N.clear();
+    
+}
 
 
 void RBF_Core::Set_HermiteRBF(std::vector<double>&pts){
@@ -115,7 +144,6 @@ void RBF_Core::Set_HermiteRBF(std::vector<double>&pts){
             //            int jind = j*3+npt;
             //            for(int k=0;k<3;++k)M(i,jind+k) = -G[k];
             //            for(int k=0;k<3;++k)M(jind+k,i) = G[k];
-
             for(int k=0;k<3;++k)M(i,npt+j+k*key_npt) = G[k];
             for(int k=0;k<3;++k)M(npt+j+k*key_npt,i) = G[k];
 
@@ -304,21 +332,14 @@ void RBF_Core::Set_Hermite_PredictNormal(std::vector<double>&pts){
         K00 = K.submat(0,0,npt-1,npt-1);
         K01 = K.submat(0,npt,npt-1,m_dim-1);
         K11 = K.submat( npt, npt, m_dim-1, m_dim-1 );
-
         M.clear();N.clear();
         // cout<<"K11: "<<K11.n_cols<<endl;
-
-
         //Set_Hermite_DesignedCurve();
-
         Set_User_Lamnda_ToMatrix(User_Lamnbda_inject);
-
-		
 //		arma::vec eigval, ny;
 //		arma::mat eigvec;
 //		ny = eig_sym( eigval, eigvec, K);
 //		cout<<ny<<endl;
-
         // cout<<"K: "<<K.n_cols<<endl;
     }
 
@@ -390,6 +411,7 @@ int RBF_Core::Solve_Hermite_PredictNormal_UnitNorm(){
 double acc_time;
 
 static int countopt = 0;
+
 double optfunc_Hermite(const std::vector<double>&x, std::vector<double>&grad, void *fdata){
 
     auto t1 = Clock::now();

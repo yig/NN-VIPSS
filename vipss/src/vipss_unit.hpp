@@ -1,0 +1,42 @@
+#pragma once
+#include "rbfcore.h"
+#include "voronoi_gen.h"
+#include "local_vipss.hpp"
+#include "Solver.h"
+
+class VIPSSUnit {
+
+    public:
+        VIPSSUnit(){};
+        ~VIPSSUnit(){};
+
+        void GetLocalVipssClusters();
+        void InitPtNormalWithLocalVipss();
+        void BuildVipssUnitMatrixP();
+        void OptUnitVipssNormalSimple();
+        void OptUnitVipssNormal();
+        void ReconSurface();
+        void Run();
+        
+
+    public:
+        std::string file_name_;
+        std::string data_dir_; 
+        VoronoiGen voro_gen_;
+        LocalVipss local_vipss_;
+        RBF_API rbf_api_;
+        arma::sp_imat adjacent_mat_;
+        arma::vec sg_;
+        // std::vector<arma::mat> local_M_vec_;
+        // std::vector<arma::mat> local_J_vec_;
+        // std::vector<arma::sp_mat> unit_matrix_vec_;
+        double lambda_ = 0;
+        arma::sp_mat Final_H_;
+        size_t npt_; 
+        Solution_Struct solver_;
+        std::vector<double> initnormals_;
+        std::vector<double> newnormals_;
+        const double M_PI_ = 3.14159265358979323846;
+        bool use_hrbf_surface_ = false;
+
+};

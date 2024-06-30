@@ -14,7 +14,7 @@ class LocalVipss {
 
         void Init(const std::string & path);
         inline std::vector<size_t> GetClusterPtIds(size_t cluster_id) const;
-        inline void GetInitClusterPtIds(size_t cluster_id, 
+        void GetInitClusterPtIds(size_t cluster_id, 
         std::vector<double>& pts, std::vector<size_t>& pt_ids);
 
         inline std::vector<size_t> GetClusterCoreIds(size_t cluster_id) const;
@@ -52,6 +52,7 @@ class LocalVipss {
         void SaveClusterCorePts(const std::string& path,
                             const std::vector<std::vector<P3tr>>& key_pts);
         void Run();
+        void InitNormals();
 
     public:
         inline void AppendRow(arma::sp_imat& in_mat,  arma::sp_irowvec& append_row);
@@ -65,6 +66,11 @@ class LocalVipss {
 
         inline bool IsFlipNormal(const arma::mat& a_normals, const arma::mat& b_normals) const;
         inline bool FlipClusterNormal(size_t c_a, size_t c_b) const;
+
+    private:
+
+        inline void ShedCols(arma::sp_imat& in_mat, const std::vector<arma::uword>& delete_ids);
+        inline void ShedCols(arma::sp_mat& in_mat, const std::vector<arma::uword>& delete_ids);
     
     public:
         VoronoiGen voro_gen_;

@@ -39,6 +39,7 @@ void LocalVipss::Init(const std::string & path)
     vipss_api_.is_surfacing_ = false;
     vipss_api_.outpath_ = out_dir_;
     vipss_api_.user_lambda_ = user_lambda_;
+    vipss_api_.n_voxel_line_ = volume_dim_;
 
     cluster_normal_x_.resize(pt_num_, pt_num_);
     cluster_normal_y_.resize(pt_num_, pt_num_);
@@ -89,7 +90,7 @@ void LocalVipss::UpdateClusterCoresPtIds()
     }
 }
 
-inline void LocalVipss::GetInitClusterPtIds(size_t cluster_id, 
+void LocalVipss::GetInitClusterPtIds(size_t cluster_id, 
         std::vector<double>& pts, std::vector<size_t>& pt_ids)
 {
     auto& cluster_pts_map = voro_gen_.point_cluster_pts_map_;
@@ -97,7 +98,7 @@ inline void LocalVipss::GetInitClusterPtIds(size_t cluster_id,
     // auto& points = voro_gen_.points_;
     // printf("cluster id %d, points size %d \n ", cluster_id, points_.size()/3);
     tetgenmesh::point cur_ptr = points_[cluster_id];
-    auto cluster_pts = voro_gen_.point_cluster_pts_map_[cur_ptr];
+    auto& cluster_pts = voro_gen_.point_cluster_pts_map_[cur_ptr];
 
     pt_ids.push_back(cluster_id);
     pts.push_back(cur_ptr[0]);
@@ -396,15 +397,11 @@ inline double LocalVipss::CalculateClusterPairScore(size_t c_a, size_t c_b, bool
     }
     min_project_p = std::min(1.0, std::max(-1.0, min_project_p));
     double angle = acos (min_project_p) * Anlge_PI_Rate ;
-
     return angle;
-       
-
 }
 
 void LocalVipss::BuildClusterAdjacentMat()
 {
-
     // printf("00 adjacent mat rows : %d, cols : %d \n", adjacent_mat_.n_rows, adjacent_mat_.n_cols);
     printf("adjacent no zero count : %llu \n", adjacent_mat_.n_nonzero);
     cluster_adjacent_mat_ = adjacent_mat_ * cluster_cores_mat_;
@@ -603,7 +600,7 @@ void LocalVipss::MergeClusters()
     arma::vec c_scores(cluster_scores_vec_);
     // arma::colvec c_scores = arma::conv_to<arma::colvec>::from(cluster_scores_vec_);
     arma::uvec indices = arma::sort_index(c_scores, "descend");
-    printf("cluster scores indices num : %zu \n", indices.size());
+    printf("cluster scores indices num : %llu \n", indices.size());
     // for(auto &ele : cluster_id_scores_)
     for(auto& id : indices)
     {
@@ -627,7 +624,7 @@ void LocalVipss::MergeClusters()
                     // double cur_dist = PtDistance(cluster_centers_[iter.internal_col], cur_center);
                     // cur_dist = cur_dist > 1e-10? cur_dist: 1e-10;
                     double cur_score = *iter;
-                    if(cur_score > max_score)
+                    if(cur_score > max_score && cluster_scores_vec_[iter.row()] > angle_threshold_)
                     {
                         max_id = iter.row();
                         max_score = cur_score;
@@ -690,31 +687,66 @@ void LocalVipss::MergeClusters()
     printf("------finish append_data_time time : %f ! \n", append_data_time);
         
     merged_cluster_size_ = merged_cluster_ids.size();
+
+    // auto t00v1 = Clock::now();
     std::sort(merged_cluster_ids.begin(), merged_cluster_ids.end(), std::greater<>());
+    // auto t00v2 = Clock::now();
+    // double scores_sort_time = std::chrono::nanoseconds(t00v2 - t00v1).count()/1e9;
+    // printf("------finish scores_sort_time time : %f ! \n", scores_sort_time);
 
     auto t000 = Clock::now();
     // arma::uvec delete_ids(merged_cluster_ids);
-
     // // (merged_cluster_ids.begin(), merged_cluster_ids.end());
     // // arma::uvec delete_ids = merged_cluster_ids;
     // cluster_normal_x_.shed_cols(delete_ids);
     // cluster_normal_y_.shed_cols(delete_ids);
     // cluster_normal_z_.shed_cols(delete_ids);
+    // cluster_cores_mat_.shed_cols(merged_cluster_ids);
+
+    // ShedCols(cluster_cores_mat_, merged_cluster_ids);
+    // ShedCols(cluster_adjacent_pt_mat_, merged_cluster_ids);
+    // ShedCols(cluster_adjacent_mat_, merged_cluster_ids);
+
+    // ShedCols(cluster_scores_mat_, merged_cluster_ids);
+    // ShedCols(cluster_normal_x_, merged_cluster_ids);
+    // ShedCols(cluster_normal_y_, merged_cluster_ids);
+    // ShedCols(cluster_normal_z_, merged_cluster_ids);
     
     for(auto id : merged_cluster_ids)
     {
         cluster_cores_mat_.shed_col(id);
         cluster_adjacent_pt_mat_.shed_col(id);
-        cluster_scores_mat_.shed_row(id);
+        // cluster_scores_mat_.shed_row(id);
         cluster_scores_mat_.shed_col(id);
-        cluster_adjacent_mat_.shed_row(id);
+        // cluster_adjacent_mat_.shed_row(id);
         cluster_adjacent_mat_.shed_col(id);
         cluster_normal_x_.shed_col(id);
         cluster_normal_y_.shed_col(id);
         cluster_normal_z_.shed_col(id);
         cluster_core_pt_ids_.erase(std::next(cluster_core_pt_ids_.begin(), id));
-        // cluster_scores_vec_.erase(std::next(cluster_scores_vec_.begin(), id));
     }
+
+    
+    // for(auto id : merged_cluster_ids)
+    // {
+        // cluster_core_pt_ids_.erase(std::next(cluster_core_pt_ids_.begin(), id));
+    // }
+    
+
+    auto t00t1 = Clock::now();
+    cluster_scores_mat_ = cluster_scores_mat_.t();
+    cluster_adjacent_mat_ = cluster_adjacent_mat_.t();
+    
+    for(auto id : merged_cluster_ids)
+    {
+        cluster_scores_mat_.shed_col(id);
+        cluster_adjacent_mat_.shed_col(id);
+    }
+    auto t00t2 = Clock::now();
+    double update_mat_trans_time = std::chrono::nanoseconds(t00t2 - t00t1).count()/1e9;
+    printf("------finish update update_mat_trans_time time : %f ! \n", update_mat_trans_time);
+    // cluster_scores_mat_ = cluster_scores_mat_.t();
+    // cluster_adjacent_mat_ = cluster_adjacent_mat_.t();
 
     auto t001 = Clock::now();
     double update_score_time = std::chrono::nanoseconds(t001 - t000).count()/1e9;
@@ -732,6 +764,22 @@ void LocalVipss::AppendRow(arma::sp_imat& in_mat,  arma::sp_irowvec& append_row)
     new_mat.row(rows) = append_row;
     in_mat = new_mat;
 
+}
+
+inline void LocalVipss::ShedCols(arma::sp_imat& in_mat, const std::vector<arma::uword>& delete_ids)
+{
+    for(auto id : delete_ids)
+    {
+        in_mat.shed_col(id);
+    }
+}
+
+inline void LocalVipss::ShedCols(arma::sp_mat& in_mat, const std::vector<arma::uword>& delete_ids)
+{
+    for(auto id : delete_ids)
+    {
+        in_mat.shed_col(id);
+    }
 }
 
 void LocalVipss::AppendCol(arma::sp_imat& in_mat,  arma::sp_icolvec& append_col)
@@ -1214,7 +1262,7 @@ void LocalVipss::Run()
     total_time += build_mat_time + normal_estimate_time;
     
 
-    
+    double sum_score_time = 0;
 
     auto t2 = Clock::now();
     CalculateClusterNeiScores(true);
@@ -1229,17 +1277,29 @@ void LocalVipss::Run()
     printf("finish calculate cluster scores time : %f ! \n", cluster_scores_time);
 
     total_time += scores_time;
+    total_time += cluster_scores_time;
+
+    sum_score_time += scores_time;
+    sum_score_time += cluster_scores_time;
+
     size_t iter_num = 1;
+
+    double sum_merge_time = 0;
     while(merged_cluster_size_ > 0)
     {
         iter_num ++;
-        if(iter_num > max_iter_) break;
+        if(iter_num > max_iter_) 
+        {
+            iter_num = max_iter_;
+            break;
+        }
         auto tt0 = Clock::now();
         // GetClusterCenters();
         MergeClusters();
         auto tt1 = Clock::now();
         double merge_time = std::chrono::nanoseconds(tt1 - tt0).count()/1e9;
         total_time += merge_time;
+        sum_merge_time += merge_time;
         printf("MergeClusters time : %f ! \n", merge_time);
         printf("iter %zu merged cluster number : %zu \n", iter_num, merged_cluster_size_);
         if(merged_cluster_size_ == 0)
@@ -1273,6 +1333,8 @@ void LocalVipss::Run()
         printf("calculate_score_time : %f ! \n", calculate_score_time);
 
         total_time += calculate_score_time;
+
+        sum_score_time += update_score_time + calculate_score_time;
         // std::string init_ptn_path_iter = out_dir_ + filename_ + "_ptn" + std::to_string(iter_num);
         // OuputPtN(init_ptn_path_iter);
         // std::string init_ptn_path_iter2 = out_dir_ + filename_ + "_orient_ptn" + std::to_string(iter_num);
@@ -1299,9 +1361,83 @@ void LocalVipss::Run()
     SaveCluster();
     WriteVipssTimeLog();
     printf("total time used : %f \n", total_time);
+    printf("total merge time used : %f \n", sum_merge_time);
+    printf("total score time used : %f \n", sum_score_time);
     if(use_hrbf_surface_)
     {
         vipss_api_.is_surfacing_ = true;
         vipss_api_.run_vipss(out_pts_, out_normals_);
     }
+}
+
+
+void LocalVipss::InitNormals()
+{
+    double total_time = 0;
+    auto t0 = Clock::now();
+    BuildClusterAdjacentMat();
+    // printf("finish build cluster adjacent mat ! \n");
+
+    // printf("2 adjacent mat rows : %d, cols : %d \n", adjacent_mat_.n_rows, adjacent_mat_.n_cols);
+    BuidClusterCoresPtIds();
+    auto t1 = Clock::now();
+    double build_mat_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
+    printf("finish init core pt ids time : %f ! \n", build_mat_time);
+
+    std::string init_ptn_path = out_dir_ + filename_ + "_init_ptn";
+    OuputPtN(init_ptn_path);
+
+    InitNormalWithVipss();
+    auto t12 = Clock::now();
+    double normal_estimate_time = std::chrono::nanoseconds(t12 - t1).count()/1e9;
+    printf("finish init cluster normals time : %f ! \n", normal_estimate_time);
+
+    total_time += build_mat_time + normal_estimate_time;
+    
+
+    double sum_score_time = 0;
+
+    auto t2 = Clock::now();
+    CalculateClusterNeiScores(true);
+    auto t3 = Clock::now();
+    double scores_time = std::chrono::nanoseconds(t3 - t2).count()/1e9;
+    printf("finish init cluster neigh scores time : %f ! \n", scores_time);
+
+    CalculateClusterScores();
+
+    auto t34 = Clock::now();
+    double cluster_scores_time = std::chrono::nanoseconds(t34 - t3).count()/1e9;
+    printf("finish calculate cluster scores time : %f ! \n", cluster_scores_time);
+    total_time += scores_time;
+    total_time += cluster_scores_time;
+
+    sum_score_time += scores_time;
+    sum_score_time += cluster_scores_time;
+
+    size_t iter_num = 1;
+    auto ti00 = Clock::now();
+    BuildClusterMST();
+    auto ti11 = Clock::now();
+    double MST_time = std::chrono::nanoseconds(ti11 - ti00).count()/1e9;
+    total_time += MST_time;
+    printf("normal MST_time time used : %f \n", MST_time); 
+    auto ti0 = Clock::now();
+    FlipClusterNormalsByMST();
+    // FlipClusterNormalsByScores();
+    auto ti1 = Clock::now();
+    double flip_time = std::chrono::nanoseconds(ti1 - ti0).count()/1e9;
+    total_time += flip_time;
+    printf("normal flip time used : %f \n", flip_time);
+    // flipClusterNormalsByScores();
+    std::string init_ptn_path_iter = out_dir_ + filename_ + "_flipped" + std::to_string(iter_num);
+    OuputPtN(init_ptn_path_iter);
+    // SaveCluster();
+    // WriteVipssTimeLog();
+    printf("total time used : %f \n", total_time);
+    printf("total score time used : %f \n", sum_score_time);
+    // if(use_hrbf_surface_)
+    // {
+    //     vipss_api_.is_surfacing_ = true;
+    //     vipss_api_.run_vipss(out_pts_, out_normals_);
+    // }
 }
