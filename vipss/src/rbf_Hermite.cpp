@@ -87,7 +87,7 @@ bool RBF_Core::Write_Hermite_NormalPrediction(std::string fname, int mode){
 void RBF_Core::BuildUnitVipssMat(std::vector<double>&pts)
 {
     key_npt = npt;
-    Init(XCube);
+    // Init(XCube);
     Set_HermiteRBF(pts);
     size_t m_dim = npt + 3* key_npt;
     bigM.zeros(m_dim + 4, m_dim + 4);

@@ -4,7 +4,14 @@
 #include "local_vipss.hpp"
 #include "Solver.h"
 
+enum AXI_PlANE {
+        XYZ,
+        XZY,
+        YZX
+    };
+
 class VIPSSUnit {
+    
 
     public:
         VIPSSUnit(){};
@@ -14,6 +21,7 @@ class VIPSSUnit {
         void InitPtNormalWithLocalVipss();
         void BuildVipssUnitMatrixP();
         void OptUnitVipssNormalSimple();
+        void OptUnitVipssNormalDirectSimple();
         void OptUnitVipssNormal();
         void ReconSurface();
         void Run();
@@ -38,5 +46,13 @@ class VIPSSUnit {
         std::vector<double> newnormals_;
         const double M_PI_ = 3.14159265358979323846;
         bool use_hrbf_surface_ = false;
+        int volume_dim_ = 100;
+        size_t countopt_ = 0;
+        std::vector<arma::sp_mat> temp_Hs_;
+
+        size_t constraint_count_ = 0; 
+        AXI_PlANE axi_plane_ = AXI_PlANE::XYZ;
+
+
 
 };

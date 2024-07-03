@@ -21,78 +21,115 @@ void VIPSSUnit::InitPtNormalWithLocalVipss()
     local_vipss_.Init(path);
     local_vipss_.InitNormals();
     initnormals_ = local_vipss_.out_normals_;
+
+    printf("unit vipss J mat init time : %f \n", local_vipss_.vipss_api_.u_v_time);
 }
 
 
 void VIPSSUnit::BuildVipssUnitMatrixP()
 {
+    auto& cluster_pt_mat_vec = local_vipss_.cluster_pt_mat_vec_;
+    auto& cluster_J_mat_vec  = local_vipss_.cluster_J_mat_vec_;
+    // auto& cluster_pt_ids_vec = local_vipss_.cluster_pt_ids_vec_;
+
     auto& pts = local_vipss_.points_;
-    auto& voro_gen = local_vipss_.voro_gen_;
-    auto& pt_ids = local_vipss_.cluster_core_pt_ids_;
-    auto& cluster_pt_id_map = voro_gen.point_id_map_;
-    npt_ = pts.size(); 
-    
+    npt_ = pts.size();
     Final_H_.resize(4 * npt_, 4 * npt_);
-    
-    for(auto& pt : pts)
+    temp_Hs_.resize(npt_);
+#pragma omp parallel for
+    for(size_t i = 0; i < cluster_pt_mat_vec.size(); ++i)
     {
-        const auto& cluster_pts = voro_gen.point_cluster_pts_map_[pt];
-        std::vector<size_t> unit_pt_ids;
-        std::vector<double> pts_data;
-        size_t pt_id = cluster_pt_id_map[pt];
-        local_vipss_.GetInitClusterPtIds(pt_id,pts_data,  unit_pt_ids);
-        
-        size_t unit_npt = unit_pt_ids.size();
-        arma::sp_mat unit_cluster_mat(unit_npt*4, npt_ * 4);
-        // printf("----------unit_cluster_mat col size %llu \n", unit_cluster_mat.n_cols);
+        const auto& unit_cluster_mat = cluster_pt_mat_vec[i];
+        const auto& J_m = cluster_J_mat_vec[i];
+        // const auto& current_ids = cluster_pt_ids_vec[i];
 
-        for(size_t id = 0; id < unit_pt_ids.size(); ++id)
-        {
-
-            size_t pid = unit_pt_ids[id];
-            // printf("cur p id : %d \n", pid);
-            unit_cluster_mat(id, pid) = 1.0;
-            unit_cluster_mat(id + unit_npt,     pid + npt_ ) = 1.0;
-            unit_cluster_mat(id + unit_npt * 2, pid + npt_ * 2) = 1.0;
-            unit_cluster_mat(id + unit_npt * 3, pid + npt_ * 3) = 1.0;
-            // printf("cur pid + npt_ * 3 : %d \n", pid + npt_ * 3);
-            // break;
-        }
-
-        // arma::sp_mat::const_row_col_iterator it     = unit_cluster_mat.begin_row_col();
-        // arma::sp_mat::const_row_col_iterator it_end = unit_cluster_mat.end_row_col();
-
-        // for (; it != it_end; ++it) {
-        //     cout << "-------val: " << (*it)    << endl;
-        //     cout << "row: " << it.row() << endl;
-        //     cout << "col: " << it.col() << endl;
-        // }
-        // unit_matrix_vec_.push_back(unit_cluster_mat);   
-        rbf_api_.build_unit_vipss(pts_data);
-        // arma::mat minv = rbf_api_.rbf_core_.Minv;
-        arma::sp_mat J_m(rbf_api_.rbf_core_.Minv);
-        // printf("minv rows %d, cols %d", minv.n_rows, minv.n_cols);
-        // printf("J_m rows %d, cols %d \n", J_m.n_rows, J_m.n_cols);
         if(lambda_ < 1e-10)
         {
-            // printf("J_m non zero  : %d \n", J_m.n_nonzero);
-            // printf("unit_npt : %d \n", unit_npt);
-            Final_H_ += unit_cluster_mat.t() * J_m * unit_cluster_mat;
-            // auto sub_H_ = Final_H_(0, 0, arma::size(npt_, npt_));
-            // printf("sub_H_ non zero  : %d \n", sub_H_.n_nonzero);
-            // arma::sp_mat temp_m = unit_cluster_mat.t()  * unit_cluster_mat;
-            // printf("----temp_m non zero  : %d \n", temp_m.n_nonzero);
-            // auto sub_m_ = temp_m(npt_, npt_, arma::size(3 * npt_, 3 * npt_));
-            // printf("----sub_m_ non zero  : %d \n", sub_m_.n_nonzero);
+            
+            arma::sp_mat sp_J(J_m); 
+            arma::sp_mat temp_H = unit_cluster_mat.t() * sp_J * unit_cluster_mat;
+            temp_Hs_[i] = temp_H;
+            // printf("temp_H non zero : %d \n", temp_H.n_nonzero);
+            // Final_H_ += temp_H;
+            // for(size_t pi = 0; pi < current_ids.size(); ++pi)
+            // {
+            //     size p_id 
+            //     for(size_t pj = 0; pj < current_ids.size(); ++pj)
+            //     {
+            //     }
+            // }
         } else {
-            arma::sp_mat F(4 * unit_npt, 4 * unit_npt);
-            arma::sp_mat E(unit_npt, unit_npt);
+            size_t unit_npt = unit_cluster_mat.n_rows / 4; 
+            arma::mat F(4 * unit_npt, 4 * unit_npt);
+            arma::mat E(unit_npt, unit_npt);
             E.eye();
             F(0, 0, arma::size(unit_npt, unit_npt)) = E;
-            Final_H_ += unit_cluster_mat.t() * (F + J_m * lambda_) * unit_cluster_mat;
+            arma::mat K = (F + J_m * lambda_);
+            arma::sp_mat sp_K(K);  
+            // printf("sp_K cols %llu, rows %llu \n", 
+            //     sp_K.n_cols, sp_K.n_rows);
+            arma::sp_mat temp_H = unit_cluster_mat.t() * sp_K * unit_cluster_mat;
+            temp_Hs_[i] = temp_H;
         }
-        
     }
+    size_t cur_n = npt_;
+    size_t cur_loop = 0;
+    printf("npt_ %lu log 2 : %d \n", npt_, (int)log2(npt_));
+    size_t loop_level = (size_t)log2(npt_);
+    if(npt_ > pow(2, loop_level)) loop_level ++;
+    for(size_t cur_loop = 1; cur_loop <= loop_level; ++cur_loop)
+    {
+        size_t cur_step = pow(2, cur_loop);
+        // printf("-----current N : %llu \n", cur_n);
+        // size_t remain =  cur_n % 2;
+        if(cur_n / 2 == 0) break;
+        cur_n = cur_n / 2 + cur_n % 2; 
+        // printf("current N 0: %llu \n", cur_n);
+    #pragma omp parallel for
+        for(size_t m_i = 0; m_i < cur_n; ++m_i)
+        {
+            if(m_i*cur_step + cur_step/2 < npt_)
+            {
+                temp_Hs_[m_i*cur_step] += temp_Hs_[m_i*cur_step + cur_step/2]; 
+            }
+        } 
+    }
+    Final_H_ = temp_Hs_[0];
+    // auto& voro_gen = local_vipss_.voro_gen_;
+    // auto& pt_ids = local_vipss_.cluster_core_pt_ids_;
+    // auto& cluster_pt_id_map = voro_gen.point_id_map_;
+     
+    // Final_H_.resize(4 * npt_, 4 * npt_);
+    // for(auto& pt : pts)
+    // {
+    //     const auto& cluster_pts = voro_gen.point_cluster_pts_map_[pt];
+    //     std::vector<size_t> unit_pt_ids;
+    //     std::vector<double> pts_data;
+    //     size_t pt_id = cluster_pt_id_map[pt];
+    //     local_vipss_.GetInitClusterPtIds(pt_id, pts_data, unit_pt_ids);
+    //     size_t unit_npt = unit_pt_ids.size();
+    //     arma::sp_mat unit_cluster_mat(unit_npt*4, npt_ * 4);
+    //     for(size_t id = 0; id < unit_pt_ids.size(); ++id)
+    //     {
+    //         size_t pid = unit_pt_ids[id];
+    //         unit_cluster_mat(id, pid) = 1.0;
+    //         unit_cluster_mat(id + unit_npt,     pid + npt_ ) = 1.0;
+    //         unit_cluster_mat(id + unit_npt * 2, pid + npt_ * 2) = 1.0;
+    //         unit_cluster_mat(id + unit_npt * 3, pid + npt_ * 3) = 1.0;
+    //     }
+    //     rbf_api_.build_unit_vipss(pts_data);
+    //     arma::sp_mat J_m(rbf_api_.rbf_core_.Minv);
+    //     if(lambda_ < 1e-10)
+    //     {
+    //         Final_H_ += unit_cluster_mat.t() * J_m * unit_cluster_mat;
+    //     } else {
+    //         arma::sp_mat F(4 * unit_npt, 4 * unit_npt);
+    //         arma::sp_mat E(unit_npt, unit_npt);
+    //         E.eye();
+    //         F(0, 0, arma::size(unit_npt, unit_npt)) = E;
+    //         Final_H_ += unit_cluster_mat.t() * (F + J_m * lambda_) * unit_cluster_mat;
+    //     }
+    // }
     if(lambda_ < 1e-10)
     {
         // printf("Final_H_ rows : %llu, cols : %llu \n", Final_H_.n_rows, Final_H_.n_cols);
@@ -126,9 +163,20 @@ double optfunc_unit_vipss_simple(const std::vector<double>&x, std::vector<double
     }
     for(int i=0;i<n;++i){
         auto p_scsc = sina_cosa_sinb_cosb.data()+i*4;
-        arma_x(i) = p_scsc[0] * p_scsc[3];
-        arma_x(i+n) = p_scsc[0] * p_scsc[2];
-        arma_x(i+n*2) = p_scsc[1];
+
+        if(drbf->axi_plane_ == AXI_PlANE::XYZ)
+        {
+            arma_x(i) = p_scsc[0] * p_scsc[3];
+            arma_x(i+n) = p_scsc[0] * p_scsc[2];
+            arma_x(i+n*2) = p_scsc[1];
+        } else {
+            arma_x(i) = p_scsc[0] * p_scsc[3];
+            arma_x(i+n) = p_scsc[1];
+            arma_x(i+n*2) = p_scsc[0] * p_scsc[2];
+        }
+        
+
+        
     }
     arma::vec a2;
     a2 = drbf->Final_H_ * arma_x;
@@ -136,8 +184,18 @@ double optfunc_unit_vipss_simple(const std::vector<double>&x, std::vector<double
         grad.resize(n*2);
         for(size_t i=0;i<n;++i){
             auto p_scsc = sina_cosa_sinb_cosb.data()+i*4;
-            grad[i*2] = a2(i) * p_scsc[1] * p_scsc[3] + a2(i+n) * p_scsc[1] * p_scsc[2] - a2(i+n*2) * p_scsc[0];
-            grad[i*2+1] = -a2(i) * p_scsc[0] * p_scsc[2] + a2(i+n) * p_scsc[0] * p_scsc[3];
+
+            if(drbf->axi_plane_ == AXI_PlANE::XYZ)
+            {
+                grad[i*2] = a2(i) * p_scsc[1] * p_scsc[3] + a2(i+n) * p_scsc[1] * p_scsc[2] - a2(i+n*2) * p_scsc[0];
+                grad[i*2+1] = -a2(i) * p_scsc[0] * p_scsc[2] + a2(i+n) * p_scsc[0] * p_scsc[3];
+            } else {
+                grad[i*2] = a2(i) * p_scsc[1] * p_scsc[3] + a2(i+n*2) * p_scsc[1] * p_scsc[2] - a2(i+n) * p_scsc[0];
+                grad[i*2+1] = -a2(i) * p_scsc[0] * p_scsc[2] + a2(i+n*2) * p_scsc[0] * p_scsc[3];
+            }
+            
+
+            
         }
     }
     double re = arma::dot( arma_x, a2 );
@@ -147,6 +205,119 @@ double optfunc_unit_vipss_simple(const std::vector<double>&x, std::vector<double
     // acc_time+=(std::chrono::nanoseconds(Clock::now() - t1).count()/1e9);
     return re;
 }
+
+double optfunc_unit_vipss_direct_simple(const std::vector<double>&x, std::vector<double>&grad, void *fdata){
+
+    auto t1 = Clock::now();
+    VIPSSUnit *drbf = reinterpret_cast<VIPSSUnit*>(fdata);
+    // size_t n = drbf->npt;
+    size_t n = drbf->npt_;
+    arma::vec arma_x(n*3);
+    for(int i=0;i<n;++i){
+        // auto p_scsc = sina_cosa_sinb_cosb.data()+i*4;
+        arma_x(i)     = x[3*i];
+        arma_x(i+n)   = x[3*i + 1];
+        arma_x(i+n*2) = x[3*i + 2];
+    }
+    arma::vec a2;
+    a2 = drbf->Final_H_ * arma_x;
+    if (!grad.empty()) {
+        // std::cout << " grad size " <<grad.size() << std::endl;
+        grad.resize(n*3);
+        for(size_t i=0;i<n;++i){
+            grad[i*3]   = a2(i);
+            grad[i*3+1] = a2(n+i);
+            grad[i*3+2] = a2(2*n+i);
+        }
+    }
+    double re = arma::dot(arma_x, a2);
+    double alpha = 100.0;
+
+    for(size_t id =0; id < n; ++id)
+    {
+        double cur_re = x[3*id] * x[3*id] + x[3*id + 1] * x[3*id + 1] + x[3*id + 2] * x[3*id + 2] - 1;
+        if(!grad.empty()) 
+        {
+            grad[3* id]     += alpha * 2 * x[3*id] * cur_re; 
+            grad[3* id + 1] += alpha * 2 * x[3*id + 1] * cur_re; 
+            grad[3* id + 2] += alpha * 2 * x[3*id + 2] * cur_re; 
+        }
+        re += alpha* cur_re * cur_re;
+    }
+    // printf("res val : %f \n", re);
+    return re;
+}
+
+
+double optfunc_unit_vipss_direct(const std::vector<double>&x, std::vector<double>&grad, void *fdata){
+
+    auto t1 = Clock::now();
+    VIPSSUnit *drbf = reinterpret_cast<VIPSSUnit*>(fdata);
+    // size_t n = drbf->npt;
+    size_t n = drbf->npt_;
+    arma::vec arma_x(n*4);
+    for(int i=0;i<n;++i){
+        // auto p_scsc = sina_cosa_sinb_cosb.data()+i*4;
+        
+        arma_x(i)     = x[3*i];
+        arma_x(i+n)   = x[3*i + 1];
+        arma_x(i+n*2) = x[3*i + 2];
+    }
+    arma::vec a2;
+    a2 = drbf->Final_H_ * arma_x;
+    if (!grad.empty()) {
+        // std::cout << " grad size " <<grad.size() << std::endl;
+        grad.resize(n*3);
+        for(size_t i=0;i<n;++i){
+            grad[i*3]   = a2(i);
+            grad[i*3+1] = a2(n+i);
+            grad[i*3+2] = a2(2*n+i);
+        }
+    }
+    double re = arma::dot(arma_x, a2);
+    double alpha = 100.0;
+
+    for(size_t id =0; id < n; ++id)
+    {
+        double cur_re = x[3*id] * x[3*id] + x[3*id + 1] * x[3*id + 1] + x[3*id + 2] * x[3*id + 2] - 1;
+        if(!grad.empty()) 
+        {
+            grad[3* id]     += alpha * 2 * x[3*id] * cur_re; 
+            grad[3* id + 1] += alpha * 2 * x[3*id + 1] * cur_re; 
+            grad[3* id + 2] += alpha * 2 * x[3*id + 2] * cur_re; 
+        }
+        re += alpha* cur_re * cur_re;
+    }
+    // printf("res val : %f \n", re);
+    return re;
+}
+
+// double myconstraint(unsigned n, const double *x, double *grad, void *data)
+
+double contraint_simple(const std::vector<double>&x, std::vector<double>&grad, void *fdata)
+{
+    VIPSSUnit *drbf = reinterpret_cast<VIPSSUnit*>(fdata);
+    // size_t id = drbf->constraint_count_ % (x.size()/3);
+    // std::cout << " grad size " <<grad.size() << std::endl;
+    // drbf->constraint_count_ ++;
+    size_t npt = x.size() /3;
+    // if(grad.empty())  grad.resize(x.size());
+    double re =0;
+    for(size_t id =0; id < npt; ++id)
+    {
+        double cur_re = x[3*id] * x[3*id] + x[3*id + 1] * x[3*id + 1] + x[3*id + 2] * x[3*id + 2] - 1;
+        if(!grad.empty()) 
+        {
+            grad[3* id] = 2 * x[3*id] * cur_re; 
+            grad[3* id + 1] = 2 * x[3*id + 1] * cur_re; 
+            grad[3* id + 2] = 2 * x[3*id + 2] * cur_re; 
+        }
+        re +=  cur_re * cur_re;
+    }
+    // double re = x[0] * x[0] -1;
+    return re;
+}
+
 
 double optfunc_unit_vipss(const std::vector<double>&x, std::vector<double>&grad, void *fdata){
 
@@ -179,9 +350,9 @@ double optfunc_unit_vipss(const std::vector<double>&x, std::vector<double>&grad,
         grad.resize(n*3);
         for(size_t i=0;i<n;++i){
             auto p_scsc = sina_cosa_sinb_cosb.data()+i*4;
-            grad[i*3] = a2[i];
-            grad[i*3 + 1] = a2(n + i) * p_scsc[1] * p_scsc[3] + a2(i+ n * 2) * p_scsc[1] * p_scsc[2] - a2(i+n*3) * p_scsc[0];
-            grad[i*3 + 2] = -a2(i + n) * p_scsc[0] * p_scsc[2] + a2(i+n* 2) * p_scsc[0] * p_scsc[3];
+            grad[i*3] = 2 * a2[i];
+            grad[i*3 + 1] = 2 * (a2(n + i) * p_scsc[1] * p_scsc[3] + a2(i+ n * 2) * p_scsc[1] * p_scsc[2] - a2(i+n*3) * p_scsc[0]);
+            grad[i*3 + 2] = 2* (-a2(i + n) * p_scsc[0] * p_scsc[2] + a2(i+n* 2) * p_scsc[0] * p_scsc[3]);
         }
     }
     double re = arma::dot( arma_x, a2 );
@@ -189,6 +360,7 @@ double optfunc_unit_vipss(const std::vector<double>&x, std::vector<double>&grad,
     // printf("Final_H_ non zero  : %d \n", drbf->Final_H_.n_nonzero);
     // countopt++;
     // acc_time+=(std::chrono::nanoseconds(Clock::now() - t1).count()/1e9);
+    drbf->countopt_ ++;
     return re;
 }
 
@@ -200,8 +372,16 @@ void VIPSSUnit::OptUnitVipssNormalSimple(){
     for(size_t i=0;i<npt_;++i){
         double *veccc = initnormals_.data()+i*3;
         {
-            solver_.solveval[i*2] = atan2(sqrt(veccc[0]*veccc[0]+veccc[1]*veccc[1]),veccc[2] );
-            solver_.solveval[i*2 + 1] = atan2( veccc[1], veccc[0]   );
+            if(axi_plane_ == AXI_PlANE::XYZ)
+            {
+                solver_.solveval[i*2] = atan2(sqrt(veccc[0]*veccc[0]+veccc[1]*veccc[1]),veccc[2] );
+                solver_.solveval[i*2 + 1] = atan2( veccc[1], veccc[0]);
+            } else {
+                solver_.solveval[i*2] = atan2(sqrt(veccc[0]*veccc[0]+veccc[2]*veccc[2]),veccc[1] );
+                solver_.solveval[i*2 + 1] = atan2( veccc[2], veccc[0]);
+            }
+            // solver_.solveval[i*2] = atan2(sqrt(veccc[1]*veccc[1]+veccc[2]*veccc[2]),veccc[0] );
+            // solver_.solveval[i*2 + 1] = atan2( veccc[2], veccc[1]);
         }
     }
     printf("finish init solver ! \n");
@@ -209,11 +389,11 @@ void VIPSSUnit::OptUnitVipssNormalSimple(){
         std::vector<double>upper(npt_*2);
         std::vector<double>lower(npt_*2);
         for(int i=0;i<npt_;++i){
-            upper[i*2] = 2 * M_PI_;
-            upper[i*2 + 1] = 2 * M_PI_;
+            upper[i*2] = 1 * M_PI_;
+            upper[i*2 + 1] = 1 * M_PI_;
 
-            lower[i*2] = -2 * M_PI_;
-            lower[i*2 + 1] = -2 * M_PI_;
+            lower[i*2] = -1 * M_PI_;
+            lower[i*2 + 1] = -1 * M_PI_;
         }
         // countopt = 0;
         // acc_time = 0;
@@ -229,9 +409,18 @@ void VIPSSUnit::OptUnitVipssNormalSimple(){
     for(size_t i=0;i<npt_;++i)y(i) = 0;
     for(size_t i=0;i<npt_;++i){
         double a = solver_.solveval[i*2], b = solver_.solveval[i*2+1];
-        newnormals_[i*3]   = sin(a) * cos(b);
-        newnormals_[i*3+1] = sin(a) * sin(b);
-        newnormals_[i*3+2] = cos(a);
+
+        if(axi_plane_ == AXI_PlANE::XYZ)
+        {
+            newnormals_[i*3]   = sin(a) * cos(b);
+            newnormals_[i*3+1] = sin(a) * sin(b);
+            newnormals_[i*3+2] = cos(a);
+        } else {
+            newnormals_[i*3]   = sin(a) * cos(b);
+            newnormals_[i*3+1] = cos(a);
+            newnormals_[i*3+2] = sin(a) * sin(b);
+        }
+        
         // MyUtility::normalize(newnormals.data()+i*3);
     }
     // Set_RBFCoef(y);
@@ -241,6 +430,46 @@ void VIPSSUnit::OptUnitVipssNormalSimple(){
     return;
 }
 
+void VIPSSUnit::OptUnitVipssNormalDirectSimple(){
+
+    printf("start to call solver ! \n");
+    solver_.solveval.resize(npt_ * 3);
+
+    for(size_t i=0;i<npt_;++i){
+        double *veccc = initnormals_.data()+i*3;
+        {
+            solver_.solveval[i*3] =veccc[0];
+            solver_.solveval[i*3 + 1] = veccc[1];
+            solver_.solveval[i*3 + 2] = veccc[2];
+        }
+    }
+    std::vector<double>upper(npt_*3);
+    std::vector<double>lower(npt_*3);
+    for(int i=0;i<npt_;++i){
+        upper[i*3] = 1;
+        upper[i*3 + 1] = 1;
+        upper[i*3 + 2] = 1;
+
+        lower[i*3] = -1.0;
+        lower[i*3 + 1] = -1.0;
+        lower[i*3 + 2] = -1.0;
+    }
+
+    Solver::nloptwrapper(lower,upper,optfunc_unit_vipss_direct_simple,contraint_simple,npt_,
+                this,1e-7,3000,solver_);
+    // Solver::nloptwrapper(lower,upper,optfunc_unit_vipss_simple,this,1e-7,3000,solver_);
+    
+    newnormals_.resize(npt_*3);
+    arma::vec y(npt_ + 3 * npt_);
+    for(size_t i=0;i<npt_;++i)y(i) = 0;
+    for(size_t i=0;i<npt_;++i){
+        newnormals_[i*3]   = solver_.solveval[i*3];
+        newnormals_[i*3+1] = solver_.solveval[i*3 + 1];
+        newnormals_[i*3+2] = solver_.solveval[i*3 + 2];
+        // MyUtility::normalize(newnormals.data()+i*3);
+    }
+    return;
+}
 
 void VIPSSUnit::OptUnitVipssNormal(){
 
@@ -261,21 +490,16 @@ void VIPSSUnit::OptUnitVipssNormal(){
         std::vector<double>lower(npt_*3);
         for(int i=0;i<npt_;++i){
             upper[i*3 ] = 1.0;
-            upper[i*3 + 1] = 2 * M_PI_;
-            upper[i*3 + 2] = 2 * M_PI_;
+            upper[i*3 + 1] = 1 * M_PI_;
+            upper[i*3 + 2] = 1 * M_PI_;
 
             lower[i*3] = -1.0;
-            lower[i*3 + 1] = -2 * M_PI_;
-            lower[i*3 + 2] = -2 * M_PI_;
+            lower[i*3 + 1] = -1.0 * M_PI_;
+            lower[i*3 + 2] = -1 * M_PI_;
         }
-        // countopt = 0;
-        // acc_time = 0;
-        //LocalIterativeSolver(sol,kk==0?normals:newnormals,300,1e-7);
         printf("start the solver ! \n");
         Solver::nloptwrapper(lower,upper,optfunc_unit_vipss,this,1e-7,3000,solver_);
-        // callfunc_time = acc_time;
-        // solve_time = sol.time;
-        //for(int i=0;i<npt;++i)cout<< sol.solveval[i]<<' ';cout<<endl;
+
     }
     newnormals_.resize(npt_*3);
     arma::vec y(npt_ + 3 * npt_);
@@ -299,24 +523,41 @@ void VIPSSUnit::ReconSurface()
     if(use_hrbf_surface_)
     {
         rbf_api_.user_lambda_ = lambda_;
+        // rbf_api_.user_lambda_ = 0.001;
         rbf_api_.outpath_ = data_dir_ + file_name_ + "/";
         rbf_api_.is_surfacing_ = true;
+        rbf_api_.n_voxel_line_ = volume_dim_;
         rbf_api_.run_vipss(local_vipss_.out_pts_, newnormals_);
     }
 }
 
 void VIPSSUnit::Run()
 {
+    auto t00 = Clock::now();
     rbf_api_.Set_RBF_PARA();
     InitPtNormalWithLocalVipss();
+    auto tn0 = Clock::now();
     BuildVipssUnitMatrixP();
+    auto tn1 = Clock::now();
+    double build_H_time = std::chrono::nanoseconds(tn1 - tn0).count() / 1e9;
+    printf("Build H matrix time : %f ! \n", build_H_time);
+
+    auto ts0 = Clock::now();
     if(lambda_ < 1e-10)
     {
         OptUnitVipssNormalSimple();
+        // OptUnitVipssNormalDirectSimple();
     } else {
         OptUnitVipssNormal();
     }
-    
+    auto ts1 = Clock::now();
+    double solve_time = std::chrono::nanoseconds(ts1 - ts0).count() / 1e9;
+    printf("opt solve time : %f ! \n", solve_time);
+
+    auto t01 = Clock::now();
+    double total_time = std::chrono::nanoseconds(t01 - t00).count()/1e9;
+    printf("total local vipss running time : %f ! \n", total_time);
+
     std::string out_path  = local_vipss_.out_dir_ + local_vipss_.filename_  + "_opt";
     writePLYFile_VN(out_path, local_vipss_.out_pts_, newnormals_);
 

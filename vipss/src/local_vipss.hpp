@@ -74,19 +74,18 @@ class LocalVipss {
     
     public:
         VoronoiGen voro_gen_;
+        RBF_API vipss_api_;
+
         arma::sp_imat adjacent_mat_;
         arma::sp_imat cluster_cores_mat_;
         arma::sp_imat cluster_adjacent_mat_;
         arma::sp_imat cluster_MST_mat_;
-
         arma::sp_mat cluster_scores_mat_;
         arma::sp_imat cluster_adjacent_pt_mat_;
         arma::sp_imat cluster_adjacent_flip_mat_;
-        
         arma::sp_mat cluster_normal_x_;
         arma::sp_mat cluster_normal_y_;
         arma::sp_mat cluster_normal_z_;
-
 
         std::vector<tetgenmesh::point> points_; 
         std::vector<double> normals_;
@@ -98,24 +97,31 @@ class LocalVipss {
         // std::vector<double> cluster_scores_vec_;
         arma::sp_colvec cluster_scores_vec_;
         std::set<size_t> update_score_cluster_ids_;
-        RBF_API vipss_api_;
+        
+        
+        std::vector<double> out_pts_;
+        std::vector<double> out_normals_;
+        
+        std::vector<std::pair<size_t, double>> vipss_time_stats_;
+        std::vector<std::vector<std::pair<size_t, double>>> cluster_ptn_vipss_time_stats_;
 
+        std::vector<arma::sp_mat> cluster_pt_mat_vec_; 
+        std::vector<arma::mat> cluster_J_mat_vec_;
+        // std::vector<std::vector<size_t>> cluster_pt_ids_vec_;
+        
+    public:
+        bool flip_normal_ = false;
+        double user_lambda_ = 0.0;
+        const double M_PI2  = 2*acos(0.0);
+        const double Anlge_PI_Rate = 180 / M_PI2;
+        size_t max_iter_ = 30;
+        bool use_hrbf_surface_ = false;
+        int volume_dim_ = 100;
+        int top_k_ = 5;
         double angle_threshold_= 30;
         size_t merged_cluster_size_ = 1;
         std::string out_dir_ = "./";
         std::string filename_ = "local_vipss"; 
 
-        bool flip_normal_ = false;
-        std::vector<double> out_pts_;
-        std::vector<double> out_normals_;
-        double user_lambda_ = 0.0;
-        std::vector<std::pair<size_t, double>> vipss_time_stats_;
-        std::vector<std::vector<std::pair<size_t, double>>> cluster_ptn_vipss_time_stats_;
-        const double M_PI2  = 2*acos(0.0);
-        const double Anlge_PI_Rate = 180 / M_PI2;
-
-        size_t max_iter_ = 30;
-        bool use_hrbf_surface_ = false;
-        int volume_dim_ = 100;
-        int top_k_ = 5;
+        
 };

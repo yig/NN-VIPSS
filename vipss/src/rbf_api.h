@@ -22,6 +22,6 @@ class RBF_API{
         // size_t key_ptn_ = 0;
         RBF_Core rbf_core_;
         std::string outpath_ = "./vipss";
-        
+        double u_v_time = 0;
 
 };

@@ -197,6 +197,20 @@ void LocalVipss::CalculateClusterNormals(size_t cluster_id)
     }
 }
 
+inline arma::sp_mat BuildClusterPtIdMatrix(const std::vector<size_t>& p_ids, size_t npt)
+{
+    size_t unit_npt = p_ids.size();
+    arma::sp_mat unit_cluster_mat(unit_npt*4, npt * 4);
+    for(size_t id = 0; id < unit_npt; ++id)
+    {
+        size_t pid = p_ids[id];
+        unit_cluster_mat(id, pid) = 1.0;
+        unit_cluster_mat(id + unit_npt,     pid + npt ) = 1.0;
+        unit_cluster_mat(id + unit_npt * 2, pid + npt * 2) = 1.0;
+        unit_cluster_mat(id + unit_npt * 3, pid + npt * 3) = 1.0;
+    }
+    return unit_cluster_mat;
+}
 
 void LocalVipss::InitNormalWithVipss()
 {
@@ -212,6 +226,10 @@ void LocalVipss::InitNormalWithVipss()
         std::vector<double> vts;
         std::vector<size_t> p_ids;
         GetInitClusterPtIds(i, vts, p_ids);
+        auto unit_pt_mat = BuildClusterPtIdMatrix(p_ids, cluster_num);
+        cluster_pt_mat_vec_.push_back(std::move(unit_pt_mat));
+        
+        // cluster_pt_ids_vec_.push_back(std::move(p_ids));
         // printf("vt size : %d , p ids : %d \n", vts.size(), p_ids.size());
         auto t1 = Clock::now();
         vipss_api_.run_vipss(vts, 1);
@@ -219,6 +237,8 @@ void LocalVipss::InitNormalWithVipss()
         double vipss_time = std::chrono::nanoseconds(t2 - t1).count()/1e9;
         vipss_sum += vipss_time;
         vipss_time_stats_.emplace_back(std::pair<size_t, double>(p_ids.size(), vipss_time));
+        vipss_api_.build_unit_vipss(vts);
+        cluster_J_mat_vec_.push_back(std::move(vipss_api_.rbf_core_.Minv));        
 
         for(size_t p_id = 0; p_id < p_ids.size(); ++p_id)
         {
@@ -1091,14 +1111,14 @@ void LocalVipss::OuputPtN(const std::string& out_path, bool orient_normal)
             normals.push_back(cluster_normal_z_(p_id, i));
         }
     }
-    printf("out pt size : %zu \n", pts.size() / 3);
+    // printf("out pt size : %zu \n", pts.size() / 3);
 
     // if(orient_normal)
     // {
     //     ORIENT::OrientPointNormals(pts, normals);
     // }
     
-    writePLYFile_VN(out_path, pts, normals);
+    // writePLYFile_VN(out_path, pts, normals);
 }
 
 void LocalVipss::WriteVipssTimeLog()
@@ -1384,8 +1404,8 @@ void LocalVipss::InitNormals()
     double build_mat_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
     printf("finish init core pt ids time : %f ! \n", build_mat_time);
 
-    std::string init_ptn_path = out_dir_ + filename_ + "_init_ptn";
-    OuputPtN(init_ptn_path);
+    // std::string init_ptn_path = out_dir_ + filename_ + "_init_ptn";
+    // OuputPtN(init_ptn_path);
 
     InitNormalWithVipss();
     auto t12 = Clock::now();
@@ -1393,8 +1413,6 @@ void LocalVipss::InitNormals()
     printf("finish init cluster normals time : %f ! \n", normal_estimate_time);
 
     total_time += build_mat_time + normal_estimate_time;
-    
-
     double sum_score_time = 0;
 
     auto t2 = Clock::now();
@@ -1423,12 +1441,11 @@ void LocalVipss::InitNormals()
     printf("normal MST_time time used : %f \n", MST_time); 
     auto ti0 = Clock::now();
     FlipClusterNormalsByMST();
-    // FlipClusterNormalsByScores();
     auto ti1 = Clock::now();
     double flip_time = std::chrono::nanoseconds(ti1 - ti0).count()/1e9;
     total_time += flip_time;
     printf("normal flip time used : %f \n", flip_time);
-    // flipClusterNormalsByScores();
+
     std::string init_ptn_path_iter = out_dir_ + filename_ + "_flipped" + std::to_string(iter_num);
     OuputPtN(init_ptn_path_iter);
     // SaveCluster();

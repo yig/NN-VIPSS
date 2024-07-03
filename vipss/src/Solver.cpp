@@ -201,6 +201,7 @@ int Solver::nloptwrapper(vector<double>&lowerbound,
         //myopt.set_initial_step(0.001);
         myopt.set_lower_bounds(lowerbound);
         myopt.set_upper_bounds(upperbound);
+        // myopt.add_equality_constraint();
 
         myopt.set_min_objective(optfunc,funcPara);
         //myopt.set_precond_min_objective(optfuncModify, pre, &funcPara);
@@ -224,6 +225,73 @@ int Solver::nloptwrapper(vector<double>&lowerbound,
     return result;
 
 
+}
+
+int Solver::nloptwrapper(std::vector<double>&lowerbound,
+                   std::vector<double>&upperbound,
+                   nlopt::vfunc optfunc,
+                   nlopt::vfunc constraintFunc,
+                   size_t constraintNum,
+                   void *funcPara,
+                   double tor,
+                   int maxIter,
+                   Solution_Struct &sol
+                   )
+{
+    nlopt::result result;
+    sol.Statue=0;
+    vector<double>tmp_grad(0);
+
+    sol.init_energy = optfunc(sol.solveval,tmp_grad,funcPara);
+    try{
+        int numOfPara = (int)lowerbound.size();
+        //nlopt::opt myopt(nlopt::LD_VAR1,uint(numOfPara));
+        //nlopt::opt myopt(nlopt::LD_CCSAQ,uint(numOfPara));
+        //nlopt::opt myopt(nlopt::LD_SLSQP,uint(numOfPara));
+        nlopt::opt myopt(nlopt::LD_LBFGS,uint(numOfPara));
+        // nlopt::opt myopt(nlopt::LD_AUGLAG_EQ,uint(numOfPara));
+        // nlopt::opt myopt(nlopt::LD_AUGLAG,uint(numOfPara));
+        myopt.set_ftol_rel(tor);
+        //myopt.set_ftol_abs(tor);
+
+        //myopt.set_xtol_abs(1e-6);
+        //myopt.set_xtol_rel(1e-7);
+        myopt.set_maxeval(maxIter);
+
+        //myopt.set_initial_step(0.001);
+        myopt.set_lower_bounds(lowerbound);
+        myopt.set_upper_bounds(upperbound);
+        // myopt.add_equality_constraint();
+
+        myopt.set_min_objective(optfunc,funcPara);
+
+        printf("start to add equality constraints ... \n");
+        // for(size_t i = 0; i < constraintNum; ++i)
+        {
+            // myopt.add_equality_constraint(constraintFunc, funcPara);
+        }
+
+        printf(" .... equality constraints added successfully! \n");
+        
+        //myopt.set_precond_min_objective(optfuncModify, pre, &funcPara);
+        //myopt.set_min_objective(optfunc, &funcPara);
+
+        auto t1 = Clock::now();
+        result = myopt.optimize(sol.solveval, sol.energy);
+        auto t2 = Clock::now();
+        // cout << "nlopt time: " << (sol.time = std::chrono::nanoseconds(t2 - t1).count()/1e9) <<endl;
+
+        sol.Statue = (result >= nlopt::SUCCESS);
+        // cout<<"Statu: "<<result<<endl;
+        // std::cout << "Obj: "<< std::setprecision(10) << sol.init_energy << " -> " <<sol.energy << std::endl;
+    }
+    catch(std::exception &e) {
+        // std::cout << "nlopt failed: " << e.what() << std::endl;
+    }
+
+
+
+    return result;
 }
 
 
