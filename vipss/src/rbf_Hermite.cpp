@@ -99,8 +99,13 @@ void RBF_Core::BuildUnitVipssMat(std::vector<double>&pts)
 
     auto t2 = Clock::now();
     bigMinv = inv(bigM);
+
+    bigM_inv_time = std::chrono::nanoseconds(Clock::now() - t2).count()/1e9;
+
+    // printf("big M size %llu, %f \n", bigMinv.n_rows, bigM_inv_time);
+
     if(open_debug_log)
-    cout<<"bigMinv: "<<(setK_time= std::chrono::nanoseconds(Clock::now() - t2).count()/1e9)<<endl;
+    cout<<"bigMinv inv: "<<(std::chrono::nanoseconds(Clock::now() - t2).count()/1e9)<<endl;
     bigM.clear();
     Minv = bigMinv.submat(0,0,m_dim-1,m_dim-1);
     // Ninv = bigMinv.submat(0,m_dim,m_dim-1, m_dim + 3);
@@ -309,7 +314,7 @@ void RBF_Core::Set_Hermite_PredictNormal(std::vector<double>&pts){
     }else{
         // if(open_debug_log)
         // cout<<"using new formula"<<endl;
-
+        // M = arma::symmatu(M);
         size_t m_dim = npt + 3* key_npt;
         bigM.zeros(m_dim + 4, m_dim + 4);
         bigM.submat(0,0,m_dim-1,m_dim-1) = M;
@@ -319,7 +324,9 @@ void RBF_Core::Set_Hermite_PredictNormal(std::vector<double>&pts){
         //for(int i=0;i<4;++i)bigM(i+(npt)*4,i+(npt)*4) = 1;
 
         auto t2 = Clock::now();
+        // cout << " start bigMinv inv " <<  endl;
         bigMinv = inv(bigM);
+        //   cout << " finish bigMinv inv " <<  endl;
         if(open_debug_log)
         cout<<"bigMinv: "<<(setK_time= std::chrono::nanoseconds(Clock::now() - t2).count()/1e9)<<endl;
 		bigM.clear();
@@ -336,6 +343,14 @@ void RBF_Core::Set_Hermite_PredictNormal(std::vector<double>&pts){
         // cout<<"K11: "<<K11.n_cols<<endl;
         //Set_Hermite_DesignedCurve();
         Set_User_Lamnda_ToMatrix(User_Lamnbda_inject);
+        
+        // double cur_lambda = user_lambda_;
+        
+
+        // printf("build H \n");
+
+        
+        // finalH = K;
 //		arma::vec eigval, ny;
 //		arma::mat eigvec;
 //		ny = eig_sym( eigval, eigvec, K);
@@ -475,6 +490,141 @@ double optfunc_Hermite(const std::vector<double>&x, std::vector<double>&grad, vo
 }
 
 
+double optfunc_unit_vipss_direct2(const std::vector<double>&x, std::vector<double>&grad, void *fdata){
+
+    auto t1 = Clock::now();
+    RBF_Core *drbf = reinterpret_cast<RBF_Core*>(fdata);
+    // VIPSSUnit *drbf = reinterpret_cast<VIPSSUnit*>(fdata);
+    // size_t n = drbf->npt;
+    size_t n = drbf->npt;
+    size_t kn = drbf->key_npt;
+    size_t u_size = 4;
+    arma::vec arma_x( n + 3 * kn);
+
+    // printf("start to call opt ! \n");
+    for(int i=0;i<n;++i){
+        // auto p_scsc = sina_cosa_sinb_cosb.data()+i*4;
+        
+        if(i <  kn)
+        {
+            arma_x(i+n )   = x[n + 3*i + 0];
+            arma_x(i+n + kn) = x[n + 3*i + 1];
+            arma_x(i+n + kn * 2) = x[n + 3*i + 2];
+            arma_x(i)     = x[i];
+        } else {
+            arma_x(i)     = drbf->user_beta * x[i];
+            // arma_x(i+n )   = x[n + 3*i + 0];
+        }
+    }
+    arma::vec a2;
+    a2 = drbf->finalH * arma_x;
+
+    // printf("start to call opt 11 ! \n");
+    if (!grad.empty()) {
+        // std::cout << " grad size " <<grad.size() << std::endl;
+        grad.resize(n*u_size);
+        for(size_t i=0;i<n;++i){
+            grad[i]   = 2 * a2(i);
+            if(i < kn)
+            {
+                grad[n + i*3+0] = 2 * a2(i + n);
+                grad[n + i*3+1] = 2 * a2(i + n + kn);
+                grad[n + i*3+2] = 2 * a2(i + n + kn*2);
+            }
+            
+        }
+    }
+    double re = arma::dot(arma_x, a2);
+    double alpha = 100.0;
+
+    for(size_t id =0; id < kn; ++id)
+    {
+        double cur_re = x[n + 3*id + 0] * x[n + 3*id + 0] + x[n + 3*id + 1] * x[n + 3*id + 1] 
+                        + x[n + 3*id + 2] * x[n + 3*id + 2] - 1;
+        if(!grad.empty()) 
+        {
+            grad[n + 3*id + 0] += alpha * 2 * x[n + 3*id + 0] * cur_re; 
+            grad[n + 3*id + 1] += alpha * 2 * x[n + 3*id + 1] * cur_re; 
+            grad[n + 3*id + 2] += alpha * 2 * x[n + 3*id + 2] * cur_re; 
+        }
+        re += alpha* cur_re * cur_re;
+    }
+    // printf("res val : %f \n", re);
+    return re;
+}
+
+void RBF_Core::OptUnitVipssNormalDirect(){
+
+    // printf("start to call solver ! \n");
+
+    size_t u_size = 4;
+    sol.solveval.resize(npt + 3 * key_npt);
+
+    arma::mat E(npt, npt);
+    E.eye();
+    arma::mat F(npt + key_npt*3, npt + key_npt*3);
+    F(0, 0, arma::size(npt, npt)) = E;
+    // printf("build H 00 \n");
+    finalH = (F + Minv * User_Lamnbda);
+
+    for(size_t i=0;i<npt;++i){
+        sol.solveval[i]     = 0;
+        if(i < key_npt)
+        {
+            double *veccc = initnormals.data()+i*3;
+            sol.solveval[npt + i*3 + 0] = veccc[0];
+            sol.solveval[npt + i*3 + 1] = veccc[1];
+            sol.solveval[npt + i*3 + 2] = veccc[2];
+        }
+    }
+    std::vector<double>upper(npt + 3 * key_npt);
+    std::vector<double>lower(npt + 3 * key_npt);
+
+    //  printf("start to call solver 11! \n");
+
+    for(int i=0;i<npt;++i){
+        upper[i] = 1;
+        lower[i] = -1.0;
+
+        if(i < key_npt)
+        {
+            for(size_t j = 0; j < 3; ++j)
+            {
+                upper[npt + i*3 + j] = 1;
+                lower[npt + i*3 + j] = -1.0;
+            }
+        }
+    }
+    //  printf("start to call solver 22! \n");
+
+    Solver::nloptwrapperDirect(lower,upper,optfunc_unit_vipss_direct2,
+                this, 1e-6, 2000, sol);
+    // Solver::nloptwrapper(lower,upper,optfunc_unit_vipss_simple,this,1e-7,3000,solver_);
+    newnormals.resize(key_npt*3);
+    // arma::vec y(npt_ + 3 * npt_);
+    // for(size_t i=0;i<npt_;++i)y(i) = 0;
+    arma::vec y(npt + 3 * key_npt);
+    for(size_t i=0;i<npt;++i)y(i) = sol.solveval[i];
+
+    for(size_t i=0;i<key_npt;++i){
+        newnormals[i*3]   = sol.solveval[npt + i*3 + 0];
+        newnormals[i*3+1] = sol.solveval[npt + i*3 + 1];
+        newnormals[i*3+2] = sol.solveval[npt + i*3 + 2];
+        MyUtility::normalize(newnormals.data()+i*3);
+
+        y(npt+i) = newnormals[i*3];
+        y(npt+i+key_npt) = newnormals[i*3+1];
+        y(npt+i+key_npt*2) = newnormals[i*3+2];
+        // 
+    }
+    // Set_RBFCoef(y);
+
+    a = Minv*y;
+    b = Ninv.t()*y;
+
+    return;
+}
+
 
 int RBF_Core::Opt_Hermite_PredictNormal_UnitNormal(){
 
@@ -550,6 +700,81 @@ void RBF_Core::Set_RBFCoefWithInitNormal(const std::vector<double>& Vn)
 }
 
 
+void RBF_Core::Set_RBFCoefWithOptNormalAndSval(const std::vector<double>& Vn, 
+                                                const std::vector<double>& s_vals )
+{
+    
+    newnormals = Vn;
+    arma::vec y(npt + 3 * key_npt);
+    for(size_t i=0;i<key_npt;++i){
+        y(npt+i) = newnormals[i*3];
+        y(npt+i+key_npt) = newnormals[i*3+1];
+        y(npt+i+key_npt*2) = newnormals[i*3+2];
+    }
+    if(User_Lamnbda>0)
+    {
+        for(size_t i = 0; i < npt; ++i)
+        {
+            y(i) = s_vals[i];
+        }
+    } else {
+        for(size_t i=0;i<npt;++i)y(i) = 0;
+    }
+
+    y.subvec(0,npt-1);
+    a = Minv*y;
+    b = Ninv.t()*y;
+}
+
+
+void RBF_Core::Solve_RBFCoefWithOptNormalAndSval(const std::vector<double>& Vn, 
+                                                const std::vector<double>& s_vals )
+{
+    
+    newnormals = Vn;
+    arma::vec y(npt + 3 * key_npt + 4);
+    for(size_t i=0;i<key_npt;++i){
+        y(npt+i) = Vn[i*3];
+        y(npt+i+key_npt) = Vn[i*3+1];
+        y(npt+i+key_npt*2) = Vn[i*3+2];
+    }
+    if(User_Lamnbda>0)
+    {
+        for(size_t i = 0; i < npt; ++i)
+        {
+            y(i) = s_vals[i];
+        }
+    } else {
+        for(size_t i=0;i<npt;++i)y(i) = 0;
+    }
+    
+    size_t m_dim = npt + 3* key_npt;
+    bigM.zeros(m_dim + 4, m_dim + 4);
+    bigM.submat(0,0,m_dim-1,m_dim-1) = M;
+    bigM.submat(0,m_dim,m_dim-1, m_dim + 3) = N;
+    bigM.submat(m_dim,0,m_dim + 3, m_dim-1) = N.t();  
+
+    M.clear();
+    N.clear();
+
+    size_t mat_mem_size = bigM.n_elem * sizeof(double) / (1024 * 1024 );
+    // printf("------mat_mem_size %llu MB\n", mat_mem_size);
+    auto t0 = Clock::now();
+    arma::mat X2 = arma::solve(bigM, y, arma::solve_opts::fast);
+
+    // arma::mat X2 = arma::inv(bigM) * y;
+
+    auto t1 = Clock::now();
+    double t_time =  std::chrono::nanoseconds(t1 - t0).count()/1e9;
+    // printf("pure solve linear system size %llu and time: %f \n", m_dim, t_time);
+
+    // X2 = X2 * y;
+    a = X2(0, 0, arma::size(npt * 4, 1));
+    b = X2(npt * 4, 0, arma::size(4, 1));
+
+}
+
+
 void RBF_Core::Set_RBFCoef(arma::vec &y){
     if(open_debug_log)
     cout<<"Set_RBFCoef"<<endl;
@@ -561,14 +786,10 @@ void RBF_Core::Set_RBFCoef(arma::vec &y){
         b = bprey * y;
         a = Minv * (y - N*b);
     }else{
-
         // if(User_Lamnbda>0)y.subvec(0,npt-1) = -User_Lamnbda*dI*K01*y.subvec(npt,npt*4-1);
-
         if(User_Lamnbda>0)y.subvec(0,npt-1) = -User_Lamnbda*dI*K01*y.subvec(npt,npt + 3* key_npt-1);
-
         a = Minv*y;
         b = Ninv.t()*y;
-
         // a.save("a.txt", arma::arma_ascii);
     }
 }

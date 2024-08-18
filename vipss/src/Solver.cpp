@@ -227,11 +227,9 @@ int Solver::nloptwrapper(vector<double>&lowerbound,
 
 }
 
-int Solver::nloptwrapper(std::vector<double>&lowerbound,
+int Solver::nloptwrapperDirect(std::vector<double>&lowerbound,
                    std::vector<double>&upperbound,
                    nlopt::vfunc optfunc,
-                   nlopt::vfunc constraintFunc,
-                   size_t constraintNum,
                    void *funcPara,
                    double tor,
                    int maxIter,
@@ -265,13 +263,13 @@ int Solver::nloptwrapper(std::vector<double>&lowerbound,
 
         myopt.set_min_objective(optfunc,funcPara);
 
-        printf("start to add equality constraints ... \n");
-        // for(size_t i = 0; i < constraintNum; ++i)
-        {
-            // myopt.add_equality_constraint(constraintFunc, funcPara);
-        }
+        // printf("start to add equality constraints ... \n");
+        // // for(size_t i = 0; i < constraintNum; ++i)
+        // {
+        //     // myopt.add_equality_constraint(constraintFunc, funcPara);
+        // }
 
-        printf(" .... equality constraints added successfully! \n");
+        // printf(" .... equality constraints added successfully! \n");
         
         //myopt.set_precond_min_objective(optfuncModify, pre, &funcPara);
         //myopt.set_min_objective(optfunc, &funcPara);

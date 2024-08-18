@@ -32,12 +32,14 @@ void RBF_Core::BuildK(RBF_Paras para){
 
     auto t1 = Clock::now();
 
+    // cout << " start Set_Hermite_PredictNormal " <<  endl;
     switch(curMethod){
 
     case Hermite_UnitNormal:
         Set_Hermite_PredictNormal(pts);
         break;
     }
+    // cout << " finish Set_Hermite_PredictNormal " <<  endl;
     auto t2 = Clock::now();
     if(open_debug_log)
     cout << "Build Time: " << (setup_time = std::chrono::nanoseconds(t2 - t1).count()/1e9) << endl<< endl;
@@ -94,13 +96,11 @@ void RBF_Core::Surfacing(int method, int n_voxels_1d){
 
     n_evacalls = 0;
     Surfacer sf;
-
-    surf_time = sf.Surfacing_Implicit(pts,n_voxels_1d,false, RBF_Core::Dist_Function);
+    surf_time = sf.Surfacing_Implicit(pts, n_voxels_1d, false, RBF_Core::Dist_Function);
 
     sf.WriteSurface(finalMesh_v,finalMesh_fv);
     if(open_debug_log)
-    cout<<"n_evacalls: "<<n_evacalls<<"   ave: "<<surf_time/n_evacalls<<endl;
-
+    cout<<"n_evacalls: "<<n_evacalls<<" ave: "<<surf_time/n_evacalls<<endl;
 
 }
 

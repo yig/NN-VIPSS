@@ -84,6 +84,7 @@
 //   They are defined in <stdint.h> by the C99 Standard.
 
 #include <stdint.h>
+#include <vector>
 
 //============================================================================//
 //                                                                            //
@@ -336,6 +337,7 @@ public:
   // Input & output routines.
   bool load_node_call(FILE* infile, int markers, int uvflag, char*);
   bool load_node(REAL* pt_data, int pt_num);
+  bool load_node2(REAL* pt_data, int pt_num);
   bool load_node(char*);
   bool load_edge(char*);
   bool load_face(char*);
@@ -1043,10 +1045,9 @@ public:
 //                                                                            //
 // 'objectbytes' is the size of one object in blocks; 'log2objectsperblock'   //
 // is the base-2 logarithm of 'objectsperblock'; 'objects' counts the number  //
-// of allocated objects; 'totalmemory' is the total memory in bytes.          //
-//                                                                            //
-//============================================================================//
+// of allocated objects; 'totalmemory' is the topoint newpoint;
 
+ 
   class arraypool {
 
   public:
@@ -1345,8 +1346,7 @@ public:
 // Variables of TetGen                                                        //
 //                                                                            //
 //============================================================================//
-
-  // Pointer to the input data (a set of nodes, a PLC, or a mesh).
+// Pointer to the input data (a set of nodes, a PLC, or a mesh).
   tetgenio *in, *addin;
 
   // Pointer to the switches and parameters.
@@ -1494,6 +1494,7 @@ public:
   long opt_flips_count, opt_collapse_count, opt_smooth_count;
   long recover_delaunay_count;
   unsigned long totalworkmemory;      // Total memory used by working arrays.
+  bool raise_exception_ = false; 
 
 
 //============================================================================//
@@ -1814,8 +1815,19 @@ public:
   int flipnm_post(triface*, int n, int nn, int, flipconstraints* fc);
 
   // Point insertion.
-  int  insertpoint(point, triface*, face*, face*, insertvertexflags*);
+  int insertpoint(point, triface*, face*, face*, insertvertexflags*);
+
+  int GetCaveBoundryPoint(point insertpt, triface *searchtet, face *splitsh,
+                            face *splitseg, insertvertexflags *ivf, 
+                            std::vector<tetgenmesh::point>& out_cavetetvertlist);
+  
+  int GetCaveBoundryPointMP(point insertpt, triface *searchtet, face *splitsh,
+                          face *splitseg, insertvertexflags *ivf, 
+                          std::vector<tetgenmesh::point>& out_cavetetvertlist);
+                            
   void insertpoint_abort(face*, insertvertexflags*);
+
+  int GetInsertPointBoundry(point insertpt, triface *searchtet, arraypool* vertlist);
 
 //============================================================================//
 //                                                                            //
@@ -2229,12 +2241,13 @@ public:
   void outsubsegments(tetgenio*);
   void outneighbors(tetgenio*);
   void outvoronoi(tetgenio*);
+
   void outsmesh(char*);
   void outmesh2medit(char*);
   void outmesh2vtk(char*, int);
   void out_surfmesh_vtk(char*, int);
   void out_intersected_facets();
-
+  void generate_voronoi_cell(tetgenio* voronoi_data);
 
 
 
@@ -2521,7 +2534,8 @@ inline void terminatetetgen(tetgenmesh *m, int x)
     printf("Boundary contains Steiner points (-YY option). Program stopped.\n");
     break;
   } // switch (x)
-  exit(x);
+  // exit(x);
+  throw x;
 #endif // #ifdef TETLIBRARY
 }
 

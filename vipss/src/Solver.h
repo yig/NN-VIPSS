@@ -134,11 +134,9 @@ public:
                    Solution_Struct &sol
                    );
 
-    static int nloptwrapper(std::vector<double>&lowerbound,
+    static int nloptwrapperDirect(std::vector<double>&lowerbound,
                    std::vector<double>&upperbound,
                    nlopt::vfunc optfunc,
-                   nlopt::vfunc constraintFunc,
-                   size_t constraintNum,
                    void *funcPara,
                    double tor,
                    int maxIter,

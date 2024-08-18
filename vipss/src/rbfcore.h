@@ -72,6 +72,7 @@ public:
     int polyDeg;
     double sigma;
     double user_lamnbda;
+    
     double rangevalue;
     double sparse_para = 1e-3;
     double Hermite_weight_smoothness;
@@ -101,6 +102,7 @@ public:
     bool isnewformula = true;
     double User_Lamnbda;
     bool open_debug_log = false;
+    double user_beta = 1.0;
 
     RBF_Kernal kernal;
     RBF_METHOD curMethod;
@@ -206,6 +208,8 @@ public:
     void Init(RBF_Kernal kernal);
     void EstimateNormals();
 
+    std::vector<double> EstimateNormals(const std::vector<double>& pts);
+
 
 public:
     double Dist_Function(const double x, const double y, const double z);
@@ -257,6 +261,10 @@ public:
 
     void Set_RBFCoef(arma::vec &y);
     void Set_RBFCoefWithInitNormal(const std::vector<double>& Vn);
+    void Set_RBFCoefWithOptNormalAndSval(const std::vector<double>& Vn, 
+                                                const std::vector<double>& s_vals );
+    void Solve_RBFCoefWithOptNormalAndSval(const std::vector<double>& Vn, 
+                                                const std::vector<double>& s_vals );
 
     void Set_Actual_Hermite_LSCoef(double hermite_ls);
     void Set_HermiteApprox_Lamnda(double hermite_ls);
@@ -281,6 +289,7 @@ public:
 public:
 
     int Opt_Hermite_PredictNormal_UnitNormal();
+    void OptUnitVipssNormalDirect();
 
 public:
 
@@ -332,6 +341,8 @@ public:
 
     double setup_time, init_time, solve_time, callfunc_time,invM_time, setK_time, surf_time;
     std::vector<double>setup_timev, init_timev, solve_timev, callfunc_timev,invM_timev,setK_timev;
+
+    double bigM_inv_time;
 
     void Record();
     void Record(RBF_METHOD method, RBF_Kernal kernal, Solution_Struct &rsol, double time);
