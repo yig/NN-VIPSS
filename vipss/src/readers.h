@@ -13,7 +13,7 @@ bool writeOffFile(std::string filename,const std::vector<double>&vertices,const 
 
 bool writePLYFile(std::string filename, const std::vector<double>&vertices, const std::vector<unsigned int>&faces2vertices,
                   const std::vector<double> &vertices_normal, const std::vector<unsigned char>&vertices_color);
-
+bool writePLYFile(std::string filename,const std::vector<double>&vertices);
 bool writePLYFile_VF(std::string filename,const std::vector<double>&vertices,const std::vector<unsigned int>&faces2vertices);
 bool writePLYFile_VN(std::string filename,const std::vector<double>&vertices, const std::vector<double>&vertices_normal);
 bool writePLYFile_CO(std::string filename,const std::vector<double>&vertices,

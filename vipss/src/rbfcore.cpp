@@ -244,9 +244,20 @@ inline double RBF_Core::Dist_Function(const double *p){
 
 
 }
+int RBF_Core::DistFuncCallNum = 0;
+double RBF_Core::DistFuncCallTime = 0.0;
 static RBF_Core * s_hrbf;
+
+typedef std::chrono::high_resolution_clock Clock;
+
 double RBF_Core::Dist_Function(const R3Pt &in_pt){
-   return s_hrbf->Dist_Function(&(in_pt[0]));
+    DistFuncCallNum ++;
+   auto t0 = Clock::now();
+   double dist = s_hrbf->Dist_Function(&(in_pt[0]));
+   auto t1 = Clock::now();
+   double call_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
+   DistFuncCallTime += call_time;
+   return dist;
 }
 
 //FT RBF_Core::Dist_Function(const Point_3 in_pt){

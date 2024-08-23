@@ -116,6 +116,8 @@ public:
     std::vector<double>tangents;
     std::vector<uint>edges;
     std::vector<int>labels;
+    static int DistFuncCallNum;
+    static double DistFuncCallTime;
 
 public:
 

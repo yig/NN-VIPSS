@@ -35,7 +35,37 @@ struct VoroPlane{
         px = in_px; py = in_py; pz = in_pz;
         nx = in_nx; ny = in_ny; nz = in_nz; 
     };
+
+    VoroPlane(double* p0, double* p1, double* p2)
+    {
+        arma::vec3 e01;
+        arma::vec3 e02;
+        e01[0] = p1[0] - p0[0];
+        e01[1] = p1[1] - p0[1];
+        e01[2] = p1[2] - p0[2];
+        e02[0] = p2[0] - p0[0];
+        e02[1] = p2[1] - p0[1];
+        e02[2] = p2[2] - p0[2];
+        px = (p0[0] + p1[0] + p2[0]) / 3.0;
+        py = (p0[1] + p1[1] + p2[1]) / 3.0;
+        pz = (p0[2] + p1[2] + p2[2]) / 3.0;
+
+        arma::vec3 pn = arma::cross(e01, e02);
+        pn = arma::normalise(pn);
+        nx = pn[0];
+        ny = pn[1];
+        nz = pn[2];
+
+        double f_step = 0.002;
+        px += nx * f_step;
+        py += ny * f_step;
+        pz += nz * f_step;
+    }
+
+    void SavePlane(const std::string& outpath);
 };
+
+
 
 
 
@@ -120,6 +150,7 @@ class VoronoiGen{
         void BuildPicoTree();
         tetgenmesh::tetrahedron* GetClosetTet(double x, double y, double z);
         double CalTruncatedCellVolumePass(tetgenmesh::point in_pt, tetgenmesh::point nei_pt);
+        void OutputTetMesh(const std::string& tetmesh_path);
                 
     public:
         size_t pt_num_;

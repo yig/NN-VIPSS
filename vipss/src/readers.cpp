@@ -214,6 +214,34 @@ bool writePLYFile_VN(string filename,const vector<double>&vertices, const vector
 }
 
 
+bool writePLYFile(string filename,const vector<double>&vertices){
+    filename = filename + ".ply";
+    ofstream outer(filename.data(), ofstream::out);
+    if (!outer.good()) {
+        cout << "Can not create output PLY file " << filename << endl;
+        return false;
+    }
+
+    size_t n_vertices = vertices.size()/3;
+    outer << "ply" <<endl;
+    outer << "format ascii 1.0"<<endl;
+    outer << "element vertex " << n_vertices <<endl;
+    outer << "property float x" <<endl;
+    outer << "property float y" <<endl;
+    outer << "property float z" <<endl;
+    outer << "end_header" <<endl;
+
+    for(size_t i=0;i<n_vertices;++i){
+        auto p_v = vertices.data()+i*3;
+        for(size_t j=0;j<3;++j)outer << p_v[j] << " ";
+        outer << endl;
+    }
+
+    outer.close();
+    cout<<"saving finish: "<<filename<<endl;
+    return true;
+}
+
 
 bool readPLYFile(string filename,  vector<double>&vertices, vector<double> &vertices_normal){
     ifstream fin(filename.data());

@@ -92,6 +92,11 @@ class LocalVipss {
         void SetThis();      
         void VisualFuncValues(double (*function)(const R3Pt &in_pt), const VoroPlane& plane,
                               const std::string& dist_fuc_color_path);
+        
+        void testNNPtDist();
+
+        static int DistCallNum;
+        static double DistCallTime;
 
     private:
 
@@ -160,7 +165,5 @@ class LocalVipss {
         double build_j_time_total_ = 0;
         double build_h_time_total_ = 0;
         double build_h_time_total2_ = 0;
-
         std::vector<tetgenmesh::point> insert_pts_;
-        
 };

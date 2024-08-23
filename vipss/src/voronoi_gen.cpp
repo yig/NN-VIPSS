@@ -87,7 +87,7 @@ void VoronoiGen::InsertBoundryPts()
         max_y = max_y > in_pts[3*i + 1] ? max_y : in_pts[3*i + 1];
         max_z = max_z > in_pts[3*i + 2] ? max_z : in_pts[3*i + 2];
     }
-    double scale = 0.2;
+    double scale = 2;
     double dx = (max_x - min_x) / 2.0 * scale;
     double dy = (max_y - min_y) / 2.0 * scale;
     double dz = (max_z - min_z) / 2.0 * scale;
@@ -98,9 +98,9 @@ void VoronoiGen::InsertBoundryPts()
     //     5-------6
     //    /|      /|
     //   4-|-----7 |
-    //   | 3-----|-2
+    //   | 1-----|-2
     //   |/      |/
-    //   0-------1 
+    //   0-------3 
     double box_pts[14][3];
     box_pts[0][0] = min_x; box_pts[0][1] = min_y; box_pts[0][2] = min_z;
     box_pts[1][0] = min_x; box_pts[1][1] = max_y; box_pts[1][2] = min_z;
@@ -114,39 +114,39 @@ void VoronoiGen::InsertBoundryPts()
 
     // face centers 
     // f0 : 0 1 2 3
-    // f1 : 0 1 7 4
-    // f2 : 1 2 6 7
-    // f3 : 2 3 5 6
-    // f4 : 0 3 5 4
+    // f1 : 0 3 7 4
+    // f2 : 3 2 6 7
+    // f3 : 2 1 5 6
+    // f4 : 0 1 5 4
     // f5 : 4 5 6 7
-if(0)
+if(1)
 {
     box_pts[8][0] = (box_pts[0][0] + box_pts[1][0] + box_pts[2][0] + box_pts[3][0])/4.0;
     box_pts[8][1] = (box_pts[0][1] + box_pts[1][1] + box_pts[2][1] + box_pts[3][1])/4.0;
     box_pts[8][2] = (box_pts[0][2] + box_pts[1][2] + box_pts[2][2] + box_pts[3][2])/4.0;
 
-    box_pts[9][0] = (box_pts[0][0] + box_pts[1][0] + box_pts[7][0] + box_pts[4][0])/4.0;
-    box_pts[9][1] = (box_pts[0][1] + box_pts[1][1] + box_pts[7][1] + box_pts[4][1])/4.0;
-    box_pts[9][2] = (box_pts[0][2] + box_pts[1][2] + box_pts[7][2] + box_pts[4][2])/4.0;
+    box_pts[9][0] = (box_pts[0][0] + box_pts[3][0] + box_pts[7][0] + box_pts[4][0])/4.0;
+    box_pts[9][1] = (box_pts[0][1] + box_pts[3][1] + box_pts[7][1] + box_pts[4][1])/4.0;
+    box_pts[9][2] = (box_pts[0][2] + box_pts[3][2] + box_pts[7][2] + box_pts[4][2])/4.0;
 
-    box_pts[10][0] = (box_pts[1][0] + box_pts[2][0] + box_pts[6][0] + box_pts[7][0])/4.0;
-    box_pts[10][1] = (box_pts[1][1] + box_pts[2][1] + box_pts[6][1] + box_pts[7][1])/4.0;
-    box_pts[10][2] = (box_pts[1][2] + box_pts[2][2] + box_pts[6][2] + box_pts[7][2])/4.0;
+    box_pts[10][0] = (box_pts[3][0] + box_pts[2][0] + box_pts[6][0] + box_pts[7][0])/4.0;
+    box_pts[10][1] = (box_pts[3][1] + box_pts[2][1] + box_pts[6][1] + box_pts[7][1])/4.0;
+    box_pts[10][2] = (box_pts[3][2] + box_pts[2][2] + box_pts[6][2] + box_pts[7][2])/4.0;
 
-    box_pts[11][0] = (box_pts[2][0] + box_pts[3][0] + box_pts[5][0] + box_pts[6][0])/4.0;
-    box_pts[11][1] = (box_pts[2][1] + box_pts[3][1] + box_pts[5][1] + box_pts[6][1])/4.0;
-    box_pts[11][2] = (box_pts[2][2] + box_pts[3][2] + box_pts[5][2] + box_pts[6][2])/4.0;
+    box_pts[11][0] = (box_pts[2][0] + box_pts[1][0] + box_pts[5][0] + box_pts[6][0])/4.0;
+    box_pts[11][1] = (box_pts[2][1] + box_pts[1][1] + box_pts[5][1] + box_pts[6][1])/4.0;
+    box_pts[11][2] = (box_pts[2][2] + box_pts[1][2] + box_pts[5][2] + box_pts[6][2])/4.0;
     
-    box_pts[12][0] = (box_pts[0][0] + box_pts[3][0] + box_pts[5][0] + box_pts[6][0])/4.0;
-    box_pts[12][1] = (box_pts[0][1] + box_pts[3][1] + box_pts[5][1] + box_pts[6][1])/4.0;
-    box_pts[12][2] = (box_pts[0][2] + box_pts[3][2] + box_pts[5][2] + box_pts[6][2])/4.0;
+    box_pts[12][0] = (box_pts[0][0] + box_pts[1][0] + box_pts[5][0] + box_pts[4][0])/4.0;
+    box_pts[12][1] = (box_pts[0][1] + box_pts[1][1] + box_pts[5][1] + box_pts[4][1])/4.0;
+    box_pts[12][2] = (box_pts[0][2] + box_pts[1][2] + box_pts[5][2] + box_pts[4][2])/4.0;
 
     box_pts[13][0] = (box_pts[4][0] + box_pts[5][0] + box_pts[7][0] + box_pts[6][0])/4.0;
     box_pts[13][1] = (box_pts[4][1] + box_pts[5][1] + box_pts[7][1] + box_pts[6][1])/4.0;
     box_pts[13][2] = (box_pts[4][2] + box_pts[5][2] + box_pts[7][2] + box_pts[6][2])/4.0;
 }
 
-    for(size_t i = 0; i < 8; ++i)
+    for(size_t i = 0; i < 14; ++i)
     {
         tetgenmesh::point newpt;
         auto& temp_mesh = tetMesh_;
@@ -196,7 +196,7 @@ void VoronoiGen::Tetrahedralize()
 
     BuildPtIdMap();
     printf("finsh BuildPtIdMap \n");
-    InsertBoundryPts();
+    // InsertBoundryPts();
     GenerateVoroData();
     // m.facetverticeslist
     // m.meshsurface();
@@ -221,7 +221,7 @@ void VoronoiGen::Tetrahedralize()
 
 void VoronoiGen::GenerateVoroData()
 {
-    // InsertBoundryPts();
+    InsertBoundryPts();
 
     // printf("finsh InsertBoundryPts \n");
     tetMesh_.generate_voronoi_cell(&voronoi_data_);
@@ -235,6 +235,8 @@ void VoronoiGen::GenerateVoroData()
     if(1)
     {
         OutputVoronisMesh();
+        std::string out_mesh_path = out_dir_ + "tet_mesh.obj";
+        OutputTetMesh(out_mesh_path);
     }
     // printf("finsh to Tetrahedralize \n");
 }
@@ -826,30 +828,23 @@ double VoronoiGen::CalTruncatedCellVolume(tetgenmesh::point in_pt, tetgenmesh::p
 
 // int tet_vol_count = 0;
 
-
-
-void SavePlane(const VoroPlane& in_plane)
+void VoroPlane::SavePlane(const std::string& outpath)
 {
     arma::vec3 ax_1 = {1, 1, 0}; 
-    ax_1[2] = -(in_plane.nx * ax_1[0] + in_plane.ny * ax_1[1]) / in_plane.nz;
+    ax_1[2] = -(nx * ax_1[0] + ny * ax_1[1]) / nz;
     double len = sqrt(ax_1[0] * ax_1[0] + ax_1[1] * ax_1[1] + ax_1[2] * ax_1[2]);
     ax_1[0] /= len;
     ax_1[1] /= len;
     ax_1[2] /= len;
-    arma::vec3 pv{in_plane.nx, in_plane.ny, in_plane.nz};
+    arma::vec3 pv{nx, ny, nz};
     arma::vec3 ax_2 = arma::cross(ax_1, pv);
-
     std::ofstream out_file;
-    std::string out_path = "../out/bi_intersect_plane.obj";
-    out_file.open(out_path);
-
-    arma::vec3 ori{in_plane.px, in_plane.py, in_plane.pz};
-
+    out_file.open(outpath);
+    arma::vec3 ori{px, py, pz};
     arma::vec3 pa = ori + ax_1 * 2;
     arma::vec3 pb = ori + ax_2 * 2;
     arma::vec3 pc = ori - ax_1 * 2;
     arma::vec3 pd = ori - ax_2 * 2;
-
 
     out_file << "v " << pa[0] << " " << pa[1] << " " << pa[2] << std::endl;
     out_file << "v " << pb[0] << " " << pb[1] << " " << pb[2] << std::endl;
@@ -859,9 +854,6 @@ void SavePlane(const VoroPlane& in_plane)
     out_file << "f 1 2 3" << std::endl;
     out_file << "f 1 4 3" << std::endl;
     out_file.close();
-    
-
-
 }
 
 double VoronoiGen::CalTruncatedCellVolumePass(tetgenmesh::point in_pt, tetgenmesh::point nei_pt)
@@ -1156,6 +1148,71 @@ if(0)
 
 
     return cell_volume;
+}
+
+void VoronoiGen::OutputTetMesh(const std::string& tetmesh_path)
+{
+    std::ofstream mesh_file;
+    mesh_file.open(tetmesh_path);
+    // for(auto pt : points_)
+    // {
+    //     mesh_file << "v " << pt[0] << " " << pt[1] << " " << pt[2] << std::endl; 
+    // }
+
+    tetMesh_.points->traversalinit();
+    tetgenmesh::point ptloop;
+    ptloop = tetMesh_.pointtraverse();
+    while (ptloop != (tetgenmesh::point) NULL) {
+        mesh_file << "v " << ptloop[0] << " " << ptloop[1] << " " << ptloop[2] << std::endl; 
+        ptloop = tetMesh_.pointtraverse();
+    }
+
+    tetgenmesh::triface tetloop;
+    tetMesh_.tetrahedrons->traversalinit();
+    tetloop.tet = tetMesh_.alltetrahedrontraverse();
+    size_t t_count = 0;
+    while(tetloop.tet != (tetgenmesh::tetrahedron*) NULL)
+    {
+        auto pts = (tetgenmesh::point *) tetloop.tet;
+        if(pts[4] == (tetgenmesh::point) NULL || pts[5] == (tetgenmesh::point) NULL ||
+          pts[6] == (tetgenmesh::point) NULL || pts[7] == (tetgenmesh::point) NULL) 
+        {
+            tetloop.tet = tetMesh_.alltetrahedrontraverse();
+            continue;
+        }
+      
+        int idx0 = tetMesh_.pointmark(pts[4]); 
+        int idx1 = tetMesh_.pointmark(pts[5]); 
+        int idx2 = tetMesh_.pointmark(pts[6]); 
+        int idx3 = tetMesh_.pointmark(pts[7]); 
+
+        if(idx0 == -1 || idx1 == -1 || idx2 == -1 || idx3 == -1)
+        {
+            tetloop.tet = tetMesh_.alltetrahedrontraverse();
+            continue;
+        }
+
+        mesh_file << "l " << idx0 + 1 << " " << idx1 + 1 << std::endl;
+        mesh_file << "l " << idx0 + 1 << " " << idx2 + 1 << std::endl;
+        mesh_file << "l " << idx0 + 1 << " " << idx3 + 1 << std::endl;
+        mesh_file << "l " << idx1 + 1 << " " << idx2 + 1 << std::endl;
+        mesh_file << "l " << idx1 + 1 << " " << idx3 + 1 << std::endl;
+        mesh_file << "l " << idx2 + 1 << " " << idx3 + 1 << std::endl;
+        tetloop.tet = tetMesh_.alltetrahedrontraverse();
+    }
+
+    // tetMesh_.subsegs->traversalinit();
+    // tetgenmesh::face segloop;
+    // segloop.sh = tetMesh_.shellfacetraverse(tetMesh_.subsegs);
+    // while (segloop.sh != (tetgenmesh::shellface *) NULL) {
+    //     auto torg = tetMesh_.sorg(segloop);
+    //     auto tdest = tetMesh_.sdest(segloop);
+    //     int idx0 = tetMesh_.pointmark(torg); 
+    //     int idx1 = tetMesh_.pointmark(tdest);
+    //     mesh_file << "l " << idx0 + 1 << " " << idx1 + 1 << std::endl; 
+    //     segloop.sh = tetMesh_.shellfacetraverse(tetMesh_.subsegs);
+    // }
+    mesh_file.close();
 }
 
 

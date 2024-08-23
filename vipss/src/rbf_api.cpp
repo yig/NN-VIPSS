@@ -213,6 +213,7 @@ void RBF_API::run_vipss(std::vector<double> &Vs, std::vector<double> &Vn)
     normals_ = rbf_core_.newnormals;
 }
 
+
 void RBF_API::run_vipss(std::vector<double> &Vs, std::vector<double> &Vn, 
                                     const std::vector<double>& s_vals)
 {
@@ -240,14 +241,24 @@ void RBF_API::run_vipss(std::vector<double> &Vs, std::vector<double> &Vn,
 
     if(is_surfacing_){
         // rbf_core_.Write_Hermite_NormalPrediction(outpath_ + "_normal", 1);
+        RBF_Core::DistFuncCallNum = 0;
+        RBF_Core::DistFuncCallTime = 0.0;
         rbf_core_.Surfacing(0,n_voxel_line_);
         rbf_core_.Write_Surface(outpath_ +"_surface");
+        printf("number of call dist function : %d \n", RBF_Core::DistFuncCallNum);
+        printf("time of call dist function : %f \n", RBF_Core::DistFuncCallTime);
     }
     if(is_outputtime_){
         rbf_core_.Print_TimerRecord_Single(outpath_ +"_time.txt");
     }
     normals_ = rbf_core_.newnormals;
 }
+
+void RBF_API::build_cluster_hrbf_surface(std::shared_ptr<RBF_Core> rbf_ptr, const std::string& mesh_path)
+{
+
+}
+
 
 
 void RBF_API::build_cluster_hrbf(std::vector<double> &Vs, std::vector<double> &Vn, 
@@ -262,16 +273,17 @@ void RBF_API::build_cluster_hrbf(std::vector<double> &Vs, std::vector<double> &V
         rbf_ptr = std::make_shared<RBF_Core>();
     }
     rbf_ptr->User_Lamnbda = user_lambda_;
-    // printf("user lambda : %f \n", user_lambda_);
-    rbf_ptr->key_npt = Vs.size()/3;
+    // printf("build hrbf user lambda : %f \n", user_lambda_);
+    rbf_ptr->key_npt = Vn.size()/3;
     rbf_ptr->npt = Vs.size()/3;
     rbf_ptr->InjectData(Vs, para_);
     rbf_ptr->Set_HermiteRBF(Vs);
+
+    // printf(" start to Solve_RBFCoefWithOptNormalAndSval\n");
     rbf_ptr->Solve_RBFCoefWithOptNormalAndSval(Vn, s_vals);
     auto t1 = Clock::now();
     double t_time =  std::chrono::nanoseconds(t1 - t0).count()/1e9;
     // printf("solve hrbf linear time: %f \n", t_time);
-
 }
 
 void RBF_API::build_unit_vipss(std::vector<double> &Vs)

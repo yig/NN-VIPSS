@@ -27,7 +27,12 @@ class PTSampler
 
     void OutputNormals(const std::vector<double>& in_normals, std::vector<double>& out_normals);
 
+    
+
 };
+
+
+std::vector<double> CreateSpherePoints(double cx, double cy, double cz, double radius, int pt_num);
 
 
 

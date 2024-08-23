@@ -18,6 +18,8 @@ class RBF_API{
         void build_cluster_hrbf(std::vector<double> &Vs, std::vector<double> &Vn, 
                                  const std::vector<double>& s_vals, std::shared_ptr<RBF_Core> rbf_ptr);
 
+        void build_cluster_hrbf_surface(std::shared_ptr<RBF_Core> rbf_ptr, const std::string& mesh_path);
+
     public:
 
         RBF_Paras para_;

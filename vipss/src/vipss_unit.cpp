@@ -593,19 +593,52 @@ void VIPSSUnit::BuildLocalHRBFPerNode()
 void VIPSSUnit::ReconSurface()
 {
     // local_vipss_.TestVoronoiPts();
-    local_vipss_.voro_gen_.GenerateVoroData();
+    // local_vipss_.voro_gen_.GenerateVoroData();
     // local_vipss_.voro_gen_.BuildTetMeshTetCenterMap();
     // local_vipss_.voro_gen_.BuildPicoTree();
     
-    local_vipss_.normals_ = newnormals_;
-    local_vipss_.s_vals_ = s_func_vals_;
-    // std::cout << "start to build hrfb vec " << std::endl;
-    local_vipss_.BuildHRBFPerNode(); 
-    local_vipss_.SetThis();
-    // std::cout << "finish build hrfb vec " << std::endl;
-    // std::cout << "finish TestVoronoiPts----------------------------------- " << std::endl;
+    bool use_nn_interpolation = true;
+    if(use_nn_interpolation)
+    {
+        local_vipss_.normals_ = newnormals_;
+        local_vipss_.s_vals_ = s_func_vals_;
+        local_vipss_.user_lambda_ = user_lambda_;
+        local_vipss_.BuildHRBFPerNode(); 
+        local_vipss_.SetThis();
 
-    // if(use_hrbf_surface_)
+        local_vipss_.testNNPtDist();
+
+    if(0)
+    {
+        double p0[3] = {0.266693, 0.369411, 0.0690456};
+        double p1[3] = {0.278074, 0.326238, 0.029064};
+        double p2[3] = {0.373304, 0.289721, 0.0855713};
+        VoroPlane visual_plane(&p0[0], &p1[0], &p2[0]);
+        // std::string plane_save_path = data_dir_ + file_name_ + "/visual_func_plane.obj";
+        // visual_plane.SavePlane(plane_save_path);
+
+        std::string visual_func_path = data_dir_ + file_name_ + "/visual_func_vals.obj";
+        local_vipss_.VisualFuncValues(LocalVipss::NNDistFunction, visual_plane, visual_func_path);
+    }
+    
+        size_t n_voxels_1d = 100;
+        Surfacer sf;
+        auto surf_time = sf.Surfacing_Implicit(local_vipss_.out_pts_, n_voxels_1d, false, LocalVipss::NNDistFunction);
+        sf.WriteSurface(finalMesh_v_,finalMesh_fv_);
+        printf(" ------ DistCallNum : %d  \n", LocalVipss::DistCallNum);
+        printf(" ------ DistCallTime : %f \n", LocalVipss::DistCallTime);
+        std::string out_path = data_dir_ + "/" + file_name_  + "/nn_surface";
+        writePLYFile_VF(out_path, finalMesh_v_, finalMesh_fv_);
+    } else {
+        rbf_api_.user_lambda_ = user_lambda_;
+        // rbf_api_.user_lambda_ = 0.001;
+        rbf_api_.outpath_ = data_dir_ + file_name_ + "/";
+        rbf_api_.is_surfacing_ = true;
+        rbf_api_.n_voxel_line_ = volume_dim_;
+        rbf_api_.run_vipss(local_vipss_.out_pts_, newnormals_, s_func_vals_);
+    }
+
+      // if(use_hrbf_surface_)
     // {
     //     rbf_api_.user_lambda_ = user_lambda_;
     //     // rbf_api_.user_lambda_ = 0.001;
@@ -615,13 +648,6 @@ void VIPSSUnit::ReconSurface()
     //     rbf_api_.run_vipss(local_vipss_.out_pts_, newnormals_, s_func_vals_);
     // } 
     // local_vipss_.
-    size_t n_voxels_1d = 100;
-    Surfacer sf;
-    auto surf_time = sf.Surfacing_Implicit(local_vipss_.out_pts_, n_voxels_1d, false, LocalVipss::NNDistFunction);
-    sf.WriteSurface(finalMesh_v_,finalMesh_fv_);
-
-    std::string out_path = data_dir_ + "/" + file_name_  + "/nn_surface";
-    writePLYFile_VF(out_path, finalMesh_v_, finalMesh_fv_);
 }
 
 void VIPSSUnit::Run()

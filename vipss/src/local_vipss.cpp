@@ -118,6 +118,7 @@ void LocalVipss::TestVoronoiPts()
 void LocalVipss::VisualFuncValues(double (*function)(const R3Pt &in_pt), const VoroPlane& in_plane,
                               const std::string& dist_fuc_color_path)
 {
+    
     arma::vec3 ax_1 = {1, 1, 0}; 
     ax_1[2] = -(in_plane.nx * ax_1[0] + in_plane.ny * ax_1[1]) / in_plane.nz;
     double len = sqrt(ax_1[0] * ax_1[0] + ax_1[1] * ax_1[1] + ax_1[2] * ax_1[2]);
@@ -132,25 +133,25 @@ void LocalVipss::VisualFuncValues(double (*function)(const R3Pt &in_pt), const V
     out_file.open(out_path);
 
     arma::vec3 ori{in_plane.px, in_plane.py, in_plane.pz};
-    double step = 0.005;
-    int dim = 100;
+    double step = 0.001;
+    int dim = 200;
     std::vector<double> pts;
     std::vector<uint8_t> pts_co;
     //rbf_core_.isHermite = true;
     //cout << "is hermite " << rbf_core_.isHermite << endl;
-    R3Pt pt;
-    for (int i = -100; i < 101; ++i)
+    
+    for (int i = -dim; i < dim + 1; ++i)
     {
-        for (size_t j = -100; j < 101; ++j)
+        for (int j = -dim; j < dim + 1; ++j)
         {
             arma::vec3 new_pt = ori + i * step * ax_1 + j * step * ax_2;
             
             pts.push_back(new_pt[0]);
             pts.push_back(new_pt[1]);
             pts.push_back(new_pt[2]);
-
+            R3Pt pt(new_pt[0], new_pt[1], new_pt[2]);
             double dist = function(pt);
-            double scale = 0.03;
+            double scale = 0.01;
             dist = dist > -scale ? dist : -scale;
             dist = dist < scale ? dist : scale;
             dist = dist / scale;
@@ -169,6 +170,7 @@ void LocalVipss::VisualFuncValues(double (*function)(const R3Pt &in_pt), const V
             }
         }
     }
+    printf("pts size : %ld , pts co size : %ld \n", pts.size()/3, pts_co.size()/3);
     writePLYFile_CO(dist_fuc_color_path, pts, pts_co);
 }
 
@@ -663,15 +665,32 @@ void LocalVipss::BuildHRBFPerNode()
     // final_H_.resize(4 * npt , 4 * npt);
     double time_sum = 0;
     node_rbf_vec_.resize(cluster_num);
+    bool use_partial_vipss = false;
+    vipss_api_.user_lambda_ = user_lambda_;
+    // for(auto val : s_vals_)
+    // {
+    //     if(val != 0) printf("val : %f \n", val);
+    // }
     for(size_t i =0; i < cluster_num; ++i)
     {
-        auto cluster_pt_ids = GetClusterPtIds(i);
-        // printf("cluster_pt_ids size : %ld \n", cluster_pt_ids.size());
-        auto cluster_pt_vec = GetClusterVerticesFromIds(cluster_pt_ids);
-        // printf("cluster_pt_vec size : %ld \n", cluster_pt_vec.size());
-        auto cluster_nl_vec = GetClusterNormalsFromIds(cluster_pt_ids, normals_);
+        std::vector<double> cluster_pt_vec;
+        std::vector<size_t> cluster_pt_ids;
+        GetInitClusterPtIds(i, cluster_pt_vec, cluster_pt_ids);
+        // auto cluster_pt_ids = GetClusterPtIds(i);
+        // auto cluster_pt_vec = GetClusterVerticesFromIds(cluster_pt_ids);
+
+        std::vector<double> cluster_nl_vec;
+        if(use_partial_vipss) 
+        {
+            cluster_nl_vec = {normals_[3*i], normals_[3*i + 1], normals_[3*i + 2]};
+        } else {
+            cluster_nl_vec = GetClusterNormalsFromIds(cluster_pt_ids, normals_);
+        }
+        // auto cluster_nl_vec = GetClusterNormalsFromIds(cluster_pt_ids, normals_);
+
+        
         // printf("cluster_nl_vec size : %ld \n", cluster_nl_vec.size());
-        // printf("cluster_sv_vec all size : %ld \n", s_vals_.size());
+
         auto cluster_sv_vec = GetClusterSvalsFromIds(cluster_pt_ids, s_vals_);
         // printf("cluster_sv_vec size : %ld \n", cluster_sv_vec.size());
         node_rbf_vec_[i] = std::make_shared<RBF_Core>();
@@ -691,6 +710,45 @@ double LocalVipss::NodeDistanceFunction(const tetgenmesh::point nn_pt, const tet
         return node_rbf_vec_[pid]->Dist_Function(cur_pt);
     } 
     return 0;
+}
+
+void LocalVipss::testNNPtDist()
+{
+    double test_pt[3] = {0.301703, 0.34657, 0.0822563};
+    std::vector<tetgenmesh::point> nei_pts;
+    voro_gen_.GetVoronoiNeiPts(test_pt, nei_pts);
+
+    std::vector<double> nn_pts;
+    std::vector<double> nn_normals;
+    int n_voxel_line_ = 50;
+    for(auto pt : nei_pts)
+    {
+        if(voro_gen_.tetMesh_.pointtype(pt) != tetgenmesh::UNUSEDVERTEX)
+        {
+            nn_pts.push_back(pt[0]);
+            nn_pts.push_back(pt[1]);
+            nn_pts.push_back(pt[2]);
+            size_t p_id = voro_gen_.point_id_map_[pt];
+
+            nn_normals.push_back(normals_[3*p_id]);
+            nn_normals.push_back(normals_[3*p_id + 1]);
+            nn_normals.push_back(normals_[3*p_id + 2]);
+
+            // size_t p_id = voro_gen_.point_id_map_[pt];
+            if(0)
+            {
+                node_rbf_vec_[p_id]->Surfacing(0,n_voxel_line_);
+                node_rbf_vec_[p_id]->Write_Surface(out_dir_ + "cluster_mesh/"+  std::to_string(p_id) + "_surface");
+            }
+            
+        }
+        
+    }
+
+    // std::ofstream out_nn_file;
+    std::string nn_pt_path = out_dir_  + "nn_pts";
+    writePLYFile_VN(nn_pt_path, nn_pts, nn_normals);
+    // writeXYZ(nn_pt_path, nn_pts);
 }
 
 double LocalVipss::NatureNeighborDistanceFunction(const tetgenmesh::point cur_pt)
@@ -777,12 +835,19 @@ void LocalVipss::InitNormalWithVipss()
 }
 
 static LocalVipss* local_vipss_ptr;
+int LocalVipss::DistCallNum = 0;
+double LocalVipss::DistCallTime = 0.0;
 
 double LocalVipss::NNDistFunction(const R3Pt &in_pt)
 {
+    DistCallNum ++;
+    auto t0 = Clock::now();
     double new_pt[3] = {in_pt[0], in_pt[1], in_pt[2]};
-    // printf("new pt %f, %f, %f \n", new_pt[0], new_pt[1], new_pt[2]);
-    return local_vipss_ptr->NatureNeighborDistanceFunction(&(new_pt[0]));
+    double dist = local_vipss_ptr->NatureNeighborDistanceFunction(&(new_pt[0]));
+    auto t1 = Clock::now();
+    double dist_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
+    DistCallTime += dist_time;
+    return dist;
 }
 
 void LocalVipss::SetThis()

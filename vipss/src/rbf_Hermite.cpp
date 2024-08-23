@@ -767,11 +767,9 @@ void RBF_Core::Solve_RBFCoefWithOptNormalAndSval(const std::vector<double>& Vn,
     auto t1 = Clock::now();
     double t_time =  std::chrono::nanoseconds(t1 - t0).count()/1e9;
     // printf("pure solve linear system size %llu and time: %f \n", m_dim, t_time);
-
     // X2 = X2 * y;
-    a = X2(0, 0, arma::size(npt * 4, 1));
-    b = X2(npt * 4, 0, arma::size(4, 1));
-
+    a = X2(0, 0, arma::size(npt + 3 * key_npt, 1));
+    b = X2(npt + 3 * key_npt, 0, arma::size(4, 1));
 }
 
 
