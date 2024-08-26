@@ -4,6 +4,8 @@
 
 #include<vector>
 #include<string>
+#include <stdint.h>
+
 // using namespace std;
 
 bool readOffFile(std::string filename,std::vector<double>&vertices,std::vector<unsigned int>&faces2vertices);
@@ -82,5 +84,20 @@ bool readXYZ(std::string filename, std::vector<double>&v);
 bool readXYZnormal(std::string filename, std::vector<double>&v, std::vector<double>&vn);
 bool writeXYZ(std::string filename, std::vector<double>&v);
 bool writeXYZnormal(std::string filename, std::vector<double>&v, std::vector<double>&vn);
+
+bool readPlyMesh(const std::string& filename, std::vector<std::array<double, 3>>& vts, std::vector<std::vector<size_t>>& faces);
+
+bool writePlyMesh(const std::string& filename,  const std::vector<std::array<double, 3>>& vts,
+                                                const std::vector<std::vector<size_t>>& faces);
+bool writePlyMeshWithColor(const std::string& filename,  const std::vector<std::array<double, 3>>& vts,
+                                                const std::vector<std::array<double, 3>>& colors, 
+                                                const std::vector<std::vector<size_t>>& faces);
+
+bool SaveSphere(const std::string& filename,  const std::vector<std::array<double, 3>>& vts, 
+                                              const std::vector<std::vector<size_t>>& faces,
+                                              const std::array<double,3> center, const double radius);
+
+void output_opt_pts_with_color(const std::vector<double>& pts, const std::vector<double>& s_vals, 
+                               const std::string& out_dir);
 
 #endif // READERS_H

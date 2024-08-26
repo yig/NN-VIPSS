@@ -10,6 +10,11 @@ enum AXI_PlANE {
         YZX
     };
 
+enum HRBF_SURFACE_TYPE{
+    GLOBAL_HRBF,
+    LOCAL_HRBF_NN
+};
+
 class VIPSSUnit {
     
 
@@ -64,5 +69,7 @@ class VIPSSUnit {
         std::vector<std::shared_ptr<RBF_Core*>> node_rbf_vec;
         std::vector<double>finalMesh_v_;
         std::vector<uint>finalMesh_fv_;
+
+        HRBF_SURFACE_TYPE hrbf_type_;
 
 };

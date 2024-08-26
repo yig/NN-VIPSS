@@ -7,10 +7,11 @@
 #include <chrono>
 #include <math.h>
 #include <cmath>
-// #include <qhull/qhull.h>
-#include <qhull/Qhull.h>
-#include <qhull/RboxPoints.h>
-// #include <qhull/qhull_a.h>
+// #include <libqhull/libqhull.h>
+#include <libqhullcpp/Qhull.h>
+#include <libqhullcpp/RboxPoints.h>
+// #include <libqhull/qhull_a.h>
+#include "sample.h"
 
 typedef std::chrono::high_resolution_clock Clock;
 
@@ -19,9 +20,8 @@ REAL cps = (REAL) CLOCKS_PER_SEC;
 
 double CalVolumeQhull(std::vector<double>& pts)
 {
-    // orgQhull::Coordinates newPts(pts);
+    orgQhull::Coordinates newPts(pts);
     orgQhull::RboxPoints inpts;
-    // inpts.dimension = 3;
     inpts.setDimension(3);
     inpts.append(pts); 
 
@@ -29,6 +29,7 @@ double CalVolumeQhull(std::vector<double>& pts)
     // orgQhull::Qhull q_convex(inpts, cmd);
     orgQhull::Qhull q_convex(inpts, cmd);
     double volume = q_convex.volume();
+
     // printf("qhull volume : %Lf \n", volume);
     // std::cout << " qhull volume " << volume << std::endl;
     return volume;
@@ -66,6 +67,81 @@ void VoronoiGen::loadData(const std::vector<double>& in_pts)
     tetIO_.load_node((double*)in_pts.data(), in_pts.size()/3);
 }
 
+void VoronoiGen::InsertSphereBoundryPts()
+{
+    double min_x = std::numeric_limits<double>::max();
+    double min_y = std::numeric_limits<double>::max();
+    double min_z = std::numeric_limits<double>::max();
+
+    double max_x = std::numeric_limits<double>::min();
+    double max_y = std::numeric_limits<double>::min();
+    double max_z = std::numeric_limits<double>::min();
+
+    auto& in_pts = tetIO_.pointlist;
+    for(size_t i =0; i < tetIO_.numberofpoints; ++i)
+    {
+        min_x = min_x < in_pts[3*i]     ? min_x : in_pts[3*i];
+        min_y = min_y < in_pts[3*i + 1] ? min_y : in_pts[3*i + 1];
+        min_z = min_z < in_pts[3*i + 2] ? min_z : in_pts[3*i + 2];
+
+        max_x = max_x > in_pts[3*i]     ? max_x : in_pts[3*i];
+        max_y = max_y > in_pts[3*i + 1] ? max_y : in_pts[3*i + 1];
+        max_z = max_z > in_pts[3*i + 2] ? max_z : in_pts[3*i + 2];
+    }
+    double cx = (min_x + max_x) / 2.0;
+    double cy = (min_y + max_y) / 2.0;
+    double cz = (min_z + max_z) / 2.0;
+    
+    double scale = 2.0;
+    double dx = (max_x - min_x) / 2.0 * scale;
+    double dy = (max_y - min_y) / 2.0 * scale;
+    double dz = (max_z - min_z) / 2.0 * scale;
+    double radius = std::max(dx, std::max(dy, dz)); 
+    int pt_num = 128;
+    auto sphere_pts = CreateSpherePoints(cx, cy, cz, radius, pt_num);
+    pt_num = sphere_pts.size()/3;
+    printf("sphere pt size : %ld \n",sphere_pts.size()/3 );
+    std::string out_sphere_path = out_dir_ + "sphere_boundry.xyz";
+    writeXYZ(out_sphere_path, sphere_pts);
+    printf("successfully write sphere boundary pts to file : %s\n", out_sphere_path.c_str());
+    // printf(out_sphere_path);
+    std::vector<tetgenmesh::point> boundary_pts;
+
+    for(size_t i = 0; i < pt_num; ++i)
+    {
+        tetgenmesh::point newpt;
+        auto& temp_mesh = tetMesh_;
+        temp_mesh.makepoint(&newpt, tetgenmesh::UNUSEDVERTEX);
+        newpt[0] = sphere_pts[i * 3];
+        newpt[1] = sphere_pts[i * 3 + 1];
+        newpt[2] = sphere_pts[i * 3 + 2];
+        tetgenmesh::insertvertexflags ivf;
+        ivf.bowywat = 1; // Use Bowyer-Watson algorithm
+        ivf.lawson = 0;
+        tetgenmesh::triface searchtet;
+        searchtet.tet = NULL;
+        ivf.iloc = (int) tetgenmesh::UNKNOWN;
+        auto t0 = Clock::now();
+        tetgenmesh::face *splitsh = NULL;
+        tetgenmesh::face *splitseg = NULL;
+        // temp_mesh.setpointtype(newpt, tetgenmesh::UNUSEDVERTEX);
+        if(temp_mesh.insertpoint(newpt, &searchtet, splitsh, splitseg,  &ivf))
+        {
+            // printf(" %ld insertion succeeded ! \n", i);
+        }
+        boundary_pts.push_back(newpt);
+        // temp_mesh.setpointtype(newpt, tetgenmesh::UNUSEDVERTEX);
+        // printf(" insertion pt type : %d! \n", temp_mesh.pointtype(newpt));
+        printf("insert pt id : %ld \n", i);
+    }
+
+    for(auto pt : boundary_pts)
+    {
+        tetMesh_.setpointtype(pt, tetgenmesh::UNUSEDVERTEX);
+    }
+
+}
+
 void VoronoiGen::InsertBoundryPts()
 {
     double min_x = std::numeric_limits<double>::max();
@@ -87,7 +163,8 @@ void VoronoiGen::InsertBoundryPts()
         max_y = max_y > in_pts[3*i + 1] ? max_y : in_pts[3*i + 1];
         max_z = max_z > in_pts[3*i + 2] ? max_z : in_pts[3*i + 2];
     }
-    double scale = 2;
+    // bbox final_scale = scale + 1 
+    double scale = 0.5;
     double dx = (max_x - min_x) / 2.0 * scale;
     double dy = (max_y - min_y) / 2.0 * scale;
     double dz = (max_z - min_z) / 2.0 * scale;
@@ -197,7 +274,7 @@ void VoronoiGen::Tetrahedralize()
     BuildPtIdMap();
     printf("finsh BuildPtIdMap \n");
     // InsertBoundryPts();
-    GenerateVoroData();
+    // GenerateVoroData();
     // m.facetverticeslist
     // m.meshsurface();
     // m.recoverboundary(ts[0]);
@@ -221,7 +298,9 @@ void VoronoiGen::Tetrahedralize()
 
 void VoronoiGen::GenerateVoroData()
 {
-    InsertBoundryPts();
+    // InsertBoundryPts();
+// 
+    InsertSphereBoundryPts();
 
     // printf("finsh InsertBoundryPts \n");
     tetMesh_.generate_voronoi_cell(&voronoi_data_);
@@ -231,7 +310,7 @@ void VoronoiGen::GenerateVoroData()
     printf("voronoi facet num : %d \n", voronoi_data_.numberofvfacets);
     printf("voronoi cell num : %d \n", voronoi_data_.numberofvcells);
     printf("finsh generate_voronoi_cell \n");
-    // InitVoronoiDataForCellVolume();
+    InitVoronoiDataForCellVolume();
     if(1)
     {
         OutputVoronisMesh();
@@ -439,6 +518,7 @@ void VoronoiGen::CalVoroCellPtSign(const VoroPlane &plane,
                                    const std::set<int>& vcell_pt_list, 
                                    std::vector<int>& positive_pids)
 {
+    // printf("vpt_sign_vals_ size : %ld \n", vpt_sign_vals_.size());
     // vcell_pt_sign_values_.clear();
     auto vp_list = voronoi_data_.vpointlist;
     for(auto p_id : vcell_pt_list)
@@ -533,7 +613,6 @@ std::vector<double> VoronoiGen::GetPolygonSplitPts(tetgenmesh::point cur_pt, tet
             // double dz = v_plane.intPz - mid_z;
             // double res = v_plane.nx * dx + v_plane.ny * dy + v_plane.nz * dz;
             // printf(" res -------------- %f \n", res);
-
             split_pts.push_back(v_plane.intPx);
             split_pts.push_back(v_plane.intPy);
             split_pts.push_back(v_plane.intPz);
@@ -668,7 +747,7 @@ double VoronoiGen::CalSplitPolyhedronVolume(std::vector<double>& split_pts)
     temp_mesh.in = &temp_io;
     tet_beha_.quiet = 1;
     temp_mesh.b = &tet_beha_;
-    temp_mesh.b->epsilon = 1e-12;
+    temp_mesh.b->epsilon = 1e-18;
     // printf("............. CalSplitPolyhedronVolume 000\n");
     temp_mesh.initializepools();
     // printf("............. CalSplitPolyhedronVolume 0000000\n");
@@ -763,8 +842,10 @@ double VoronoiGen::CalUnionCellVolume(tetgenmesh::point in_pt, tetgenmesh::point
     //     out_file <<"v "<< split_pts[3*i] <<" " << split_pts[3 *i + 1] << " " << split_pts[3 * i + 2] << std::endl;
     // }
     // out_file.close();
+    
 
     double volume = CalSplitPolyhedronVolume(split_pts);
+    // double volume = CalVolumeQhull(split_pts);
     return volume;
 }
 
@@ -783,11 +864,15 @@ double VoronoiGen::CalTruncatedCellVolume(tetgenmesh::point in_pt, tetgenmesh::p
         p_ny /= pn_len;
         p_nz /= pn_len;
     }
+
+    // printf("start to retrive voronois cell pt and edges\n");
+
     VoroPlane v_plane(mid_x, mid_y, mid_z, p_nx, p_ny, p_nz);
     std::set<int> vcell_pids;
     std::set<int> vcell_eids;
     GetVoroCellPtAndEdgeIdList(nei_pt, vcell_pids, vcell_eids);
 
+    // printf("start to cal CalVoroCellPtSign \n");
     std::vector<int> truncated_cell_pt_list;
     CalVoroCellPtSign(v_plane, vcell_pids, truncated_cell_pt_list);
     // printf("truncated cell pt size : %ld \n", truncated_cell_pt_list.size());
@@ -802,12 +887,13 @@ double VoronoiGen::CalTruncatedCellVolume(tetgenmesh::point in_pt, tetgenmesh::p
     }
     CalVoroEdgeIntersection(vcell_eids, truncated_cell_pts);
 
-    // printf("truncated_cell_pts size : %d \n", truncated_cell_pts.size()/3);
+    // printf("truncated_cell_pts size : %ld \n", truncated_cell_pts.size()/3);
     // double volume = 0;
     // try{
     // double volume = CalVolumeQhull(truncated_cell_pts);
     // auto t000 = Clock::now();
     if(truncated_cell_pts.size() < 4) return 0;
+    
     double volume = CalSplitPolyhedronVolume(truncated_cell_pts);
     // double volume = CalVolumeQhull(truncated_cell_pts);
     // auto t001 = Clock::now();
@@ -1426,8 +1512,8 @@ void VoronoiGen::BuildTetMeshTetCenterMap()
 
 tetgenmesh::tetrahedron* VoronoiGen::GetClosetTet(double x, double y, double z)
 {
-    size_t tet_id = pTree_.SearchNearestPt(x, y, z);
-    
+    // size_t tet_id = pTree_.SearchNearestPt(x, y, z);
+    size_t tet_id = 0;
     return tc_pt_tet_map_[tet_id];
 }
 
@@ -1440,7 +1526,7 @@ void VoronoiGen::BuildPicoTree()
     //     tet_center_pts.push_back(pt[1]);
     //     tet_center_pts.push_back(pt[2]);
     // }
-    pTree_.Init(tet_center_pts_);
+    // pTree_.Init(tet_center_pts_);
 }
 
 void VoronoiGen::GetVoronoiNeiPts(tetgenmesh::point pt, std::vector<tetgenmesh::point>& candid_pts)

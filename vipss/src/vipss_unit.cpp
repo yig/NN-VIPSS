@@ -589,30 +589,36 @@ void VIPSSUnit::BuildLocalHRBFPerNode()
 
 
 
-
 void VIPSSUnit::ReconSurface()
 {
+    printf(" start ReconSurface \n");
     // local_vipss_.TestVoronoiPts();
-    // local_vipss_.voro_gen_.GenerateVoroData();
+    local_vipss_.voro_gen_.GenerateVoroData();
     // local_vipss_.voro_gen_.BuildTetMeshTetCenterMap();
     // local_vipss_.voro_gen_.BuildPicoTree();
+    // return;
     
-    bool use_nn_interpolation = true;
-    if(use_nn_interpolation)
+    // bool use_nn_interpolation = true;
+    if(LOCAL_HRBF_NN == hrbf_type_)
     {
+        printf(" start use_nn_interpolation \n");
         local_vipss_.normals_ = newnormals_;
         local_vipss_.s_vals_ = s_func_vals_;
         local_vipss_.user_lambda_ = user_lambda_;
         local_vipss_.BuildHRBFPerNode(); 
+        // printf(" start set local vipss static ptr \n");
         local_vipss_.SetThis();
-
+        // printf(" finish set local vipss static ptr \n");
         local_vipss_.testNNPtDist();
 
-    if(0)
+    if(1)
     {
-        double p0[3] = {0.266693, 0.369411, 0.0690456};
-        double p1[3] = {0.278074, 0.326238, 0.029064};
-        double p2[3] = {0.373304, 0.289721, 0.0855713};
+        // double p0[3] = {0.266693, 0.369411, 0.0690456};
+        // double p1[3] = {0.278074, 0.326238, 0.029064};
+        // double p2[3] = {0.373304, 0.289721, 0.0855713};
+        double p0[3] = {-0.142955, 0.147453, -0.273193};
+        double p1[3] = {-0.145742, 0.241941, -0.243457};
+        double p2[3] = {-0.146177, 0.201896, -0.202977};
         VoroPlane visual_plane(&p0[0], &p1[0], &p2[0]);
         // std::string plane_save_path = data_dir_ + file_name_ + "/visual_func_plane.obj";
         // visual_plane.SavePlane(plane_save_path);
@@ -638,7 +644,7 @@ void VIPSSUnit::ReconSurface()
         rbf_api_.run_vipss(local_vipss_.out_pts_, newnormals_, s_func_vals_);
     }
 
-      // if(use_hrbf_surface_)
+    // if(use_hrbf_surface_)
     // {
     //     rbf_api_.user_lambda_ = user_lambda_;
     //     // rbf_api_.user_lambda_ = 0.001;
@@ -657,9 +663,8 @@ void VIPSSUnit::Run()
     rbf_api_.Set_RBF_PARA();
     InitPtNormalWithLocalVipss();
     auto tn0 = Clock::now();
-    // BuildVipssUnitMatrixP();
-    // return;
-    
+if(1)
+{
     if(user_lambda_ < 1e-10)
     {
         Final_H_ = local_vipss_.final_H_(npt_, npt_, arma::size(3 *npt_, 3 * npt_));
@@ -680,9 +685,11 @@ void VIPSSUnit::Run()
         OptUnitVipssNormalDirect();
     }
     Final_H_.clear();
+
     auto ts1 = Clock::now();
     double solve_time = std::chrono::nanoseconds(ts1 - ts0).count() / 1e9;
     printf("opt solve time : %f ! \n", solve_time);
+}
 
     auto t01 = Clock::now();
     double total_time = std::chrono::nanoseconds(t01 - t00).count()/1e9;
@@ -692,9 +699,12 @@ void VIPSSUnit::Run()
     printf("out size : %lu, %lu \n", local_vipss_.out_pts_.size(), newnormals_.size());
     writePLYFile_VN(out_path, local_vipss_.out_pts_, newnormals_);
 
-    std::string init_path  = local_vipss_.out_dir_ + local_vipss_.filename_  + "_init";
-    writePLYFile_VN(init_path, local_vipss_.out_pts_, initnormals_);
+    std::string color_out_path  = local_vipss_.out_dir_ + local_vipss_.filename_  + "_opt_color";
+    output_opt_pts_with_color(local_vipss_.out_pts_, s_func_vals_,color_out_path);
 
-    // newnormals_ = initnormals_;
+    // printf("start to ReconSurface 000 \n");
+    // std::string init_path  = local_vipss_.out_dir_ + local_vipss_.filename_  + "_init";
+    // writePLYFile_VN(init_path, local_vipss_.out_pts_, initnormals_);
+    // printf("start to ReconSurface 0001 \n");
     ReconSurface();
 }

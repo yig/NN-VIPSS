@@ -4,6 +4,7 @@
 #include<fstream>
 #include<sstream>
 #include<assert.h>
+#include "happly.h"
 using namespace std;
 
 bool readOffFile(string filename,vector<double>&vertices,vector<unsigned int>&faces2vertices){
@@ -1418,4 +1419,107 @@ bool writeXYZnormal(string filename, vector<double>&v, vector<double>&vn){
     outer.close();
     return true;
 
+}
+
+bool readPlyMesh(const std::string& filename, std::vector<std::array<double, 3>>& vts, std::vector<std::vector<size_t>>& faces)
+{
+    // Construct the data object by reading from file
+    happly::PLYData plyIn(filename);
+
+    // printf("fetch data to readPlyMesh -------- \n");
+    // Get mesh-style data from the object
+    vts = plyIn.getVertexPositions();
+    printf("read mesh pt num : %lu \n", vts.size());
+    faces = plyIn.getFaceIndices<size_t>();
+    printf("read mesh face num : %lu \n", faces.size());
+    return true;
+}
+
+bool writePlyMeshWithColor(const std::string& filename,  const std::vector<std::array<double, 3>>& vts,
+                                                const std::vector<std::array<double, 3>>& colors, 
+                                                const std::vector<std::vector<size_t>>& faces)
+{
+    // Create an empty object
+    happly::PLYData plyOut;
+    // Add mesh data (elements are created automatically)
+    plyOut.addVertexPositions(vts);
+    plyOut.addVertexColors(colors);
+    plyOut.addFaceIndices(faces);
+    // Write the object to file
+    plyOut.write(filename, happly::DataFormat::ASCII);
+    return true;
+}
+
+bool writePlyMesh(const std::string& filename,  const std::vector<std::array<double, 3>>& vts,
+                                                const std::vector<std::vector<size_t>>& faces)
+{
+    // Create an empty object
+    happly::PLYData plyOut;
+    // Add mesh data (elements are created automatically)
+    plyOut.addVertexPositions(vts);
+    plyOut.addFaceIndices(faces);
+    // Write the object to file
+    plyOut.write(filename, happly::DataFormat::ASCII);
+    return true;
+}
+
+
+bool SaveSphere(const std::string& filename,  const std::vector<std::array<double, 3>>& vts, 
+                                              const std::vector<std::vector<size_t>>& faces,
+                                              const std::array<double,3> center, const double radius)
+{
+    double r = ((double) rand() / (RAND_MAX));
+    double g = ((double) rand() / (RAND_MAX));
+    double b = ((double) rand() / (RAND_MAX));
+    std::array<double, 3> col = {r, g, b};
+    std::vector<std::array<double, 3>> new_vts;
+    std::vector<std::array<double, 3>> colors(vts.size(), col);
+    new_vts.resize(vts.size());
+    for(size_t i =0; i < vts.size(); ++i)
+    {
+        new_vts[i][0] = vts[i][0] * radius + center[0];
+        new_vts[i][1] = vts[i][1] * radius + center[1];
+        new_vts[i][2] = vts[i][2] * radius + center[2];
+    }
+
+    writePlyMeshWithColor(filename, new_vts, colors, faces);
+    return true;
+}
+
+
+void output_opt_pts_with_color(const std::vector<double>& pts, const std::vector<double>& s_vals, 
+                               const std::string& out_dir)
+{
+    size_t ptn = pts.size()/3;
+    std::vector<unsigned char> color;
+    double max_val = 0.01;
+    for(size_t i = 0; i < ptn; ++i)
+    {
+        double cur_dist = s_vals[i];
+        if(cur_dist >= max_val)
+        {
+            color.push_back(255);
+            color.push_back(0);
+            color.push_back(0);
+        } else if (cur_dist <= - max_val)
+        {
+            color.push_back(0);
+            color.push_back(255);
+            color.push_back(0);
+        } else{
+            unsigned char r = 0;
+            unsigned char g = 0;
+            if(cur_dist >= 0)
+            {
+                r = int(255 * cur_dist/max_val );
+            } else {
+                g = int(255 * (-cur_dist)/max_val );
+            }
+
+            color.push_back(r);
+            color.push_back(g);
+            color.push_back(0);
+        }
+    }
+    writePLYFile_CO(out_dir, pts, color);
 }

@@ -738,15 +738,16 @@ void RBF_Core::Solve_RBFCoefWithOptNormalAndSval(const std::vector<double>& Vn,
         y(npt+i+key_npt) = Vn[i*3+1];
         y(npt+i+key_npt*2) = Vn[i*3+2];
     }
-    if(User_Lamnbda>0)
+    // if(User_Lamnbda>0)
     {
         for(size_t i = 0; i < npt; ++i)
         {
             y(i) = s_vals[i];
         }
-    } else {
-        for(size_t i=0;i<npt;++i)y(i) = 0;
-    }
+    } 
+    // else {
+    //     for(size_t i=0;i<npt;++i)y(i) = 0;
+    // }
     
     size_t m_dim = npt + 3* key_npt;
     bigM.zeros(m_dim + 4, m_dim + 4);

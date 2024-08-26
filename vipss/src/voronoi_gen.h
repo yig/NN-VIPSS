@@ -145,6 +145,7 @@ class VoronoiGen{
 
         void OutputVoronisMesh();
         void InsertBoundryPts();
+        void InsertSphereBoundryPts();
         void GetVoronoiNeiPts(tetgenmesh::point pt, std::vector<tetgenmesh::point>& candid_pts);
         void BuildTetMeshTetCenterMap();
         void BuildPicoTree();
