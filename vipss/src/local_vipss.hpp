@@ -1,7 +1,7 @@
 #pragma once
 #include "rbfcore.h"
 #include "voronoi_gen.h"
-#include "eigen3/Eigen/Sparse"
+#include <Eigen/Sparse>
 
 
 

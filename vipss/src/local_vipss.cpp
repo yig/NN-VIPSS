@@ -718,11 +718,11 @@ void LocalVipss::testNNPtDist()
     std::vector<double> nn_pts;
     std::vector<double> nn_normals;
     int n_voxel_line_ = 50;
-    std::string sphere_path = "/home/jianjun/Documents/sphere.ply";
+    // std::string sphere_path = "/home/jianjun/Documents/sphere.ply";
     std::vector<std::array<double, 3>> vts;
     std::vector<std::vector<size_t>> faces;
     // printf("start to readPlyMesh -------- \n");
-    readPlyMesh(sphere_path, vts, faces);
+    // readPlyMesh(sphere_path, vts, faces);
     // printf("finish readPlyMesh -------- \n");
     // readPLYFile()
     size_t nn_num = nei_pts.size();

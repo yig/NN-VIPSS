@@ -8,8 +8,8 @@
 #include <math.h>
 #include <cmath>
 // #include <libqhull/libqhull.h>
-#include <libqhullcpp/Qhull.h>
-#include <libqhullcpp/RboxPoints.h>
+// #include <libqhullcpp/Qhull.h>
+// #include <libqhullcpp/RboxPoints.h>
 // #include <libqhull/qhull_a.h>
 #include "sample.h"
 
@@ -20,15 +20,15 @@ REAL cps = (REAL) CLOCKS_PER_SEC;
 
 double CalVolumeQhull(std::vector<double>& pts)
 {
-    orgQhull::Coordinates newPts(pts);
-    orgQhull::RboxPoints inpts;
-    inpts.setDimension(3);
-    inpts.append(pts); 
+    // orgQhull::Coordinates newPts(pts);
+    // orgQhull::RboxPoints inpts;
+    // inpts.setDimension(3);
+    // inpts.append(pts); 
 
-    const char* cmd = "Fx";
+    // const char* cmd = "Fx";
     // orgQhull::Qhull q_convex(inpts, cmd);
-    orgQhull::Qhull q_convex(inpts, cmd);
-    double volume = q_convex.volume();
+    double volume = 0;
+    // double volume = q_convex.volume();
 
     // printf("qhull volume : %Lf \n", volume);
     // std::cout << " qhull volume " << volume << std::endl;
@@ -97,7 +97,7 @@ void VoronoiGen::InsertSphereBoundryPts()
     double dy = (max_y - min_y) / 2.0 * scale;
     double dz = (max_z - min_z) / 2.0 * scale;
     double radius = std::max(dx, std::max(dy, dz)); 
-    int pt_num = 128;
+    int pt_num = 18;
     auto sphere_pts = CreateSpherePoints(cx, cy, cz, radius, pt_num);
     pt_num = sphere_pts.size()/3;
     printf("sphere pt size : %ld \n",sphere_pts.size()/3 );
@@ -132,7 +132,7 @@ void VoronoiGen::InsertSphereBoundryPts()
         boundary_pts.push_back(newpt);
         // temp_mesh.setpointtype(newpt, tetgenmesh::UNUSEDVERTEX);
         // printf(" insertion pt type : %d! \n", temp_mesh.pointtype(newpt));
-        printf("insert pt id : %ld \n", i);
+        // printf("insert pt id : %ld \n", i);
     }
 
     for(auto pt : boundary_pts)
@@ -164,7 +164,7 @@ void VoronoiGen::InsertBoundryPts()
         max_z = max_z > in_pts[3*i + 2] ? max_z : in_pts[3*i + 2];
     }
     // bbox final_scale = scale + 1 
-    double scale = 0.5;
+    double scale = 2.0;
     double dx = (max_x - min_x) / 2.0 * scale;
     double dy = (max_y - min_y) / 2.0 * scale;
     double dz = (max_z - min_z) / 2.0 * scale;

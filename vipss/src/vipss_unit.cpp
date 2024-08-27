@@ -609,9 +609,9 @@ void VIPSSUnit::ReconSurface()
         // printf(" start set local vipss static ptr \n");
         local_vipss_.SetThis();
         // printf(" finish set local vipss static ptr \n");
-        local_vipss_.testNNPtDist();
+        // local_vipss_.testNNPtDist();
 
-    if(1)
+    if(0)
     {
         // double p0[3] = {0.266693, 0.369411, 0.0690456};
         // double p1[3] = {0.278074, 0.326238, 0.029064};

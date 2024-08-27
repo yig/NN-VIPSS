@@ -16,7 +16,7 @@ class IncreVipss {
 
     public:
         PTSampler pt_sampler_;
-        MKdtree::MyKDTree sample_tree_;
+        // MKdtree::MyKDTree sample_tree_;
         RBF_API vipss_api_;
 
         std::string input_path_ = "";
