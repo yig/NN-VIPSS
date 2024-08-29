@@ -631,6 +631,11 @@ void VIPSSUnit::ReconSurface()
         Surfacer sf;
         auto surf_time = sf.Surfacing_Implicit(local_vipss_.out_pts_, n_voxels_1d, false, LocalVipss::NNDistFunction);
         sf.WriteSurface(finalMesh_v_,finalMesh_fv_);
+
+        printf("------- nn search time sum: %f \n", local_vipss_.search_nn_time_sum_);
+        printf("------- nn coordinate cal time sum : %f \n", local_vipss_.pass_time_sum_);
+        printf("------- HRBF dist time sum : %f \n", local_vipss_.dist_time_sum_);
+
         printf(" ------ DistCallNum : %d  \n", LocalVipss::DistCallNum);
         printf(" ------ DistCallTime : %f \n", LocalVipss::DistCallTime);
         std::string out_path = data_dir_ + "/" + file_name_  + "/nn_surface";

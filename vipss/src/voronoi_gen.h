@@ -151,7 +151,9 @@ class VoronoiGen{
         void BuildPicoTree();
         tetgenmesh::tetrahedron* GetClosetTet(double x, double y, double z);
         double CalTruncatedCellVolumePass(tetgenmesh::point in_pt, tetgenmesh::point nei_pt);
+        double CalTruncatedCellVolumePass2(tetgenmesh::point in_pt, tetgenmesh::point nei_pt);
         void OutputTetMesh(const std::string& tetmesh_path);
+        void PrecomputeVoroData();
                 
     public:
         size_t pt_num_;
@@ -208,6 +210,15 @@ class VoronoiGen{
         std::vector<uint8_t> colors_;
         double min_angle_ = 30.0;
         PicoTree pTree_;
+
+        std::vector<std::vector<int>> vorocell_pids_;
+        std::vector<std::vector<int>> vorocell_eids_;
+
+        std::vector<bool> vids_status_;
+        std::vector<bool> eids_status_;  
+        std::vector<double> v_sign_vals_;
+        std::vector<int> e_sign_vals_;
+        std::vector<double> ve_intersect_pts_;
         
     private:
         clock_t ts_[6];

@@ -166,4 +166,8 @@ class LocalVipss {
         double build_h_time_total_ = 0;
         double build_h_time_total2_ = 0;
         std::vector<tetgenmesh::point> insert_pts_;
+
+        double pass_time_sum_ = 0;
+        double search_nn_time_sum_ = 0;
+        double dist_time_sum_ = 0;
 };

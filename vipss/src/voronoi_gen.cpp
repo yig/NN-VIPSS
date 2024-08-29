@@ -97,7 +97,7 @@ void VoronoiGen::InsertSphereBoundryPts()
     double dy = (max_y - min_y) / 2.0 * scale;
     double dz = (max_z - min_z) / 2.0 * scale;
     double radius = std::max(dx, std::max(dy, dz)); 
-    int pt_num = 18;
+    int pt_num = 32;
     auto sphere_pts = CreateSpherePoints(cx, cy, cz, radius, pt_num);
     pt_num = sphere_pts.size()/3;
     printf("sphere pt size : %ld \n",sphere_pts.size()/3 );
@@ -300,6 +300,7 @@ void VoronoiGen::GenerateVoroData()
 {
     // InsertBoundryPts();
 // 
+    auto t0 = Clock::now();
     InsertSphereBoundryPts();
 
     // printf("finsh InsertBoundryPts \n");
@@ -311,6 +312,15 @@ void VoronoiGen::GenerateVoroData()
     printf("voronoi cell num : %d \n", voronoi_data_.numberofvcells);
     printf("finsh generate_voronoi_cell \n");
     InitVoronoiDataForCellVolume();
+    auto t1 = Clock::now();
+    PrecomputeVoroData();
+    auto t2 = Clock::now();
+    double build_vo_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
+    printf("-----------compute voronoi data time : %f \n", build_vo_time);
+
+    double prevo_time = std::chrono::nanoseconds(t2 - t1).count()/1e9;
+    printf("-----------pre iter voronoi data time : %f \n", prevo_time);
+
     if(1)
     {
         OutputVoronisMesh();
@@ -1236,6 +1246,262 @@ if(0)
     return cell_volume;
 }
 
+
+double VoronoiGen::CalTruncatedCellVolumePass2(tetgenmesh::point in_pt, tetgenmesh::point nei_pt)
+{
+    double plane_mid_x = (in_pt[0] + nei_pt[0])/2.0;
+    double plane_mid_y = (in_pt[1] + nei_pt[1])/2.0;
+    double plane_mid_z = (in_pt[2] + nei_pt[2])/2.0;
+    double p_nx  = (in_pt[0] - nei_pt[0]);
+    double p_ny  = (in_pt[1] - nei_pt[1]);
+    double p_nz  = (in_pt[2] - nei_pt[2]);
+    double pn_len = sqrt(p_nx * p_nx + p_ny * p_ny + p_nz * p_nz);
+    if(pn_len > 0) 
+    {
+        p_nx /= pn_len;
+        p_ny /= pn_len;
+        p_nz /= pn_len;
+    }
+    // VoroPlane v_plane(plane_mid_x, plane_mid_y, plane_mid_z, p_nx, p_ny, p_nz);
+    // SavePlane(v_plane);
+    // if(point_id_map_.find(nei_pt) == point_id_map_.end())
+    // return 0;
+    auto vc_id = point_id_map_[nei_pt];
+    auto v_cell  = voronoi_data_.vcelllist[vc_id];
+    auto vf_list = voronoi_data_.vfacetlist;
+    auto ve_list = voronoi_data_.vedgelist;
+    auto vp_list = voronoi_data_.vpointlist;
+    // printf("pt size 0001 : %ld \n", points_.size());
+    if(v_cell == NULL) return 0;
+    int f_num = v_cell[0];
+    int e_count = 0;
+    // double cell_center[3] = {0, 0, 0};
+    int valid_count = 0;
+    int intersect_count = 0; 
+    double trunc_facet_center_[3] = {0, 0, 0};
+    const auto& vc_pids = vorocell_pids_[vc_id];
+    const auto& eids = vorocell_eids_[vc_id];
+
+if(1)
+{
+    size_t t_i;
+    // #pragma omp parallel for private(t_i) shared(vc_pids, v_sign_vals_, vp_list)
+    for( t_i = 0; t_i < vc_pids.size(); ++t_i)
+    {
+        int cur_pid = vc_pids[t_i];
+        double dx = vp_list[3 * cur_pid]     - plane_mid_x;
+        double dy = vp_list[3 * cur_pid + 1] - plane_mid_y;
+        double dz = vp_list[3 * cur_pid + 2] - plane_mid_z;
+        v_sign_vals_[cur_pid] = dx * p_nx + dy * p_ny + dz * p_nz;
+    }
+}
+
+    
+    // std::cout <<std::endl;
+    // return 0;
+    // printf("v_sign_vals_ size  %ld \n", v_sign_vals_.size());
+    // std::cout << " eids : " ;
+
+    // std::string intersect_pt_path = out_dir_ + std::to_string(vc_id) + "intersecet_pts.obj";
+    // std::ofstream inter_pt_file;
+    // inter_pt_file.open(intersect_pt_path);
+
+    for(size_t i = 0; i < eids.size(); ++i)
+    {
+        int cur_eid = eids[i];
+        const auto& ve = ve_list[cur_eid];
+        if(ve.v1 != -1 && ve.v2 != -1)
+        {
+            double proj1 = v_sign_vals_[ve.v1];
+            double proj2 = v_sign_vals_[ve.v2];
+            if(proj1 * proj2 <= 0)
+            {
+                double r1 = abs(proj1) /(abs(proj1) + abs(proj2));
+                double r2 = abs(proj2) /(abs(proj1) + abs(proj2));
+                double inter_x = r2 * vp_list[3 * ve.v1]     + r1 * vp_list[3 * ve.v2];
+                double inter_y = r2 * vp_list[3 * ve.v1 + 1] + r1 * vp_list[3 * ve.v2 + 1];
+                double inter_z = r2 * vp_list[3 * ve.v1 + 2] + r1 * vp_list[3 * ve.v2 + 2];
+                ve_intersect_pts_[3 * cur_eid]     = inter_x;
+                ve_intersect_pts_[3 * cur_eid + 1] = inter_y;
+                ve_intersect_pts_[3 * cur_eid + 2] = inter_z;
+
+                trunc_facet_center_[0] +=  inter_x;
+                trunc_facet_center_[1] +=  inter_y;
+                trunc_facet_center_[2] +=  inter_z;
+                intersect_count ++;
+                e_sign_vals_[cur_eid] = INTERSECT;
+            } 
+            else if(proj1 >0 && proj2 > 0)
+            {
+                e_sign_vals_[cur_eid] = IN_UNION;
+            } else {
+                e_sign_vals_[cur_eid] = OUT_UNION;
+            }
+
+            // std::cout << "e_sign_vals_[cur_eid] " << e_sign_vals_[cur_eid] << std::endl;
+        }    
+    }
+    // return 0;
+    // inter_pt_file.close();
+    // std::cout << std::endl;
+    // printf("e_sign_vals_ size  %ld \n", e_sign_vals_.size());
+    // printf("intersect_count   %d \n", intersect_count)
+
+    if(intersect_count > 0)
+    {
+        trunc_facet_center_[0] /= (double(intersect_count) );
+        trunc_facet_center_[1] /= (double(intersect_count) );
+        trunc_facet_center_[2] /= (double(intersect_count) );
+        valid_count ++;
+    }
+
+    // printf("valid_count   %d \n", valid_count);
+    
+    // int max_triangles = 30000;
+    // triagnles.resize(max_triangles);
+    int tri_count = 0;
+    double volume_sum = 0;
+    
+    for(size_t i = 0; i < f_num; ++i)
+    {
+        size_t f_id = v_cell[i + 1];
+        const auto& facet = vf_list[f_id];
+        size_t e_num = facet.elist[0];
+        bool find_first_vid= false;
+        int start_id = 0;
+        std::vector<double*> intersect_triagnles;
+        // int intersect_cout = 0;
+        for(size_t j = 0; j < e_num; ++j)
+        {
+            size_t e_id = facet.elist[1 + j];
+            const auto& ve = ve_list[e_id];
+            if(e_sign_vals_[e_id] == IN_UNION)
+            {
+                if(find_first_vid)
+                {
+                    // tet_pts_[tri_count * 4*3 ] = vp_list[3 * start_id];
+                    // tet_pts_[tri_count * 4*3 + 1] = vp_list[3 * start_id + 1];
+                    // tet_pts_[tri_count * 4*3 + 2] = vp_list[3 * start_id + 2];
+
+                    // tet_pts_[tri_count * 4*3 + 3] = vp_list[3 * ve.v1];
+                    // tet_pts_[tri_count * 4*3 + 4] = vp_list[3 * ve.v1 + 1];
+                    // tet_pts_[tri_count * 4*3 + 5] = vp_list[3 * ve.v1 + 2];
+
+                    // tet_pts_[tri_count * 4*3 + 6] = vp_list[3 * ve.v2];
+                    // tet_pts_[tri_count * 4*3 + 7] = vp_list[3 * ve.v2 + 1];
+                    // tet_pts_[tri_count * 4*3 + 8] = vp_list[3 * ve.v2 + 2];
+
+                    // tet_pts_[tri_count * 4*3 + 9] = trunc_facet_center_[0];
+                    // tet_pts_[tri_count * 4*3 + 10] = trunc_facet_center_[1];
+                    // tet_pts_[tri_count * 4*3 + 11] = trunc_facet_center_[2];
+
+                    // triagnles_[tri_count *3]     = &vp_list[3 * start_id];
+                    // triagnles_[tri_count *3 + 1] = &vp_list[3 * ve.v1];
+                    // triagnles_[tri_count *3 + 2] = &vp_list[3 * ve.v2];
+                    volume_sum += CalTetrahedronVolumeDet(&vp_list[3 * start_id],
+                                                &vp_list[3 * ve.v1],
+                                                &vp_list[3 * ve.v2],
+                                                trunc_facet_center_);
+                    tri_count ++;
+                } else {
+                    find_first_vid = true;
+                    start_id = ve.v2;
+                    
+                }
+            } else if(e_sign_vals_[e_id] == INTERSECT)
+            {
+                if(find_first_vid)
+                {
+                //    triagnles_[tri_count *3] = &vp_list[3 * start_id];
+                    // tet_pts_[tri_count * 4*3 ] = vp_list[3 * start_id];
+                    // tet_pts_[tri_count * 4*3 + 1] = vp_list[3 * start_id + 1];
+                    // tet_pts_[tri_count * 4*3 + 2] = vp_list[3 * start_id + 2];
+
+                    if(v_sign_vals_[ve.v1] > 0)
+                    {
+                        // triagnles_[tri_count *3 + 1] = &vp_list[3 * ve.v1];
+                        // tet_pts_[tri_count * 4*3 + 3] = vp_list[3 * ve.v1];
+                        // tet_pts_[tri_count * 4*3 + 4] = vp_list[3 * ve.v1 + 1];
+                        // tet_pts_[tri_count * 4*3 + 5] = vp_list[3 * ve.v1 + 2];
+                        volume_sum += CalTetrahedronVolumeDet(&vp_list[3 * start_id],
+                                                &vp_list[3 * ve.v1],
+                                                &ve_intersect_pts_[3 * e_id],
+                                                trunc_facet_center_);
+                    } else {
+                        // tet_pts_[tri_count * 4*3 + 3] = vp_list[3 * ve.v2];
+                        // tet_pts_[tri_count * 4*3 + 4] = vp_list[3 * ve.v2 + 1];
+                        // tet_pts_[tri_count * 4*3 + 5] = vp_list[3 * ve.v2 + 2];
+                        // triagnles_[tri_count *3 + 1] = &vp_list[3 * ve.v2];
+                        volume_sum += CalTetrahedronVolumeDet(&vp_list[3 * start_id],
+                                                &vp_list[3 * ve.v2],
+                                                &ve_intersect_pts_[3 * e_id],
+                                                trunc_facet_center_);
+                    }
+                    // tet_pts_[tri_count * 4*3 + 6] = ve_intersect_pts_[3 * e_id];
+                    // tet_pts_[tri_count * 4*3 + 7] = ve_intersect_pts_[3 * e_id + 1];
+                    // tet_pts_[tri_count * 4*3 + 8] = ve_intersect_pts_[3 * e_id + 2];
+
+                    // triagnles_[tri_count *3 + 2] = &ve_intersect_pts_[3 * e_id];
+                    tri_count ++;
+                } else {
+                    if(v_sign_vals_[ve.v1] > 0) 
+                    {
+                        start_id = ve.v1;
+                    } else {
+                        start_id = ve.v2;
+                    }
+                    find_first_vid = true;
+                }
+                intersect_triagnles.push_back(&ve_intersect_pts_[3 * e_id]);
+            } 
+        }
+
+        
+        if(find_first_vid)
+        {
+            // std::cout << " intersect_triagnles.size()  "<< intersect_triagnles.size()  << std::endl;
+            if(intersect_triagnles.size() == 2)
+            {
+                // triagnles_[tri_count *3] = intersect_triagnles[0];
+                // triagnles_[tri_count *3 + 1] = intersect_triagnles[1];
+                // triagnles_[tri_count *3 + 2] = &vp_list[3 * start_id];
+
+                double volume = CalTetrahedronVolumeDet(intersect_triagnles[0],
+                                                intersect_triagnles[1],
+                                                &vp_list[3 * start_id],
+                                                trunc_facet_center_);
+                volume_sum += volume;
+                // tri_count ++;
+            }
+        } 
+    }
+    
+    
+
+    // printf("triangle size : %ld \n", triagnles.size());
+    // printf("tri_count size : %d \n", tri_count);
+// #pragma omp parallel for
+//     for(size_t i = 0; i < tri_count; ++i)
+//     {
+//         // double volume = CalTetrahedronVolumeDet(triagnles_[3*i],
+//         //                                         triagnles_[3*i + 1],
+//         //                                         triagnles_[3*i + 2],
+//         //                                         trunc_facet_center_);
+
+//         double volume = CalTetrahedronVolumeDet(&tet_pts_[12*i], &tet_pts_[12*i+ 3],  &tet_pts_[12*i+ 6],  &tet_pts_[12*i+ 9]);                                        
+
+        
+//         volume_vec_[i] = volume;
+//     }
+
+// for(size_t i = 0; i < tri_count; ++i)
+// {
+//     volume_sum += volume_vec_[i];
+// }
+
+    return volume_sum;
+}
+
 void VoronoiGen::OutputTetMesh(const std::string& tetmesh_path)
 {
     std::ofstream mesh_file;
@@ -1450,6 +1716,114 @@ void VoronoiGen::OutputVoronisMesh()
 
 }
 
+
+
+void VoronoiGen::PrecomputeVoroData()
+{
+    auto vf_list = voronoi_data_.vfacetlist;
+    auto ve_list = voronoi_data_.vedgelist;
+    auto vp_list = voronoi_data_.vpointlist;
+    auto vc_list = voronoi_data_.vcelllist;
+    // vids_status_.resize(voronoi_data_.numberofvpoints, false);
+    v_sign_vals_.resize(voronoi_data_.numberofvpoints, 0);
+
+    // eids_status_.resize(voronoi_data_.numberofvedges, false);
+    e_sign_vals_.resize(voronoi_data_.numberofvedges);
+    ve_intersect_pts_.resize(voronoi_data_.numberofvedges * 3);
+    int vc_num = voronoi_data_.numberofvcells;
+
+    vorocell_pids_.resize(vc_num);
+    vorocell_eids_.resize(vc_num);
+
+    for(int vci =0; vci < vc_num; ++vci)
+    {
+        auto v_cell  = voronoi_data_.vcelllist[vci];
+        // printf("pt size 0001 : %ld \n", points_.size());
+        if(v_cell == NULL) continue;
+        int f_num = v_cell[0];
+        std::set<int> vcell_pt_list;
+        std::set<int> vcell_edge_list ;
+        for(size_t i = 0; i < f_num; ++i)
+        {
+            size_t f_id = v_cell[i + 1];
+            auto facet = vf_list[f_id];
+            size_t e_num = facet.elist[0];
+            arma::vec3 f_center;
+            for(size_t j = 0; j < e_num; ++j)
+            {
+                int e_id = facet.elist[1 + j];
+                vcell_edge_list.insert(e_id);
+                const auto& ve = ve_list[e_id];
+
+                
+                vcell_pt_list.insert(ve.v1);
+                vcell_pt_list.insert(ve.v2);
+            }
+        }
+        vorocell_pids_[vci] = std::vector<int>(vcell_pt_list.begin(), vcell_pt_list.end());
+        vorocell_eids_[vci] = std::vector<int>(vcell_edge_list.begin(), vcell_edge_list.end());;
+        
+    }   
+    // for(auto vc_ids : vorocell_pids_)
+    // {
+    //     for(auto id : vc_ids)
+    //     {
+    //         if(id > voronoi_data_.numberofvpoints)
+    //         {
+    //             std::cout << " too large ids : " << id << std::endl;
+    //         }
+    //     }
+    // }
+    
+
+    // for(int i =0; i < vc_num; ++i)
+    // {
+    //     eids_status_.resize(voronoi_data_.numberofvedges, false);
+    //     vids_status_.resize(voronoi_data_.numberofvpoints, false);
+    //     // std::vector<int> vids;
+    //     // std::vector<int> eids;
+    //     auto vcell = vc_list[i];
+    //     if(vcell != NULL)
+    //     {
+    //         int f_num = vcell[0];
+    //         for(size_t fi = 0; fi < f_num; ++fi)
+    //         {
+    //             int f_id = vcell[fi + 1];
+    //             const auto& facet = vf_list[f_id];
+    //             size_t e_num = facet.elist[0];
+    //             for(size_t ei = 0; ei < e_num; ++ei)
+    //             {
+    //                 size_t e_id = facet.elist[1 + ei];
+    //                 if(eids_status_[e_id]) continue;
+    //                 eids_status_[e_id] = true;
+    //                 vorocell_eids_[i].push_back(e_id);
+    //                 const auto& ve = ve_list[e_id];
+    //                 if(ve.v1 == -1 || ve.v2 == -1) continue;
+    //                 if(!vids_status_[ve.v1])
+    //                 {
+    //                     vorocell_pids_[i].push_back(ve.v1);
+    //                     vids_status_[ve.v1] = true;
+    //                 }
+    //                 if(!vids_status_[ve.v2])
+    //                 {
+    //                     vorocell_pids_[i].push_back(ve.v2);
+    //                     vids_status_[ve.v2] = true;
+    //                 }
+    //             } 
+    //         }
+    //     }
+        // for(auto vid : vorocell_pids_[i])
+        // {
+        //     vids_status_[vid] = false;
+        // }
+        // for(auto eid : vorocell_eids_[i])
+        // {
+        //     eids_status_[eid] = false;
+        // }
+        // vorocell_pids_[i] = vids;
+        // vorocell_eids_[i] = eids;
+    // }
+}
 
 void VoronoiGen::GetVertexStar(tetgenmesh::point &p_st, 
             std::set<tetgenmesh::point>& candid_pts, int level = 1)

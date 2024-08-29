@@ -666,7 +666,7 @@ void LocalVipss::BuildHRBFPerNode()
     size_t cluster_num = cluster_cores_mat_.n_cols;
     double time_sum = 0;
     node_rbf_vec_.resize(cluster_num);
-    bool use_partial_vipss = false;
+    bool use_partial_vipss = true;
     vipss_api_.user_lambda_ = user_lambda_;
 
     printf("cluster num : %lu \n", cluster_num);
@@ -679,7 +679,7 @@ void LocalVipss::BuildHRBFPerNode()
         std::vector<double> cluster_nl_vec;
         if(use_partial_vipss) 
         {
-            // cluster_nl_vec = {normals_[3*i], normals_[3*i + 1], normals_[3*i + 2]};
+            cluster_nl_vec = {normals_[3*i], normals_[3*i + 1], normals_[3*i + 2]};
         } else {
             cluster_nl_vec = GetClusterNormalsFromIds(cluster_pt_ids, normals_);
         }
@@ -785,7 +785,11 @@ void LocalVipss::testNNPtDist()
 double LocalVipss::NatureNeighborDistanceFunction(const tetgenmesh::point cur_pt)
 {
     std::vector<tetgenmesh::point> nei_pts;
+    auto tn0 = Clock::now();
     voro_gen_.GetVoronoiNeiPts(cur_pt, nei_pts);
+    auto tn1 = Clock::now();
+    double search_nn_time = std::chrono::nanoseconds(tn1 - tn0).count()/1e9;
+    search_nn_time_sum_ += search_nn_time;
     // printf("nn num %ld \n", nei_pts.size());
     size_t nn_num = nei_pts.size();
     // arma::vec dist_vec(nn_num);
@@ -798,9 +802,17 @@ double LocalVipss::NatureNeighborDistanceFunction(const tetgenmesh::point cur_pt
         auto nn_pt = nei_pts[i];
         if(nn_pt != (tetgenmesh::point)NULL && voro_gen_.tetMesh_.pointtype(nn_pt) != tetgenmesh::UNUSEDVERTEX)
         {
+            auto td0 = Clock::now();
             double nn_dist = NodeDistanceFunction(nn_pt, cur_pt);
+            auto td1 = Clock::now();
+            double dist_time = std::chrono::nanoseconds(td1 - td0).count()/1e9;
+            dist_time_sum_ += dist_time;
             // printf("nn dist %f \n", nn_dist);
+            auto t0 = Clock::now();
             double volume  = voro_gen_.CalTruncatedCellVolumePass(cur_pt, nn_pt);
+            auto t1 = Clock::now();
+            double pass_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
+            pass_time_sum_ += pass_time;
             // double volume  = voro_gen_.CalTruncatedCellVolume(cur_pt, nn_pt);
             // double volume  = voro_gen_.CalUnionCellVolume(cur_pt, nn_pt);
             // printf("nn dist %f, volume %f \n", nn_dist, volume);
