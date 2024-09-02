@@ -302,18 +302,22 @@ void VoronoiGen::GenerateVoroData()
 // 
     auto t0 = Clock::now();
     InsertSphereBoundryPts();
+    
 
     // printf("finsh InsertBoundryPts \n");
     tetMesh_.generate_voronoi_cell(&voronoi_data_);
+    
 
     printf("voronoi pt num : %d \n", voronoi_data_.numberofvpoints);
-    printf("voronoi edge num : %d \n", voronoi_data_.numberofvedges);
-    printf("voronoi facet num : %d \n", voronoi_data_.numberofvfacets);
+    // printf("voronoi edge num : %d \n", voronoi_data_.numberofvedges);
+    // printf("voronoi facet num : %d \n", voronoi_data_.numberofvfacets);
     printf("voronoi cell num : %d \n", voronoi_data_.numberofvcells);
-    printf("finsh generate_voronoi_cell \n");
-    InitVoronoiDataForCellVolume();
+    // printf("finsh generate_voronoi_cell \n");
+    // InitVoronoiDataForCellVolume();
+    // return;
+    printf("finsh InitVoronoiDataForCellVolume \n");
     auto t1 = Clock::now();
-    PrecomputeVoroData();
+    // PrecomputeVoroData();
     auto t2 = Clock::now();
     double build_vo_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
     printf("-----------compute voronoi data time : %f \n", build_vo_time);
@@ -321,7 +325,7 @@ void VoronoiGen::GenerateVoroData()
     double prevo_time = std::chrono::nanoseconds(t2 - t1).count()/1e9;
     printf("-----------pre iter voronoi data time : %f \n", prevo_time);
 
-    if(1)
+    if(0)
     {
         OutputVoronisMesh();
         std::string out_mesh_path = out_dir_ + "tet_mesh.obj";
@@ -484,15 +488,15 @@ void VoronoiGen::CalVoroFaceNormal(tetgenmesh::point in_pt, tetgenmesh::point ne
 
 void VoronoiGen::InitVoronoiDataForCellVolume()
 {
-    size_t vp_num = voronoi_data_.numberofvpoints;
-    size_t ve_num = voronoi_data_.numberofvedges;
-    size_t vf_num = voronoi_data_.numberofvfacets;
+    // size_t vp_num = voronoi_data_.numberofvpoints;
+    // size_t ve_num = voronoi_data_.numberofvedges;
+    // size_t vf_num = voronoi_data_.numberofvfacets;
 
-    vpt_sign_vals_.resize(vp_num);
-    edge_insect_symbols_.resize(ve_num, -1);
-    edge_insect_pts_.resize(ve_num * 3);
-    vcell_face_normals_.resize(vf_num);
-    vcell_face_centers_.resize(vf_num);
+    // vpt_sign_vals_.resize(vp_num);
+    // edge_insect_symbols_.resize(ve_num, -1);
+    // edge_insect_pts_.resize(ve_num * 3);
+    // vcell_face_normals_.resize(vf_num);
+    // vcell_face_centers_.resize(vf_num);
     // auto vp_list = voronoi_data_.vpointlist;
     // auto ve_list = voronoi_data_.vedgelist;
     // auto vf_list = voronoi_data_.vfacetlist;
@@ -1882,6 +1886,8 @@ void VoronoiGen::BuildTetMeshTetCenterMap()
         }
         tetface.tet = tetMesh_.alltetrahedrontraverse();
     }
+    std::string tet_center_path = out_dir_ + filename_ + "/" + "tet_centers";
+    writePLYFile(tet_center_path, tet_center_pts_);
 }
 
 tetgenmesh::tetrahedron* VoronoiGen::GetClosetTet(double x, double y, double z)

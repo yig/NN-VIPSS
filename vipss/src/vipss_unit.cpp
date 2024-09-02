@@ -593,10 +593,13 @@ void VIPSSUnit::ReconSurface()
 {
     printf(" start ReconSurface \n");
     // local_vipss_.TestVoronoiPts();
+    local_vipss_.voro_gen_.BuildTetMeshTetCenterMap();
     local_vipss_.voro_gen_.GenerateVoroData();
+    // local_vipss_.PtPCA(local_vipss_.out_pts_);
+    
     // local_vipss_.voro_gen_.BuildTetMeshTetCenterMap();
     // local_vipss_.voro_gen_.BuildPicoTree();
-    // return;
+    
     
     // bool use_nn_interpolation = true;
     if(LOCAL_HRBF_NN == hrbf_type_)
@@ -605,9 +608,16 @@ void VIPSSUnit::ReconSurface()
         local_vipss_.normals_ = newnormals_;
         local_vipss_.s_vals_ = s_func_vals_;
         local_vipss_.user_lambda_ = user_lambda_;
+
         local_vipss_.BuildHRBFPerNode(); 
         // printf(" start set local vipss static ptr \n");
         local_vipss_.SetThis();
+
+        // local_vipss_.GroupClustersWithDegree();
+        // std::string group_pt_path = data_dir_  + file_name_ + "/" + "group_pts.obj";
+        // std::cout << " save group pts to file : " << group_pt_path << std::endl;
+        // local_vipss_.SaveGroupPtsWithColor(group_pt_path);
+
         // printf(" finish set local vipss static ptr \n");
         // local_vipss_.testNNPtDist();
 
@@ -689,7 +699,9 @@ if(1)
         // OptUnitVipssNormal();
         OptUnitVipssNormalDirect();
     }
+
     Final_H_.clear();
+    local_vipss_.final_H_.clear();
 
     auto ts1 = Clock::now();
     double solve_time = std::chrono::nanoseconds(ts1 - ts0).count() / 1e9;

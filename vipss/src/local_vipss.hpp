@@ -4,12 +4,39 @@
 #include <Eigen/Sparse>
 
 
+class C_Edege{
+    public:
+        C_Edege(size_t c_a, size_t c_b)
+        {
+            c_a_ = c_a;
+            c_b_ = c_b; 
+            // if(c_a > c_b)
+            // {
+            //     c_a_ = c_b;
+            //     c_b_ = c_a;
+            // }
+            e_id_ = std::to_string(c_a_) + "_" + std::to_string(c_b_);
+        };
+        ~C_Edege () {};
+
+    public:
+        size_t c_a_;
+        size_t c_b_;
+        double score_;
+        std::string e_id_;
+};
+
+struct SP_BBOX{
+    double min_corner[3];
+    double max_corner[3];
+};
 
 class LocalVipss {
 
     typedef tetgenmesh::point P3tr;
     typedef Eigen::SparseMatrix<double> SpMat;
     typedef Eigen::Triplet<double> Triplet;
+    
 
     public:
         LocalVipss() {};
@@ -44,6 +71,7 @@ class LocalVipss {
         void CalculateClusterNeiScores(bool is_init = false);
         void CalculateClusterScores();
         void MergeClusters();
+        void MergeGoodNeighborClusters();
         void UpdateClusterScoreMat();
         void OuputPtN(const std::string& out_path, bool orient_normal = false);
         void FlipClusterNormalsByScores();
@@ -64,6 +92,8 @@ class LocalVipss {
         void Run();
         void InitNormals();
         void InitNormalsWithMerge();
+
+        void GroupPtsWithVolume();
 
     public:
         inline void AppendRow(arma::sp_imat& in_mat,  arma::sp_irowvec& append_row);
@@ -98,6 +128,15 @@ class LocalVipss {
         static int DistCallNum;
         static double DistCallTime;
 
+        void CalClusterDegrees();
+        void MergeHRBFClustersWithDegree();
+        void MergeClusterPairs(std::vector<arma::uword>& merged_cluster_ids);
+        void GroupClustersWithDegree();
+
+        void SaveGroupPtsWithColor(const std::string& path);
+        void PtPCA(std::vector<double>& pts);
+        void OptimizeAdjacentMat(); 
+
     private:
 
         inline void ShedCols(arma::sp_imat& in_mat, const std::vector<arma::uword>& delete_ids);
@@ -118,7 +157,8 @@ class LocalVipss {
         arma::sp_mat cluster_normal_y_;
         arma::sp_mat cluster_normal_z_;
         arma::sp_mat final_H_; 
-        arma::sp_mat final_H_temp_; 
+        arma::sp_mat final_H_temp_;
+        arma::vec cluster_degrees_; 
 
         std::vector<tetgenmesh::point> points_; 
         std::vector<double> normals_;
@@ -149,6 +189,7 @@ class LocalVipss {
         std::vector<uint>finalMesh_fv_;
         
     public:
+        int max_group_iter_ = 9;
         bool flip_normal_ = false;
         double user_lambda_ = 0.0;
         double unit_lambda_ = 0.0;
