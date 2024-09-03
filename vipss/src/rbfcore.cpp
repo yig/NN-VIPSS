@@ -200,8 +200,9 @@ double RBF_Core::Dist_Function(const double x, const double y, const double z){
 inline double RBF_Core::Dist_Function(const double *p){
 
     n_evacalls++;
-    double *p_pts = pts.data();
-    static arma::vec kern(npt), kb;
+    const double *p_pts = pts.data();
+    // static arma::vec kern(npt), kb;
+    arma::vec kern(npt), kb;
     if(isHermite){
         kern.set_size(npt + 3 * key_npt);
         double G[3];

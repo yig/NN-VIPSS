@@ -118,6 +118,7 @@ class LocalVipss {
         // double DistanceFunction(const std::vector<tetgenmesh::point>& nn_pts);
         double NodeDistanceFunction(const tetgenmesh::point nn_pt, const tetgenmesh::point cur_pt);
         double NatureNeighborDistanceFunction(const tetgenmesh::point cur_pt);
+        double NatureNeighborDistanceFunctionOMP(const tetgenmesh::point cur_pt);
         static double NNDistFunction(const R3Pt &in_pt);  
         void SetThis();      
         void VisualFuncValues(double (*function)(const R3Pt &in_pt), const VoroPlane& plane,
@@ -149,6 +150,7 @@ class LocalVipss {
         arma::sp_imat adjacent_mat_;
         arma::sp_imat cluster_cores_mat_;
         arma::sp_imat cluster_adjacent_mat_;
+        arma::sp_imat cluster_adjacent_mat_opt_;
         arma::sp_imat cluster_MST_mat_;
         arma::sp_mat cluster_scores_mat_;
         arma::sp_imat cluster_adjacent_pt_mat_;
@@ -187,6 +189,9 @@ class LocalVipss {
         std::vector<std::shared_ptr<RBF_Core>> node_rbf_vec_;
         std::vector<double>finalMesh_v_;
         std::vector<uint>finalMesh_fv_;
+
+        arma::vec nn_dist_vec_;
+        arma::vec nn_volume_vec_;
         
     public:
         int max_group_iter_ = 9;

@@ -1,5 +1,6 @@
 #include <chrono>
 #include "vipss_unit.hpp"
+#include "spectral_clustering.h"
 
 typedef std::chrono::high_resolution_clock Clock;
 
@@ -596,6 +597,9 @@ void VIPSSUnit::ReconSurface()
     local_vipss_.voro_gen_.BuildTetMeshTetCenterMap();
     local_vipss_.voro_gen_.GenerateVoroData();
     // local_vipss_.PtPCA(local_vipss_.out_pts_);
+    // local_vipss_.out_normals_ = newnormals_;
+    // local_vipss_.OptimizeAdjacentMat();
+    // TestSpectralClustering(local_vipss_.cluster_adjacent_mat_opt_);
     
     // local_vipss_.voro_gen_.BuildTetMeshTetCenterMap();
     // local_vipss_.voro_gen_.BuildPicoTree();
@@ -620,6 +624,7 @@ void VIPSSUnit::ReconSurface()
 
         // printf(" finish set local vipss static ptr \n");
         // local_vipss_.testNNPtDist();
+        // return;
 
     if(0)
     {

@@ -17,7 +17,7 @@ void BuildLaplacianMat(const arma::sp_imat& adj_mat, arma::sp_imat& lap_mat)
 void DeregularLaplacians(const arma::sp_imat& lap_mat)
 {
     arma::eigs_opts opts;
-    opts.maxiter = 1000;
+    opts.maxiter = 50;
     arma::vec eig_val;
     arma::mat eig_vec;
     

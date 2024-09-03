@@ -151,6 +151,7 @@ class VoronoiGen{
         void BuildPicoTree();
         tetgenmesh::tetrahedron* GetClosetTet(double x, double y, double z);
         double CalTruncatedCellVolumePass(tetgenmesh::point in_pt, tetgenmesh::point nei_pt);
+        double CalTruncatedCellVolumePassOMP(tetgenmesh::point in_pt, tetgenmesh::point nei_pt, int thread_id = 0);
         double CalTruncatedCellVolumePass2(tetgenmesh::point in_pt, tetgenmesh::point nei_pt);
         void OutputTetMesh(const std::string& tetmesh_path);
         void PrecomputeVoroData();
@@ -176,7 +177,7 @@ class VoronoiGen{
         double truncated_cell_center_[3];
         double truncated_face_center_[3];
 
-        static const int MAX_ELEMENT_ = 10000;
+        static const int MAX_ELEMENT_ = 1000;
         double pt_sign_vals_[MAX_ELEMENT_];
         int edge_sign_vals_[MAX_ELEMENT_];
         int face_sign_vals_[MAX_ELEMENT_];
@@ -186,6 +187,13 @@ class VoronoiGen{
         double face_centers_[MAX_ELEMENT_];
         double intersect_pts_[MAX_ELEMENT_];
         double tet_list_pts_[MAX_ELEMENT_ *3];
+
+        static const int MAX_THREAD_NUM_ = 32;
+        double* truncated_tets_omp_[MAX_THREAD_NUM_][MAX_ELEMENT_*2];
+        double truncated_centers_omp_[MAX_THREAD_NUM_][3];
+        double intersect_pts_omp_[MAX_THREAD_NUM_][MAX_ELEMENT_];
+        int face_tet_count_omp_[MAX_THREAD_NUM_][MAX_ELEMENT_];
+        // double* truncated_tets_[MAX_THREAD_NUM_][MAX_ELEMENT_*4];
 
         RBF_API vipss_api_;
         tetgenmesh::point dummypoint_;

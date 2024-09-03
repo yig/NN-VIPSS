@@ -5,6 +5,7 @@
 #include "orient_normal.h"
 #include <chrono>
 #include <queue>
+#include <omp.h>
 
 typedef std::chrono::high_resolution_clock Clock;
 
@@ -762,15 +763,17 @@ void LocalVipss::testNNPtDist()
             double nn_dist = NodeDistanceFunction(nn_pt, test_pt);
             // printf("nn dist %f \n", nn_dist);
             double volume  = voro_gen_.CalTruncatedCellVolumePass(test_pt, nn_pt);
+            double volume2  = voro_gen_.CalTruncatedCellVolumePassOMP(test_pt, nn_pt);
             // double volume2  = voro_gen_.CalTruncatedCellVolume(test_pt, nn_pt);
-            // printf("nn dist %f, volume %f  volume2 %f  \n", nn_dist, volume, volume2);
-            if(volume < 0.01) continue;
-            weight_sum += nn_dist * volume; 
-            volume_sum += volume;
-            size_t p_id = voro_gen_.point_id_map_[nn_pt];
-            std::string out_path = out_dir_ + "/nn_spheres/" + std::to_string(p_id) + "_sphere" + std::to_string(volume) + ".ply";
-            std::array<double,3> center = {nn_pt[0], nn_pt[1], nn_pt[2]};
-            SaveSphere(out_path, vts, faces, center, volume);
+            printf("------------- nn dist %f, volume %f  volume2 %f  \n", nn_dist, volume, volume2);
+            // if(volume < 0.01) continue;
+            // weight_sum += nn_dist * volume; 
+            // volume_sum += volume;
+            // size_t p_id = voro_gen_.point_id_map_[nn_pt];
+            // std::string out_path = out_dir_ + "/nn_spheres/" + std::to_string(p_id) + "_sphere" + std::to_string(volume) + ".ply";
+            // std::array<double,3> center = {nn_pt[0], nn_pt[1], nn_pt[2]};
+            // SaveSphere(out_path, vts, faces, center, volume);
+            // break;
         }
     }
 
@@ -805,6 +808,7 @@ void LocalVipss::testNNPtDist()
     writeXYZ(nn_pt_path, nn_pts);
 }
 
+
 double LocalVipss::NatureNeighborDistanceFunction(const tetgenmesh::point cur_pt)
 {
     std::vector<tetgenmesh::point> nei_pts;
@@ -823,7 +827,7 @@ double LocalVipss::NatureNeighborDistanceFunction(const tetgenmesh::point cur_pt
     for(size_t i = 0; i < nn_num; ++i)
     {
         auto nn_pt = nei_pts[i];
-        if(nn_pt != (tetgenmesh::point)NULL && voro_gen_.tetMesh_.pointtype(nn_pt) != tetgenmesh::UNUSEDVERTEX)
+        // if(nn_pt != (tetgenmesh::point)NULL && voro_gen_.tetMesh_.pointtype(nn_pt) != tetgenmesh::UNUSEDVERTEX)
         {
             auto td0 = Clock::now();
             double nn_dist = NodeDistanceFunction(nn_pt, cur_pt);
@@ -848,6 +852,44 @@ double LocalVipss::NatureNeighborDistanceFunction(const tetgenmesh::point cur_pt
     {
         double weight_dist = weight_sum / volume_sum;
         return weight_dist;
+    }
+    return 0;
+}
+
+double LocalVipss::NatureNeighborDistanceFunctionOMP(const tetgenmesh::point cur_pt)
+{
+    std::vector<tetgenmesh::point> nei_pts;
+    auto tn0 = Clock::now();
+    voro_gen_.GetVoronoiNeiPts(cur_pt, nei_pts);
+    auto tn1 = Clock::now();
+    double search_nn_time = std::chrono::nanoseconds(tn1 - tn0).count()/1e9;
+    search_nn_time_sum_ += search_nn_time;
+    // printf("nn num %ld \n", nei_pts.size());
+    size_t nn_num = nei_pts.size();
+    int i;  
+    auto t0 = Clock::now();
+    nn_dist_vec_.resize(nn_num);
+    nn_volume_vec_.resize(nn_num);
+#pragma omp parallel for shared(node_rbf_vec_, voro_gen_, nei_pts, cur_pt, nn_dist_vec_, nn_volume_vec_) private(i)
+    for( i = 0; i < nn_num; ++i)
+    {
+        auto nn_pt = nei_pts[i];
+        // if(nn_pt != (tetgenmesh::point)NULL && voro_gen_.tetMesh_.pointtype(nn_pt) != tetgenmesh::UNUSEDVERTEX)
+        {
+            size_t pid = voro_gen_.point_id_map_[nn_pt];
+            nn_dist_vec_[i] = node_rbf_vec_[pid]->Dist_Function(cur_pt);
+            int thread_id = omp_get_thread_num();
+            nn_volume_vec_[i] = voro_gen_.CalTruncatedCellVolumePassOMP(cur_pt, nn_pt, thread_id); 
+        }
+    }
+    auto t1 = Clock::now();
+    double pass_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
+    pass_time_sum_ += pass_time;
+
+    double volume_sum = arma::accu(nn_volume_vec_);
+    if(volume_sum > 1e-20)
+    {
+        return arma::dot(nn_dist_vec_, nn_volume_vec_) / volume_sum;
     }
     return 0;
 }
@@ -909,7 +951,8 @@ double LocalVipss::NNDistFunction(const R3Pt &in_pt)
     DistCallNum ++;
     auto t0 = Clock::now();
     double new_pt[3] = {in_pt[0], in_pt[1], in_pt[2]};
-    double dist = local_vipss_ptr->NatureNeighborDistanceFunction(&(new_pt[0]));
+    // double dist = local_vipss_ptr->NatureNeighborDistanceFunction(&(new_pt[0]));
+    double dist = local_vipss_ptr->NatureNeighborDistanceFunctionOMP(&(new_pt[0]));
     auto t1 = Clock::now();
     double dist_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
     DistCallTime += dist_time;
@@ -2043,23 +2086,71 @@ void LocalVipss::SaveClusterCorePts(const std::string& path,
     }
     writePLYFile_CO(path, pts, colors);  
 }
-
-void LocalVipss::OptimizeAdjacentMat();
+double CalEdgeLen()
 {
-    size_t cur_pid = cur_e.c_b_ ;
-    const arma::sp_imat& adj_row = cluster_adjacent_mat_.col(cur_pid);
-    // printf("row %d contains no zero num : %d \n", cur_pid, adj_row.n_nonzero);
-    const arma::sp_imat::const_iterator start = adj_row.begin();
-    const arma::sp_imat::const_iterator end = adj_row.end();
-    for(auto iter = start; iter != end; ++iter)
+
+}
+
+void LocalVipss::OptimizeAdjacentMat()
+{   
+    size_t pt_num = cluster_adjacent_mat_.n_cols;
+    cluster_adjacent_mat_opt_.resize(pt_num, pt_num);
+    std::vector<std::pair<size_t, size_t> > edge_ids;
+    for(size_t i = 0; i < pt_num; ++i)
     {
-        size_t n_id = iter.row();
-        if(visited_vids.find(n_id) != visited_vids.end()) continue;
-        if(n_id == cur_pid) continue;
-        C_Edege edge(cur_pid, n_id);
-        edge.score_ = cluster_scores_mat_(n_id, cur_pid);
-        edge_priority_queue.push(edge);
+        const arma::sp_imat& adj_col = cluster_adjacent_mat_.col(i);
+        const arma::sp_imat::const_iterator start = adj_col.begin();
+        const arma::sp_imat::const_iterator end = adj_col.end();
+        arma::vec3 p_normal = {out_normals_[3 *i],out_normals_[3 *i + 1],out_normals_[3 *i + 2]};
+        std::vector< std::pair<size_t, size_t> > cur_edges;
+        std::vector<double> dist_vec;
+        arma::vec3 pt = {out_pts_[3*i], out_pts_[3*i + 1], out_pts_[3*i +2]};
+        for(auto iter = start; iter != end; ++iter)
+        {
+            size_t n_id = iter.row();
+            arma::vec3 n_normal = {out_normals_[3 *n_id],out_normals_[3 *n_id + 1],out_normals_[3 *n_id + 2]};
+            double pro = arma::dot(p_normal, n_normal);
+            if(pro > -0.8)
+            {
+                arma::vec3 n_pt = {out_pts_[3*n_id], out_pts_[3*n_id + 1], out_pts_[3*n_id +2]};
+                
+                cur_edges.push_back(std::pair(i, n_id)); 
+                double dist = arma::norm(pt- n_pt);
+                dist_vec.push_back(dist);
+            }
+        }
+        std::vector<int> v(dist_vec.size());
+        for(int j =0; j < int(v.size()); ++j)
+        {
+            v[j] = j;
+        }
+        std::sort(v.begin(), v.end(), [&dist_vec](int a, int b){return dist_vec[a] < dist_vec[b];});
+        // int n_num = std::min(int(8), int(dist_vec.size()));
+        for(size_t j = 0; j < 4 && j < dist_vec.size() ; ++j)
+        {
+            const auto& cur_e = cur_edges[v[j]];
+            edge_ids.push_back(cur_e);
+            cluster_adjacent_mat_opt_(cur_e.second, cur_e.first) = 1;
+            cluster_adjacent_mat_opt_(cur_e.first, cur_e.second) = 1;
+        }
     }
+    std::cout << "------- cluster_adjacent_mat_opt_  no zero count : " << cluster_adjacent_mat_opt_.n_nonzero << std::endl;
+    std::cout << "------- cluster_adjacent_mat_  no zero count : " << cluster_adjacent_mat_.n_nonzero << std::endl;
+
+    std::ofstream g_file;
+    std::string graph_path = out_dir_ + "/" + "opt_graph.obj";
+    std::cout << "~~~~~~~ out opt graph path : " << graph_path << std::endl;
+    g_file.open(graph_path);
+    for(size_t i  =0; i < pt_num; ++i)
+    {
+        g_file << "v " << out_pts_[3*i] << " " << out_pts_[3*i + 1] <<" "<< out_pts_[3*i+ 2] << std::endl;
+        g_file << "vn "  << out_normals_[3*i] << " " << out_normals_[3*i + 1] <<" "<< out_normals_[3*i+ 2] << std::endl;
+    }
+    for(auto e_id : edge_ids)
+    {
+        g_file << "l " << e_id.first + 1 << " " << e_id.second + 1 << std::endl; 
+    }
+    g_file.close();
 }
 
 

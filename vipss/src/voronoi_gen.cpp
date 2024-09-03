@@ -12,6 +12,7 @@
 // #include <libqhullcpp/RboxPoints.h>
 // #include <libqhull/qhull_a.h>
 #include "sample.h"
+#include "omp.h"
 
 typedef std::chrono::high_resolution_clock Clock;
 
@@ -683,7 +684,7 @@ double CalTetrahedronVolume(double *pa, double* pb, double* pc, double* pd)
 }
 
 
-inline double CalTetrahedronVolumeDet(double* pa, double* pb, double* pc, double* pd)
+inline double CalTetrahedronVolumeDet(const double* pa, const double* pb, const double* pc, const double* pd)
 {
     double a00 = pa[0] - pd[0];
     double a10 = pb[0] - pd[0];
@@ -701,41 +702,27 @@ inline double CalTetrahedronVolumeDet(double* pa, double* pb, double* pc, double
     double det2 = a02 * a11 * a20 + a01 * a10 * a22 + a00 * a12 * a21;
     double det = abs(det2 - det1) / 6.0;
     return det;
-    // arma::mat tet_mat(3, 3);
-    // tet_mat(0, 0) = pa[0] - pd[0];
-    // tet_mat(1, 0) = pb[0] - pd[0];
-    // tet_mat(2, 0) = pc[0] - pd[0];
-
-    // tet_mat(0, 1) = pa[1] - pd[1];
-    // tet_mat(1, 1) = pb[1] - pd[1];
-    // tet_mat(2, 1) = pc[1] - pd[1];
-
-    // tet_mat(0, 2) = pa[2] - pd[2];
-    // tet_mat(1, 2) = pb[2] - pd[2];
-    // tet_mat(2, 2) = pc[2] - pd[2];
-    // std::ofstream out_file;
-    // std::string path = "../out/tet_vol_" + std::to_string(tet_vol_count) + ".obj";
-    // out_file.open(path);
-    // out_file << "v " << pa[0] << " " << pa[1] << " " << pa[2] << std::endl;
-    // out_file << "v " << pb[0] << " " << pb[1] << " " << pb[2] << std::endl;
-    // out_file << "v " << pc[0] << " " << pc[1] << " " << pc[2] << std::endl;
-    // out_file << "v " << pd[0] << " " << pd[1] << " " << pd[2] << std::endl;
-    // out_file << "f 1 2 3" << std::endl;
-    // out_file << "f 1 3 4" << std::endl;
-    // out_file << "f 1 4 2" << std::endl;
-    // out_file << "f 2 3 4" << std::endl;
-    // out_file.close();
-    // tet_vol_count++;
-
-    // arma::mat tet_mat(4, 4);
-    // tet_mat(0,0) = pa[0]; tet_mat(0,1) = pa[1]; tet_mat(0,2) = pa[2]; tet_mat(0,3) = 1;
-    // tet_mat(1,0) = pb[0]; tet_mat(1,1) = pb[1]; tet_mat(1,2) = pb[2]; tet_mat(1,3) = 1;
-    // tet_mat(2,0) = pc[0]; tet_mat(2,1) = pc[1]; tet_mat(2,2) = pc[2]; tet_mat(2,3) = 1;
-    // tet_mat(3,0) = pd[0]; tet_mat(3,1) = pd[1]; tet_mat(3,2) = pd[2]; tet_mat(3,3) = 1;
-
-    // double volume = arma::det(tet_mat) / 6.0;
-    // return abs(volume);
 }
+
+// inline double CalTetrahedronVolumeDet(double* pa, double* pb, double* pc, double* pd)
+// {
+//     double a00 = pa[0] - pd[0];
+//     double a10 = pb[0] - pd[0];
+//     double a20 = pc[0] - pd[0];
+
+//     double a01 = pa[1] - pd[1];
+//     double a11 = pb[1] - pd[1];
+//     double a21 = pc[1] - pd[1];
+
+//     double a02 = pa[2] - pd[2];
+//     double a12 = pb[2] - pd[2];
+//     double a22 = pc[2] - pd[2];
+
+//     double det1 = a00 * a11 * a22 + a01 * a12 * a20 + a02 * a10 * a21;
+//     double det2 = a02 * a11 * a20 + a01 * a10 * a22 + a00 * a12 * a21;
+//     double det = abs(det2 - det1) / 6.0;
+//     return det;
+// }
 
 double CalTetrahedronVolume(tetgenmesh::tetrahedron* searchtet)
 {
@@ -1248,6 +1235,132 @@ if(0)
 
 
     return cell_volume;
+}
+
+
+
+double VoronoiGen::CalTruncatedCellVolumePassOMP(tetgenmesh::point in_pt, tetgenmesh::point nei_pt, int thread_id)
+{
+    double plane_mid_x = (in_pt[0] + nei_pt[0])/2.0;
+    double plane_mid_y = (in_pt[1] + nei_pt[1])/2.0;
+    double plane_mid_z = (in_pt[2] + nei_pt[2])/2.0;
+    double p_nx  = (in_pt[0] - nei_pt[0]);
+    double p_ny  = (in_pt[1] - nei_pt[1]);
+    double p_nz  = (in_pt[2] - nei_pt[2]);
+    double pn_len = sqrt(p_nx * p_nx + p_ny * p_ny + p_nz * p_nz);
+    if(pn_len > 0) 
+    {
+        p_nx /= pn_len;
+        p_ny /= pn_len;
+        p_nz /= pn_len;
+    }
+    // VoroPlane v_plane(plane_mid_x, plane_mid_y, plane_mid_z, p_nx, p_ny, p_nz);
+    // SavePlane(v_plane);
+    // if(point_id_map_.find(nei_pt) == point_id_map_.end())
+    // return 0;
+    const auto vc_id   = point_id_map_[nei_pt];
+    const auto v_cell  = voronoi_data_.vcelllist[vc_id];
+    const auto vf_list = voronoi_data_.vfacetlist;
+    const auto ve_list = voronoi_data_.vedgelist;
+    const auto vp_list = voronoi_data_.vpointlist;
+    // printf("pt size 0001 : %ld \n", points_.size());
+    if(v_cell == NULL) return 0;
+    const int f_num = v_cell[0];
+
+    int cur_opm_id = thread_id;
+    double* intersect_pts = intersect_pts_omp_[cur_opm_id];
+    double* trunc_center = truncated_centers_omp_[cur_opm_id];
+    double** trunc_tets = truncated_tets_omp_[cur_opm_id];
+    int* face_tet_count = face_tet_count_omp_[cur_opm_id];
+
+    int intersect_total_count = 0;
+    int tet_total_count = 0;
+    for(size_t i = 0; i < f_num; ++i)
+    {
+        size_t f_id = v_cell[i + 1];
+        const auto& facet = vf_list[f_id];
+        size_t e_num = facet.elist[0];
+        int tet_count = 0;
+        int intersect_count = 0; 
+        for(size_t j = 0; j < e_num; ++j)
+        {
+            // printf("edge id : %ld \n", j);
+            size_t e_id = facet.elist[1 + j];
+            const auto& ve = ve_list[e_id];
+            if(ve.v1 != -1 && ve.v2 != -1)
+            {
+                double dx = vp_list[3 * ve.v1]     - plane_mid_x;
+                double dy = vp_list[3 * ve.v1 + 1] - plane_mid_y;
+                double dz = vp_list[3 * ve.v1 + 2] - plane_mid_z;
+                double proj1 = dx * p_nx + dy * p_ny + dz * p_nz;
+
+                dx = vp_list[3 * ve.v2]     - plane_mid_x;
+                dy = vp_list[3 * ve.v2 + 1] - plane_mid_y;
+                dz = vp_list[3 * ve.v2 + 2] - plane_mid_z;
+                double proj2 = dx * p_nx + dy * p_ny + dz * p_nz;
+                if(proj1 * proj2 < 0 )
+                {
+                    double r1 = abs(proj1) /(abs(proj1) + abs(proj2));
+                    double r2 = abs(proj2) /(abs(proj1) + abs(proj2));
+                    double inter_x = r2 * vp_list[3 * ve.v1]     + r1 * vp_list[3 * ve.v2];
+                    double inter_y = r2 * vp_list[3 * ve.v1 + 1] + r1 * vp_list[3 * ve.v2 + 1];
+                    double inter_z = r2 * vp_list[3 * ve.v1 + 2] + r1 * vp_list[3 * ve.v2 + 2];
+                    intersect_pts[3 * (intersect_total_count + intersect_count)]     = inter_x;
+                    intersect_pts[3 * (intersect_total_count + intersect_count) + 1] = inter_y;
+                    intersect_pts[3 * (intersect_total_count + intersect_count) + 2] = inter_z;
+                    int posi_id = proj1 > 0 ? ve.v1 : ve.v2;
+                    trunc_tets[(tet_total_count + tet_count)*2] = &vp_list[3 * posi_id];
+                    trunc_tets[(tet_count + tet_total_count)*2 + 1] = &intersect_pts[3 * (intersect_total_count + intersect_count)];
+
+                    intersect_count++;
+                    tet_count ++;
+
+                } 
+                else if(proj1 >= 0 && proj2 >= 0)
+                {
+                    trunc_tets[(tet_total_count + tet_count)*2] = &vp_list[3 * ve.v2];
+                    trunc_tets[(tet_total_count + tet_count)*2 + 1] = &vp_list[3 * ve.v1];
+                    tet_count ++;
+                } 
+            } 
+        }
+        // printf("intersect_count num : %d \n", intersect_count);
+        if(intersect_count > 0)
+        {
+            trunc_tets[(tet_total_count + tet_count)*2] = &intersect_pts[3 * (intersect_total_count)];
+            trunc_tets[(tet_total_count + tet_count)*2 + 1] = &intersect_pts[3 * intersect_total_count + 3];
+            
+            intersect_total_count += 2;
+            tet_count ++;
+        }
+        // printf("tet_count num : %d \n", tet_count);
+        face_tet_count[i] = tet_count;
+        tet_total_count += tet_count;
+    }
+    double cell_volume = 0;
+
+    if(intersect_total_count > 0)
+    {
+        const double* trunc_pt = intersect_pts; 
+        int cur_tet_id = 0;
+        for(size_t i = 0; i < f_num; ++i)
+        {
+            const int f_tet_num = face_tet_count[i];
+            const auto f_pt = trunc_tets[cur_tet_id*2];
+            // printf("cur face f_tet_num : %d \n", f_tet_num);
+            for(int ti = 0; ti < f_tet_num; ++ti )
+            {
+                double volume = CalTetrahedronVolumeDet(trunc_tets[cur_tet_id*2], 
+                                                        trunc_tets[cur_tet_id*2 + 1], 
+                                                        f_pt,
+                                                        trunc_pt);
+                cell_volume += volume;
+                cur_tet_id ++;
+            }
+        }
+        return cell_volume;
+    }
+    return 0;
 }
 
 
