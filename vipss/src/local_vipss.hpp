@@ -194,7 +194,7 @@ class LocalVipss {
         arma::vec nn_volume_vec_;
         
     public:
-        int max_group_iter_ = 9;
+        int max_group_iter_ = 8;
         bool flip_normal_ = false;
         double user_lambda_ = 0.0;
         double unit_lambda_ = 0.0;

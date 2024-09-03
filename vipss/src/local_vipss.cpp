@@ -2126,7 +2126,7 @@ void LocalVipss::OptimizeAdjacentMat()
         }
         std::sort(v.begin(), v.end(), [&dist_vec](int a, int b){return dist_vec[a] < dist_vec[b];});
         // int n_num = std::min(int(8), int(dist_vec.size()));
-        for(size_t j = 0; j < 4 && j < dist_vec.size() ; ++j)
+        for(size_t j = 0; j < 5 && j < dist_vec.size() ; ++j)
         {
             const auto& cur_e = cur_edges[v[j]];
             edge_ids.push_back(cur_e);
