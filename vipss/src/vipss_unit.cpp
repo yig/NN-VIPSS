@@ -617,10 +617,10 @@ void VIPSSUnit::ReconSurface()
         // printf(" start set local vipss static ptr \n");
         local_vipss_.SetThis();
 
-        // local_vipss_.GroupClustersWithDegree();
-        // std::string group_pt_path = data_dir_  + file_name_ + "/" + "group_pts.obj";
-        // std::cout << " save group pts to file : " << group_pt_path << std::endl;
-        // local_vipss_.SaveGroupPtsWithColor(group_pt_path);
+        local_vipss_.GroupClustersWithDegree();
+        std::string group_pt_path = data_dir_  + file_name_ + "/" + "group_pts.obj";
+        std::cout << " save group pts to file : " << group_pt_path << std::endl;
+        local_vipss_.SaveGroupPtsWithColor(group_pt_path);
 
         // printf(" finish set local vipss static ptr \n");
         // local_vipss_.testNNPtDist();

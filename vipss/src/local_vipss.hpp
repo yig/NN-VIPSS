@@ -161,6 +161,8 @@ class LocalVipss {
         arma::sp_mat final_H_; 
         arma::sp_mat final_H_temp_;
         arma::vec cluster_degrees_; 
+        arma::sp_imat valid_pt_diag_mat_;
+        arma::ivec cluster_valid_sign_vec_;
 
         std::vector<tetgenmesh::point> points_; 
         std::vector<double> normals_;
@@ -189,12 +191,12 @@ class LocalVipss {
         std::vector<std::shared_ptr<RBF_Core>> node_rbf_vec_;
         std::vector<double>finalMesh_v_;
         std::vector<uint>finalMesh_fv_;
-
         arma::vec nn_dist_vec_;
         arma::vec nn_volume_vec_;
         
     public:
-        int max_group_iter_ = 8;
+        int max_group_iter_ = 10;
+        int max_group_pt_num_ = 512;
         bool flip_normal_ = false;
         double user_lambda_ = 0.0;
         double unit_lambda_ = 0.0;
