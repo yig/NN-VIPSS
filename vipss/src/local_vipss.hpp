@@ -96,8 +96,8 @@ class LocalVipss {
         void GroupPtsWithVolume();
 
     public:
-        inline void AppendRow(arma::sp_imat& in_mat,  arma::sp_irowvec& append_row);
-        inline void AppendCol(arma::sp_imat& in_mat,  arma::sp_icolvec& append_row);
+        inline void AppendRow(arma::sp_umat& in_mat,  arma::sp_urowvec& append_row);
+        inline void AppendCol(arma::sp_umat& in_mat,  arma::sp_ucolvec& append_row);
         void BuidClusterCoresPtIds();
         void UpdateClusterCoresPtIds();
 
@@ -140,29 +140,32 @@ class LocalVipss {
 
     private:
 
-        inline void ShedCols(arma::sp_imat& in_mat, const std::vector<arma::uword>& delete_ids);
+        inline void ShedCols(arma::sp_umat& in_mat, const std::vector<arma::uword>& delete_ids);
         inline void ShedCols(arma::sp_mat& in_mat, const std::vector<arma::uword>& delete_ids);
     
     public:
         VoronoiGen voro_gen_;
         RBF_API vipss_api_;
 
-        arma::sp_imat adjacent_mat_;
-        arma::sp_imat cluster_cores_mat_;
-        arma::sp_imat cluster_adjacent_mat_;
-        arma::sp_imat cluster_adjacent_mat_opt_;
-        arma::sp_imat cluster_MST_mat_;
+        arma::sp_umat adjacent_mat_;
+        arma::sp_umat cluster_cores_mat_;
+        arma::sp_umat cluster_valid_cores_mat_;
+        arma::sp_umat cluster_adjacent_mat_;
+        arma::sp_umat cluster_adjacent_mat_opt_;
+        arma::sp_umat cluster_MST_mat_;
         arma::sp_mat cluster_scores_mat_;
-        arma::sp_imat cluster_adjacent_pt_mat_;
-        arma::sp_imat cluster_adjacent_flip_mat_;
+        arma::sp_umat cluster_adjacent_pt_mat_;
+        arma::sp_umat cluster_valid_adjacent_pt_mat_;
+        arma::sp_umat cluster_adjacent_share_pt_mat_;
+        arma::sp_umat cluster_adjacent_flip_mat_;
         arma::sp_mat cluster_normal_x_;
         arma::sp_mat cluster_normal_y_;
         arma::sp_mat cluster_normal_z_;
         arma::sp_mat final_H_; 
         arma::sp_mat final_H_temp_;
         arma::vec cluster_degrees_; 
-        arma::sp_imat valid_pt_diag_mat_;
-        arma::ivec cluster_valid_sign_vec_;
+        arma::sp_umat valid_pt_diag_mat_;
+        arma::uvec cluster_valid_sign_vec_;
 
         std::vector<tetgenmesh::point> points_; 
         std::vector<double> normals_;
@@ -195,8 +198,8 @@ class LocalVipss {
         arma::vec nn_volume_vec_;
         
     public:
-        int max_group_iter_ = 10;
-        int max_group_pt_num_ = 512;
+        int max_group_iter_ = 8;
+        int max_group_pt_num_ = 256;
         bool flip_normal_ = false;
         double user_lambda_ = 0.0;
         double unit_lambda_ = 0.0;

@@ -248,9 +248,9 @@ void LocalVipss::Init(const std::string & path)
 
 inline std::vector<size_t> LocalVipss::GetClusterCoreIds(size_t cluster_id) const
 {
-    arma::sp_imat cluster_core_ids(cluster_cores_mat_.col(cluster_id));
-    arma::sp_imat::const_iterator start = cluster_core_ids.begin();
-    arma::sp_imat::const_iterator end = cluster_core_ids.end();
+    arma::sp_umat cluster_core_ids(cluster_cores_mat_.col(cluster_id));
+    arma::sp_umat::const_iterator start = cluster_core_ids.begin();
+    arma::sp_umat::const_iterator end = cluster_core_ids.end();
     std::vector<size_t> core_ids;
     for ( auto i = start; i != end; ++i )
     {
@@ -320,17 +320,17 @@ inline std::vector<size_t> LocalVipss::GetClusterPtIds(size_t cluster_id) const
 
     std::vector<size_t> pt_ids;
     std::set<size_t> key_ids;
-    arma::sp_imat cluster_core_ids(cluster_cores_mat_.col(cluster_id));
-    arma::sp_imat::const_iterator c_start = cluster_core_ids.begin();
-    arma::sp_imat::const_iterator c_end = cluster_core_ids.end();
+    arma::sp_umat cluster_core_ids(cluster_cores_mat_.col(cluster_id));
+    arma::sp_umat::const_iterator c_start = cluster_core_ids.begin();
+    arma::sp_umat::const_iterator c_end = cluster_core_ids.end();
     for (auto i = c_start; i != c_end; ++i)
     {
         pt_ids.push_back(i.row());
         key_ids.insert(i.row());
     }
-    arma::sp_imat cluster_pt_ids (cluster_adjacent_pt_mat_.col(cluster_id));
-    arma::sp_imat::const_iterator start = cluster_pt_ids.begin();
-    arma::sp_imat::const_iterator end = cluster_pt_ids.end();
+    arma::sp_umat cluster_pt_ids (cluster_adjacent_pt_mat_.col(cluster_id));
+    arma::sp_umat::const_iterator start = cluster_pt_ids.begin();
+    arma::sp_umat::const_iterator end = cluster_pt_ids.end();
     for ( auto i = start; i != end; ++i )
     {
         if(key_ids.find(i.row()) != key_ids.end()) continue;
@@ -360,8 +360,8 @@ std::vector<double> LocalVipss::GetClusterVertices(size_t cluster_id) const
 
 size_t LocalVipss::GetClusterIdFromCorePtId(const size_t pid)
 {
-    const arma::sp_imat cluster_col(cluster_cores_mat_.col(pid));
-    arma::sp_imat::const_iterator start = cluster_col.begin();
+    const arma::sp_umat cluster_col(cluster_cores_mat_.col(pid));
+    arma::sp_umat::const_iterator start = cluster_col.begin();
     return (size_t)start.row();
 }
 
@@ -373,7 +373,7 @@ void LocalVipss::CalculateClusterNormals(size_t cluster_id)
     // printf("cluster pt size : % \n", cluster_vts.size()/3);
     auto t1 = Clock::now();
     // vipss_api_.run_vipss(cluster_vts, cluster_pt_ids.size());
-    arma::sp_imat cluster_core_ids(cluster_cores_mat_.col(cluster_id));
+    arma::sp_umat cluster_core_ids(cluster_cores_mat_.col(cluster_id));
     size_t key_ptn = cluster_core_ids.n_nonzero;
     vipss_api_.run_vipss(cluster_vts, key_ptn);
     auto t2 = Clock::now();
@@ -1137,11 +1137,11 @@ void LocalVipss::BuildClusterAdjacentMat()
 
 void LocalVipss::InitSingleClusterNeiScores(size_t i)
 {
-    // const arma::sp_imat::iterator start = cluster_adjacent_mat_.row(i).begin();
-    // const arma::sp_irowvec::const_iterator end = cluster_adjacent_mat_.row(i).end();
-    // const arma::sp_irowvec& nei = cluster_adjacent_mat_.row(i);
-    // const arma::sp_irowvec::const_iterator start = nei.begin();
-    // const arma::sp_irowvec::const_iterator end = nei.end();
+    // const arma::sp_umat::iterator start = cluster_adjacent_mat_.row(i).begin();
+    // const arma::sp_urowvec::const_iterator end = cluster_adjacent_mat_.row(i).end();
+    // const arma::sp_urowvec& nei = cluster_adjacent_mat_.row(i);
+    // const arma::sp_urowvec::const_iterator start = nei.begin();
+    // const arma::sp_urowvec::const_iterator end = nei.end();
     auto cur_pt = points_[i];
     auto nei_pts = voro_gen_.point_cluster_pts_map_[cur_pt];
     double sum = 0;
@@ -1192,9 +1192,9 @@ void LocalVipss::InitSingleClusterNeiScores(size_t i)
 
 void LocalVipss::CalculateSingleClusterNeiScores(size_t i)
 {
-    arma::sp_imat nei(cluster_adjacent_mat_.col(i));
-    const arma::sp_imat::const_iterator start = nei.begin();
-    const arma::sp_imat::const_iterator end = nei.end();
+    arma::sp_umat nei(cluster_adjacent_mat_.col(i));
+    const arma::sp_umat::const_iterator start = nei.begin();
+    const arma::sp_umat::const_iterator end = nei.end();
     // printf("cluster id : %d \n", i);
 
     int count = 0;
@@ -1249,7 +1249,7 @@ void LocalVipss::CalculateClusterScores()
     // cluster_scores_vec_ = arma::sp_colvec(scores_vec);
     cluster_scores_vec_ = arma::sum(cluster_scores_mat_,1);
     // arma::sp_colvec non_zero_count_mat(cluster_scores_vec_.n_rows);
-    // arma::sp_imat new_pt_mat = cluster_cores_mat_ + cluster_adjacent_pt_mat_;
+    // arma::sp_umat new_pt_mat = cluster_cores_mat_ + cluster_adjacent_pt_mat_;
     // new_pt_mat /= new_pt_mat;
     arma::sp_mat new_pt_mat = cluster_scores_mat_;
     new_pt_mat.for_each([](arma::sp_mat::elem_type& value){value = 1.0;});
@@ -1289,9 +1289,9 @@ void LocalVipss::GetClusterCenters()
     for(size_t i = 0; i < cluster_cores_mat_.n_cols; ++i)
     {
         tetgenmesh::point& new_p = cluster_centers_[i];
-        const arma::sp_imat cores_pt(cluster_cores_mat_.col(i));
-        const arma::sp_imat::const_iterator start = cores_pt.begin();
-        const arma::sp_imat::const_iterator end = cores_pt.end();
+        const arma::sp_umat cores_pt(cluster_cores_mat_.col(i));
+        const arma::sp_umat::const_iterator start = cores_pt.begin();
+        const arma::sp_umat::const_iterator end = cores_pt.end();
         int count = 0;
         for(auto iter = start; iter != end; ++iter)
         {
@@ -1364,15 +1364,15 @@ void LocalVipss::MergeClusters()
                 merged_cluster_ids.push_back(id);
                 merged_cluster_ids.push_back(max_id);
 
-                // arma::sp_icolvec new_cluster_cores = cluster_cores_mat_.col(id) + cluster_cores_mat_.col(max_id);
+                // arma::sp_ucolvec new_cluster_cores = cluster_cores_mat_.col(id) + cluster_cores_mat_.col(max_id);
                 // AppendCol(cluster_cores_mat_, new_cluster_cores);
 
-                // arma::sp_icolvec adjacent_pts_col = cluster_adjacent_pt_mat_.col(id) + cluster_adjacent_pt_mat_.col(max_id);
+                // arma::sp_ucolvec adjacent_pts_col = cluster_adjacent_pt_mat_.col(id) + cluster_adjacent_pt_mat_.col(max_id);
                 // AppendCol(cluster_adjacent_pt_mat_, adjacent_pts_col);
                 
-                // arma::sp_irowvec adj_row = cluster_adjacent_mat_.row(id) + cluster_adjacent_mat_.row(max_id);
+                // arma::sp_urowvec adj_row = cluster_adjacent_mat_.row(id) + cluster_adjacent_mat_.row(max_id);
                 // AppendRow(cluster_adjacent_mat_, adj_row);
-                // arma::sp_icolvec adj_col = cluster_adjacent_mat_.col(id) + cluster_adjacent_mat_.col(max_id);
+                // arma::sp_ucolvec adj_col = cluster_adjacent_mat_.col(id) + cluster_adjacent_mat_.col(max_id);
                 // AppendCol(cluster_adjacent_mat_, adj_col);
             }
         }
@@ -1385,14 +1385,14 @@ void LocalVipss::MergeClusters()
         size_t c_num = cluster_cores_mat_.n_cols;
         size_t pt_num = cluster_cores_mat_.n_rows;
 
-        arma::sp_imat new_cluster_cores_mat(pt_num, c_num + merged_pair_num); 
+        arma::sp_umat new_cluster_cores_mat(pt_num, c_num + merged_pair_num); 
         new_cluster_cores_mat.cols(0, c_num-1) = cluster_cores_mat_.cols(0, c_num-1);
         cluster_cores_mat_ = new_cluster_cores_mat;    
-        arma::sp_imat new_cluster_adjacent_pt_mat(pt_num, c_num + merged_pair_num);
+        arma::sp_umat new_cluster_adjacent_pt_mat(pt_num, c_num + merged_pair_num);
         new_cluster_adjacent_pt_mat.cols(0, c_num-1) = cluster_adjacent_pt_mat_.cols(0, c_num-1);
         cluster_adjacent_pt_mat_ = new_cluster_adjacent_pt_mat;
 
-        arma::sp_imat new_cluster_adjacent_mat(c_num + merged_pair_num, c_num + merged_pair_num);
+        arma::sp_umat new_cluster_adjacent_mat(c_num + merged_pair_num, c_num + merged_pair_num);
         new_cluster_adjacent_mat(0, 0, arma::size(c_num, c_num)) = 
             cluster_adjacent_mat_(0, 0, arma::size(c_num, c_num));
         cluster_adjacent_mat_ = new_cluster_adjacent_mat;
@@ -1499,181 +1499,124 @@ void LocalVipss::GroupClustersWithDegree()
 
 void LocalVipss::CalClusterDegrees()
 {
-    std::cout << " cluster_adjacent_mat_ nozero count : " << cluster_adjacent_mat_.n_nonzero << std::endl;
+    // std::cout << " cluster_adjacent_mat_ nozero count : " << cluster_adjacent_mat_.n_nonzero << std::endl;
     size_t cluster_num = cluster_adjacent_mat_.n_cols;
     cluster_degrees_.resize(cluster_num);
     for(size_t i = 0; i < cluster_num; ++i)
     {
-        // arma::sp_imat nei(cluster_adjacent_mat_.col(i));
-        // const arma::sp_imat::const_iterator start = nei.begin();
-        // const arma::sp_imat::const_iterator end = nei.end();
-        cluster_degrees_[i] = arma::accu(cluster_adjacent_mat_.col(i));
+        // arma::sp_umat nei(cluster_adjacent_mat_.col(i));
+        // const arma::sp_umat::const_iterator start = nei.begin();
+        // const arma::sp_umat::const_iterator end = nei.end();
+        // size_t valid_count = cluster_adjacent_mat_.col(i).n_nonzero;
+        // printf("origin nozero : %ld \n", valid_count);
+        arma::sp_umat valid_vec = valid_pt_diag_mat_ * cluster_adjacent_mat_.col(i);
+        // valid_count = valid_vec.n_nonzero;
+        // printf("22 origin nozero : %ld \n", valid_count);
+        cluster_degrees_[i] = valid_vec.n_nonzero;
     }
 }
 
 
 void LocalVipss::MergeHRBFClustersWithDegree()
 {
-    printf(" start to init merge cluster \n");
-    std::set<int> visited_clusters;
+    auto t0 = Clock::now();
+    cluster_valid_adjacent_pt_mat_ = cluster_adjacent_pt_mat_ * valid_pt_diag_mat_;
+    cluster_valid_cores_mat_ = cluster_cores_mat_ * valid_pt_diag_mat_;
+    cluster_adjacent_share_pt_mat_ = cluster_valid_adjacent_pt_mat_.t() * cluster_valid_adjacent_pt_mat_;
+    // printf(" start to init merge cluster \n");
+    // std::set<int> visited_clusters;
     std::vector<arma::uword> merged_cluster_ids;
     arma::uvec indices = arma::sort_index(cluster_degrees_, "ascend");
-    printf("cluster scores indices num : %llu \n", indices.size());
+    std::vector<bool> visited_c_vec(indices.n_elem, false);
+    // printf("cluster scores indices num : %llu \n", indices.size());
     // for(auto &ele : cluster_id_scores_)
     for(auto& id : indices)
     {
         if(!cluster_valid_sign_vec_[id]) continue;
-        if(visited_clusters.find(id) != visited_clusters.end())
+        if(visited_c_vec[id]) continue;
+        visited_c_vec[id] = true;
         {
-            continue;
-        }
-        visited_clusters.insert(id);
-        // if(cluster_scores_vec_[id] > angle_threshold_) 
-        {
-            const arma::sp_imat c_nei_vec(cluster_adjacent_mat_.col(id));
-            const arma::sp_imat::const_iterator start = c_nei_vec.begin();
-            const arma::sp_imat::const_iterator end = c_nei_vec.end();
+            const arma::sp_umat c_nei_vec(cluster_adjacent_mat_.col(id));
+            const arma::sp_umat::const_iterator start = c_nei_vec.begin();
+            const arma::sp_umat::const_iterator end = c_nei_vec.end();
             int min_degree = std::numeric_limits<int>::max();
             int max_degree = std::numeric_limits<int>::min();
             int cand_id = -1;
             int max_share_adj_pt_num = 0;
-            const arma::sp_ivec c_nei_pt_vec(valid_pt_diag_mat_ * cluster_adjacent_pt_mat_.col(id));
-            arma::sp_imat core_col = valid_pt_diag_mat_ * cluster_cores_mat_.col(id);
-            int cur_core_pt_num = core_col.n_nonzero;
-            // auto cur_center = cluster_centers_[ele.first];
+            const arma::sp_uvec c_nei_pt_vec(cluster_valid_adjacent_pt_mat_.col(id));
+            arma::sp_umat c_core_col(cluster_valid_cores_mat_.col(id));
+
+            int cur_core_pt_num = c_core_col.n_nonzero;
             for(auto iter = start; iter != end; ++iter)
             {
                 if(!cluster_valid_sign_vec_[iter.row()]) continue;
-                if(visited_clusters.find(iter.row()) == visited_clusters.end())
+                if(visited_c_vec[iter.row()]) continue;
                 {
-                    if(0)
+                    // if(1)
                     {
-                        int cur_degree = cluster_degrees_[iter.row()];
-                        if(cur_degree < min_degree )
-                        {
-                            cand_id = iter.row();
-                            min_degree = cur_degree;
-                        }
-                    }
-                    if(0)
-                    {
-                        int cur_degree = cluster_degrees_[iter.row()];
-                        if(cur_degree > max_degree )
-                        {
-                            cand_id = iter.row();
-                            max_degree = cur_degree;
-                        }
-                    }
-                    if(1)
-                    {
-                        arma::sp_imat n_core_col = valid_pt_diag_mat_ * cluster_cores_mat_.col(iter.row());
-                        int n_core_pt_num = n_core_col.n_nonzero;
-                        // int n_core_pt_num = (valid_pt_diag_mat_ * cluster_cores_mat_.col(iter.row())).n_nonzero;
+                        const arma::sp_uvec n_core_pt_vec(cluster_valid_cores_mat_.col(iter.row()));
+                        int n_core_pt_num = n_core_pt_vec.n_nonzero;
                         if(n_core_pt_num + cur_core_pt_num > max_group_pt_num_) continue;
-                        const arma::sp_ivec n_nei_pt_vec(valid_pt_diag_mat_ * cluster_adjacent_pt_mat_.col(iter.row()));
-                        int share_pt_num  = arma::dot(c_nei_pt_vec, n_nei_pt_vec);
+                        const arma::sp_uvec n_nei_pt_vec(cluster_valid_adjacent_pt_mat_.col(iter.row()));
+                        int share_pt_num  = cluster_adjacent_share_pt_mat_(id,iter.row());
                         if(share_pt_num > max_share_adj_pt_num )
                         {
                             cand_id = iter.row();
                             max_share_adj_pt_num = share_pt_num;
                         }
-                    }
-
-                    
+                    }                   
                 }
             }
             if(cand_id != -1)
             {   
-                visited_clusters.insert(cand_id);
+                visited_c_vec[cand_id] = true; 
                 merged_cluster_ids.push_back(id);
                 merged_cluster_ids.push_back(cand_id);
             }
         }
     }
-    MergeClusterPairs(merged_cluster_ids);
+    auto t1 = Clock::now();
+    double merge_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
+    printf("------get cluster merge pairs time : %f ! \n", merge_time);
+
+    MergeClusterPairs(merged_cluster_ids);    
+
+    auto t2 = Clock::now();
+    merge_time = std::chrono::nanoseconds(t2 - t1).count()/1e9;
+    printf("------update cluster merge data time : %f ! \n", merge_time);
 }
+
 void LocalVipss::MergeClusterPairs(std::vector<arma::uword>& merged_cluster_ids)
 {
-    auto t00 = Clock::now();
+    // auto t00 = Clock::now();
     size_t merged_pair_num = merged_cluster_ids.size() / 2;
+    arma::sp_umat new_cluster_cores_mat(merged_pair_num, cluster_cores_mat_.n_rows);
     if(merged_pair_num > 0)
     {
-        size_t c_num = cluster_cores_mat_.n_cols;
-        size_t pt_num = cluster_cores_mat_.n_rows;
-
-        // arma::sp_imat new_cluster_cores_mat(pt_num, c_num + merged_pair_num); 
-        // new_cluster_cores_mat.cols(0, c_num-1) = cluster_cores_mat_.cols(0, c_num-1);
-        // cluster_cores_mat_ = new_cluster_cores_mat;    
-        // arma::sp_imat new_cluster_adjacent_pt_mat(pt_num, c_num + merged_pair_num);
-        // new_cluster_adjacent_pt_mat.cols(0, c_num-1) = cluster_adjacent_pt_mat_.cols(0, c_num-1);
-        // cluster_adjacent_pt_mat_ = new_cluster_adjacent_pt_mat;
-        // arma::sp_imat new_cluster_adjacent_mat(c_num + merged_pair_num, c_num + merged_pair_num);
-        // new_cluster_adjacent_mat(0, 0, arma::size(c_num, c_num)) = 
-        //     cluster_adjacent_mat_(0, 0, arma::size(c_num, c_num));
-        // cluster_adjacent_mat_ = new_cluster_adjacent_mat;
-
         for(size_t i = 0; i < merged_pair_num; ++i)
         {
             size_t ca = merged_cluster_ids[2 * i];
             size_t cb = merged_cluster_ids[2 * i + 1];
             
-            cluster_cores_mat_.col(ca) = cluster_cores_mat_.col(ca) + cluster_cores_mat_.col(cb);
-            cluster_adjacent_pt_mat_.col(ca) = cluster_adjacent_pt_mat_.col(ca) + cluster_adjacent_pt_mat_.col(cb);
-            cluster_adjacent_mat_.row(ca) = cluster_adjacent_mat_.row(ca) + cluster_adjacent_mat_.row(cb);
-            cluster_adjacent_mat_.col(ca) = cluster_adjacent_mat_.col(ca) + cluster_adjacent_mat_.col(cb);
-
+            cluster_cores_mat_.col(ca) +=   cluster_cores_mat_.col(cb);
+            // cluster_adjacent_pt_mat_.col(ca) = cluster_adjacent_pt_mat_.col(ca) || cluster_adjacent_pt_mat_.col(cb);
+            // cluster_adjacent_mat_.row(ca)    = cluster_adjacent_mat_.row(ca) || cluster_adjacent_mat_.row(cb);
+            // cluster_adjacent_mat_.col(ca)    = cluster_adjacent_mat_.col(ca) || cluster_adjacent_mat_.col(cb);
+            cluster_adjacent_pt_mat_.col(ca) += cluster_adjacent_pt_mat_.col(cb);
+            // cluster_adjacent_mat_.row(ca)    += cluster_adjacent_mat_.row(cb);
+            cluster_adjacent_mat_.col(ca)    += cluster_adjacent_mat_.col(cb);
             cluster_valid_sign_vec_[cb] = 0;
             valid_pt_diag_mat_(cb, cb) = 0;
-        // cluster_adjacent_mat_.insert
         }
+        // arma::sp_umat cluster_adjacent_mat_t = cluster_adjacent_mat_.t();
+        // for(size_t i = 0; i < merged_pair_num; ++i)
+        // {
+        //     size_t ca = merged_cluster_ids[2 * i];
+        //     size_t cb = merged_cluster_ids[2 * i + 1];
+        //     cluster_adjacent_mat_t.col(ca) += cluster_adjacent_mat_t.col(cb);
+        // }
+        // cluster_adjacent_mat_ = cluster_adjacent_mat_t.t();
     }
-    auto t01 = Clock::now();
-    double append_data_time = std::chrono::nanoseconds(t01 - t00).count()/1e9;
-    printf("------finish append_data_time time : %f ! \n", append_data_time);
-if(0)
-{    
-    merged_cluster_size_ = merged_cluster_ids.size();
-
-    // auto t00v1 = Clock::now();
-    std::sort(merged_cluster_ids.begin(), merged_cluster_ids.end(), std::greater<>());
-    // auto t00v2 = Clock::now();
-    // double scores_sort_time = std::chrono::nanoseconds(t00v2 - t00v1).count()/1e9;
-    // printf("------finish scores_sort_time time : %f ! \n", scores_sort_time);
-
-    auto t000 = Clock::now();
-    
-    // for(auto id : merged_cluster_ids)
-    // {
-    //     cluster_cores_mat_.shed_col(id);
-    //     cluster_adjacent_pt_mat_.shed_col(id);
-    //     // cluster_scores_mat_.shed_row(id);
-    //     // cluster_scores_mat_.shed_col(id);
-    //     // cluster_adjacent_mat_.shed_row(id);
-    //     cluster_adjacent_mat_.shed_col(id);
-    //     // cluster_normal_x_.shed_col(id);
-    //     // cluster_normal_y_.shed_col(id);
-    //     // cluster_normal_z_.shed_col(id);
-    //     // cluster_core_pt_ids_.erase(std::next(cluster_core_pt_ids_.begin(), id));
-    // }
-
-    auto t00t1 = Clock::now();
-    // // cluster_scores_mat_ = cluster_scores_mat_.t();
-    // cluster_adjacent_mat_ = cluster_adjacent_mat_.t();
-    
-    // for(auto id : merged_cluster_ids)
-    // {
-    //     // cluster_scores_mat_.shed_col(id);
-    //     cluster_adjacent_mat_.shed_col(id);
-    // }
-    auto t00t2 = Clock::now();
-    double update_mat_trans_time = std::chrono::nanoseconds(t00t2 - t00t1).count()/1e9;
-    printf("------finish update update_mat_trans_time time : %f ! \n", update_mat_trans_time);
-    // cluster_scores_mat_ = cluster_scores_mat_.t();
-    // cluster_adjacent_mat_ = cluster_adjacent_mat_.t();
-    auto t001 = Clock::now();
-    double update_score_time = std::chrono::nanoseconds(t001 - t000).count()/1e9;
-    printf("------finish update shed rows and cols time : %f ! \n", update_score_time);
-}
 }
         
 void LocalVipss::SaveGroupPtsWithColor(const std::string& path)
@@ -1682,18 +1625,17 @@ void LocalVipss::SaveGroupPtsWithColor(const std::string& path)
     std::ofstream pt_file;
     pt_file.open(path);
     size_t pt_count = 0;
-    std::cout << " -----save cluster group size :  " << group_size << std::endl;
+    std::cout << " -----save cluster group size :  " << arma::accu(cluster_valid_sign_vec_) << std::endl;
     for(size_t i = 0; i < group_size; ++i)
     {
-        const arma::sp_imat cluster_col(cluster_cores_mat_.col(i));
-        arma::sp_imat::const_iterator start = cluster_col.begin();
-        arma::sp_imat::const_iterator end = cluster_col.end();
+        if(!cluster_valid_sign_vec_[i]) continue;
+        const arma::sp_umat cluster_col(cluster_cores_mat_.col(i));
+        arma::sp_umat::const_iterator start = cluster_col.begin();
+        arma::sp_umat::const_iterator end = cluster_col.end();
         int base = 1000000;
         double r = ((double) (rand() % base) / double(base)); r = min(sqrt(r) , 1.0);
         double g = ((double) (rand() % base) / double(base)); g = max(sqrt(g) , 0.0);
         double b = ((double) (rand() % base) / double(base)); b = max(sqrt(b) , 0.0);
-        
-
         // std::cout << "current cluster pt number : " << cluster_col.n_nonzero << std::endl;
         for(auto iter = start; iter != end; ++iter)
         {
@@ -1713,17 +1655,17 @@ void LocalVipss::SaveGroupPtsWithColor(const std::string& path)
 }
 
 
-void LocalVipss::AppendRow(arma::sp_imat& in_mat,  arma::sp_irowvec& append_row)
+void LocalVipss::AppendRow(arma::sp_umat& in_mat,  arma::sp_urowvec& append_row)
 {
     size_t rows = in_mat.n_rows;
     size_t cols = in_mat.n_cols;
-    arma::sp_imat new_mat(rows+1, cols);
+    arma::sp_umat new_mat(rows+1, cols);
     new_mat.rows(0, rows-1) = in_mat.rows(0, rows-1);
     new_mat.row(rows) = append_row;
     in_mat = new_mat;
 }
 
-inline void LocalVipss::ShedCols(arma::sp_imat& in_mat, const std::vector<arma::uword>& delete_ids)
+inline void LocalVipss::ShedCols(arma::sp_umat& in_mat, const std::vector<arma::uword>& delete_ids)
 {
     for(auto id : delete_ids)
     {
@@ -1739,12 +1681,12 @@ inline void LocalVipss::ShedCols(arma::sp_mat& in_mat, const std::vector<arma::u
     }
 }
 
-void LocalVipss::AppendCol(arma::sp_imat& in_mat,  arma::sp_icolvec& append_col)
+void LocalVipss::AppendCol(arma::sp_umat& in_mat,  arma::sp_ucolvec& append_col)
 {
     size_t rows = in_mat.n_rows;
     size_t cols = in_mat.n_cols;
 
-    arma::sp_imat new_mat(rows, cols + 1);
+    arma::sp_umat new_mat(rows, cols + 1);
     new_mat.cols(0, cols-1) = in_mat.cols(0, cols-1);
     new_mat.col(cols) = append_col;
     in_mat = new_mat;
@@ -1761,7 +1703,7 @@ void LocalVipss::UpdateClusterScoreMat()
     new_scores_mat(0, 0, arma::size(s_rows, s_cols)) = cluster_scores_mat_(0, 0, arma::size(s_rows, s_cols));
     cluster_scores_mat_ = new_scores_mat;
 
-    // arma::sp_imat new_cluster_adjacent_flip_mat(c_num, c_num);
+    // arma::sp_umat new_cluster_adjacent_flip_mat(c_num, c_num);
     // new_cluster_adjacent_flip_mat(0, 0, arma::size(s_rows -1, s_cols -1)) =
     //          cluster_adjacent_flip_mat_(0, 0, arma::size(s_rows -1, s_cols -1));
     // cluster_adjacent_flip_mat_ = new_cluster_adjacent_flip_mat;
@@ -1830,9 +1772,9 @@ void LocalVipss::FlipClusterNormalsByScores()
         cluster_queued_ids.pop();
         if(visited_cluster_ids.find(cur_cid) != visited_cluster_ids.end()) continue;
 
-        const arma::sp_irowvec& adj_row = cluster_adjacent_mat_.row(cur_cid);
-        const arma::sp_irowvec::const_iterator start = adj_row.begin();
-        const arma::sp_irowvec::const_iterator end = adj_row.end();
+        const arma::sp_urowvec& adj_row = cluster_adjacent_mat_.row(cur_cid);
+        const arma::sp_urowvec::const_iterator start = adj_row.begin();
+        const arma::sp_urowvec::const_iterator end = adj_row.end();
         for(auto iter = start; iter != end; ++iter)
         {   
             size_t n_cid = iter.internal_col;
@@ -1875,10 +1817,10 @@ void LocalVipss::BuildClusterMST()
         }
 
         size_t cur_pid = cur_e.c_b_ ;
-        const arma::sp_imat& adj_row = cluster_adjacent_mat_.col(cur_pid);
+        const arma::sp_umat& adj_row = cluster_adjacent_mat_.col(cur_pid);
         // printf("row %d contains no zero num : %d \n", cur_pid, adj_row.n_nonzero);
-        const arma::sp_imat::const_iterator start = adj_row.begin();
-        const arma::sp_imat::const_iterator end = adj_row.end();
+        const arma::sp_umat::const_iterator start = adj_row.begin();
+        const arma::sp_umat::const_iterator end = adj_row.end();
         for(auto iter = start; iter != end; ++iter)
         {
             size_t n_id = iter.row();
@@ -1914,9 +1856,9 @@ void LocalVipss::FlipClusterNormalsByMST()
         cluster_queued_ids.pop();
         if(visited_cluster_ids.find(cur_cid) != visited_cluster_ids.end()) continue;
 
-        const arma::sp_imat& adj_row = cluster_MST_mat_.col(cur_cid);
-        const arma::sp_imat::const_iterator start = adj_row.begin();
-        const arma::sp_imat::const_iterator end = adj_row.end();
+        const arma::sp_umat& adj_row = cluster_MST_mat_.col(cur_cid);
+        const arma::sp_umat::const_iterator start = adj_row.begin();
+        const arma::sp_umat::const_iterator end = adj_row.end();
         for(auto iter = start; iter != end; ++iter)
         {   
             size_t n_cid = iter.row();
@@ -1961,9 +1903,9 @@ void LocalVipss::OuputPtN(const std::string& out_path, bool orient_normal)
 
     for(size_t i = 0; i < cluster_cores_mat_.n_cols; ++i)
     {
-        const arma::sp_imat new_row(cluster_cores_mat_.col(i));
-        const arma::sp_imat::const_iterator start = new_row.begin();
-        const arma::sp_imat::const_iterator end = new_row.end();
+        const arma::sp_umat new_row(cluster_cores_mat_.col(i));
+        const arma::sp_umat::const_iterator start = new_row.begin();
+        const arma::sp_umat::const_iterator end = new_row.end();
         for(auto iter = start; iter != end; ++iter)
         {
             size_t p_id = iter.row();     
@@ -1977,10 +1919,10 @@ void LocalVipss::OuputPtN(const std::string& out_path, bool orient_normal)
     // for(size_t i = 0; i < cluster_cores_mat_.n_cols; ++i)
     // {
     //     // printf("cluster id : %d \n", i);
-    //     // const arma::sp_icolvec cur_row = cluster_cores_mat_.col(i);
-    //     const arma::sp_imat new_row(cluster_cores_mat_.col(i));
-    //     const arma::sp_imat::const_iterator start = new_row.begin();
-    //     const arma::sp_imat::const_iterator end = new_row.end();
+    //     // const arma::sp_ucolvec cur_row = cluster_cores_mat_.col(i);
+    //     const arma::sp_umat new_row(cluster_cores_mat_.col(i));
+    //     const arma::sp_umat::const_iterator start = new_row.begin();
+    //     const arma::sp_umat::const_iterator end = new_row.end();
     //     for(auto iter = start; iter != end; ++iter)
     //     {
     //         size_t p_id = iter.row();
@@ -2033,11 +1975,11 @@ void LocalVipss::SaveCluster()
     std::vector<std::vector<P3tr>> key_pts_vec;
     for(size_t i = 0; i < cluster_cores_mat_.n_cols; ++i)
     {
-        const arma::sp_imat& cur_row(cluster_cores_mat_.col(i));
+        const arma::sp_umat& cur_row(cluster_cores_mat_.col(i));
         if(cur_row.n_nonzero < 3) continue;
         
-        const arma::sp_imat::const_iterator start = cur_row.begin();
-        const arma::sp_imat::const_iterator end = cur_row.end();
+        const arma::sp_umat::const_iterator start = cur_row.begin();
+        const arma::sp_umat::const_iterator end = cur_row.end();
         std::set<P3tr> key_pts;
         for(auto iter = start; iter != end; ++iter)
         {
@@ -2046,9 +1988,9 @@ void LocalVipss::SaveCluster()
         
         key_pts_vec.push_back(std::vector<P3tr>(key_pts.begin(), key_pts.end()) );
         // std::vector<P3tr> nei_pts;
-        // const arma::sp_irowvec& cur_pt_row = cluster_adjacent_pt_mat_.row(i);
-        // const arma::sp_irowvec::const_iterator pt_start = cur_pt_row.begin();
-        // const arma::sp_irowvec::const_iterator pt_end = cur_pt_row.end();
+        // const arma::sp_urowvec& cur_pt_row = cluster_adjacent_pt_mat_.row(i);
+        // const arma::sp_urowvec::const_iterator pt_start = cur_pt_row.begin();
+        // const arma::sp_urowvec::const_iterator pt_end = cur_pt_row.end();
         // for(auto iter = pt_start; iter != pt_end; ++iter)
         // {
         //     auto cur_pt = points_[iter.internal_col];
@@ -2149,9 +2091,9 @@ void LocalVipss::OptimizeAdjacentMat()
     std::vector<std::pair<size_t, size_t> > edge_ids;
     for(size_t i = 0; i < pt_num; ++i)
     {
-        const arma::sp_imat& adj_col = cluster_adjacent_mat_.col(i);
-        const arma::sp_imat::const_iterator start = adj_col.begin();
-        const arma::sp_imat::const_iterator end = adj_col.end();
+        const arma::sp_umat& adj_col = cluster_adjacent_mat_.col(i);
+        const arma::sp_umat::const_iterator start = adj_col.begin();
+        const arma::sp_umat::const_iterator end = adj_col.end();
         arma::vec3 p_normal = {out_normals_[3 *i],out_normals_[3 *i + 1],out_normals_[3 *i + 2]};
         std::vector< std::pair<size_t, size_t> > cur_edges;
         std::vector<double> dist_vec;

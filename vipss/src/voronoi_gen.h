@@ -205,7 +205,7 @@ class VoronoiGen{
              
         arma::sp_mat pt_score_mat_;
         arma::sp_mat pt_dist_mat_;
-        arma::sp_imat pt_adjecent_mat_;
+        arma::sp_umat pt_adjecent_mat_;
         std::unordered_map<PtCluster*, std::set<PtCluster*>> cluster_adjacent_map_;
         std::unordered_map<tetgenmesh::point, size_t> point_id_map_;
         std::unordered_map<tetgenmesh::point, PtCluster> point_cluster_map_;
