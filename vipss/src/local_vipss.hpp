@@ -1,7 +1,8 @@
 #pragma once
+#include <unordered_set>
 #include "rbfcore.h"
 #include "voronoi_gen.h"
-#include <Eigen/Sparse>
+#include "sp_mat.h"
 
 
 class C_Edege{
@@ -35,6 +36,7 @@ class LocalVipss {
 
     typedef tetgenmesh::point P3tr;
     typedef Eigen::SparseMatrix<double> SpMat;
+    typedef Eigen::SparseMatrix<int> SpiMat;
     typedef Eigen::Triplet<double> Triplet;
     
 
@@ -136,7 +138,12 @@ class LocalVipss {
 
         void SaveGroupPtsWithColor(const std::string& path);
         void PtPCA(std::vector<double>& pts);
-        void OptimizeAdjacentMat(); 
+        void OptimizeAdjacentMat();
+        void ConvertToEigenSparseMat(); 
+        void MergeHRBFClustersWithEigen();
+
+        void InitAdjacentData();
+        void MergeHRBFClustersWithMap();
 
     private:
 
@@ -147,10 +154,22 @@ class LocalVipss {
         VoronoiGen voro_gen_;
         RBF_API vipss_api_;
 
+        SpiMat cluster_adjacent_emat_;
+        SpiMat cluster_adjacent_pt_emat_;
+        SpiMat cluster_cores_emat_;
+        SpiMat valid_pt_diag_emat_;
+
+        std::vector<std::unordered_set<size_t>> cluster_adjacent_ids_;
+        std::vector<std::unordered_set<size_t>> cluster_pt_ids_;
+        std::vector<std::vector<size_t> > cluster_core_pt_ids_vec_; 
+        arma::uvec cluster_core_pt_nums_;
+        std::vector<size_t> cluster_id_map_;;  
+
         arma::sp_umat adjacent_mat_;
         arma::sp_umat cluster_cores_mat_;
         arma::sp_umat cluster_valid_cores_mat_;
         arma::sp_umat cluster_adjacent_mat_;
+        
         arma::sp_umat cluster_adjacent_mat_opt_;
         arma::sp_umat cluster_MST_mat_;
         arma::sp_mat cluster_scores_mat_;
@@ -198,8 +217,8 @@ class LocalVipss {
         arma::vec nn_volume_vec_;
         
     public:
-        int max_group_iter_ = 8;
-        int max_group_pt_num_ = 256;
+        int max_group_iter_ = 10;
+        int max_group_pt_num_ = 512;
         bool flip_normal_ = false;
         double user_lambda_ = 0.0;
         double unit_lambda_ = 0.0;

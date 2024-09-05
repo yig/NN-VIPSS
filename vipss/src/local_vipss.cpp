@@ -1486,15 +1486,251 @@ void LocalVipss::GroupClustersWithDegree()
 
     valid_pt_diag_mat_.eye(cluster_size, cluster_size);
     cluster_valid_sign_vec_.ones(cluster_size);
+    cluster_core_pt_nums_.ones(cluster_size);
+    
+    // OptimizeAdjacentMat();
+    // ConvertToEigenSparseMat();
+    std::cout << " start to init adjacent data " << std::endl;
+    InitAdjacentData();
     
     for(size_t i = 0; i < max_group_iter_; ++i)
     {
-        CalClusterDegrees();
-        MergeHRBFClustersWithDegree();
+        std::cout << " iter :: " << i << std::endl;
+        // CalClusterDegrees();
+        // MergeHRBFClustersWithDegree();
+        // MergeHRBFClustersWithEigen();
+        MergeHRBFClustersWithMap();
     }
     auto t1 = Clock::now();
     double merge_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
     printf("------finish cluster merge time : %f ! \n", merge_time);
+}
+
+void LocalVipss::InitAdjacentData()
+{
+    int cols = cluster_adjacent_mat_.n_cols;
+    cluster_adjacent_ids_.resize(cols);
+    cluster_id_map_.resize(cols);
+    cluster_core_pt_ids_vec_.resize(cols);
+    cluster_pt_ids_.resize(cols);
+    std::cout << " start to get col vec by id "<< std::endl;
+    for(size_t i = 0; i < cols; ++i)
+    {
+        // const arma::sp_ucolvec& col_vec = cluster_adjacent_mat_.col(i);
+        // arma::sp_umat col_vec(cluster_adjacent_mat_opt_.col(i));
+        arma::sp_umat col_vec(cluster_adjacent_mat_.col(i));
+        // std::cout << " get col vec by id "<< std::endl;
+
+        arma::sp_umat::const_iterator start  = col_vec.begin();
+        arma::sp_umat::const_iterator end    = col_vec.end();
+
+        // std::cout << " get col vec by id 00"<< std::endl;
+        for(auto iter = start; iter != end; ++iter)
+        {
+            cluster_adjacent_ids_[i].insert(size_t(iter.row()));
+            cluster_pt_ids_[i].insert(size_t(iter.row()));
+        }
+        // std::cout << " get col vec by id 1"<< std::endl;
+        cluster_pt_ids_[i].insert(i);
+        cluster_id_map_[i] = i;
+        cluster_core_pt_ids_vec_[i].push_back(i);
+    }
+    // cluster_core_pt_nums_.ones(cols); 
+    
+}
+
+
+void LocalVipss::MergeHRBFClustersWithMap()
+{
+    // auto t0 = Clock::now();
+    size_t cluster_num = cluster_adjacent_mat_.n_cols;
+    // cluster_degrees_.resize(cluster_num);
+    int max_val = std::numeric_limits<int>::max();
+    for(size_t i = 0; i < cluster_num; ++i)
+    {
+        if(cluster_valid_sign_vec_[i])
+        {
+            std::unordered_set<size_t> update_ids;
+            for(const auto id :  cluster_adjacent_ids_[i])
+            {
+                update_ids.insert(cluster_id_map_[id]);
+            }
+            cluster_adjacent_ids_[i] = update_ids;
+        } 
+    }
+
+    // std::cout << " update cluster_adjacent_ids_  " << std::endl;
+
+    std::vector<arma::uword> merged_cluster_ids;
+    arma::uvec indices = arma::sort_index(cluster_core_pt_nums_, "ascend");
+    std::vector<bool> visited_c_vec(indices.n_elem, false);
+
+    for(auto& id : indices)
+    {
+        if(visited_c_vec[id]) continue;
+        visited_c_vec[id] = true;
+        if(!cluster_valid_sign_vec_[id]) continue;
+        
+        {
+            int cand_id = -1;
+            int max_share_adj_pt_num = 0;
+            int cur_core_pt_num = cluster_core_pt_nums_[id];
+            auto& cur_pids = cluster_pt_ids_[id];
+            for(const auto nei_id :  cluster_adjacent_ids_[id])
+            {
+                if(visited_c_vec[nei_id]) continue;
+                // if(nid == id) continue;
+                if(!cluster_valid_sign_vec_[nei_id]) continue;
+                if(cluster_core_pt_nums_[id] + cluster_core_pt_nums_[nei_id] > max_group_pt_num_) continue;
+                const auto n_pids = cluster_pt_ids_[nei_id];
+                int share_pt_num = 0;
+                for(const auto npid : n_pids)
+                {
+                    if(cur_pids.find(npid) != cur_pids.end()) share_pt_num ++;
+                }
+                if(share_pt_num > max_share_adj_pt_num )
+                {
+                    cand_id = nei_id;
+                    max_share_adj_pt_num = share_pt_num;
+                }
+            }
+            //  std::cout << " finish get candid ids  " << std::endl;
+            if(cand_id != -1)
+            {   
+                visited_c_vec[cand_id] = true; 
+                // merged_cluster_ids.push_back(id);
+                // merged_cluster_ids.push_back(cand_id);
+                size_t ca = id; 
+                size_t cb = cand_id;
+                cluster_valid_sign_vec_[cb] = 0;
+                cluster_id_map_[cb] = ca;
+                cluster_core_pt_nums_[ca] += cluster_core_pt_nums_[cb]; 
+                cluster_core_pt_nums_[cb] = std::numeric_limits<size_t>::max();
+                const auto n_pids = cluster_pt_ids_[cb];
+                for(const auto pid : n_pids)
+                {
+                    cur_pids.insert(pid);
+                }
+                for(const auto c_id : cluster_adjacent_ids_[cb])
+                {
+                    cluster_adjacent_ids_[ca].insert(c_id);
+                }
+                for(const auto core_id : cluster_core_pt_ids_vec_[cand_id])
+                {
+                    cluster_core_pt_ids_vec_[ca].push_back(core_id);
+                }
+            }
+        }
+    }
+    
+    // auto t2 = Clock::now();
+    // merge_time = std::chrono::nanoseconds(t2 - t1).count()/1e9;
+    // printf("------update cluster merge data time : %f ! \n", merge_time);
+
+}
+
+
+void LocalVipss::MergeHRBFClustersWithEigen()
+{
+    size_t cluster_num = cluster_adjacent_mat_.n_cols;
+    cluster_degrees_.resize(cluster_num);
+    int max_val = std::numeric_limits<int>::max();
+    cluster_adjacent_emat_ = valid_pt_diag_emat_ * cluster_adjacent_emat_;
+    for(size_t i = 0; i < cluster_num; ++i)
+    {
+        if(cluster_valid_sign_vec_[i])
+        {
+            // const SpiVec& valid_vec = cluster_adjacent_emat_.col(i);
+            cluster_degrees_[i] = cluster_adjacent_emat_.col(i).nonZeros();
+        } else {
+            cluster_degrees_[i] = max_val;
+        }
+    }
+
+    auto t0 = Clock::now();
+    // SpiMat cluster_valid_adjacent_pt_mat = cluster_adjacent_pt_emat_ * valid_pt_diag_emat_;
+    // cluster_valid_cores_mat_ = cluster_cores_mat_ * valid_pt_diag_mat_;
+    // SpiMat cluster_adjacent_share_pt_mat = cluster_valid_adjacent_pt_mat.transpose() * cluster_valid_adjacent_pt_mat;
+    SpiMat cluster_adjacent_share_pt_mat = cluster_adjacent_pt_emat_.transpose() * cluster_adjacent_pt_emat_;
+    // printf(" start to init merge cluster \n");
+    // std::set<int> visited_clusters;
+    std::vector<arma::uword> merged_cluster_ids;
+    arma::uvec indices = arma::sort_index(cluster_degrees_, "ascend");
+    std::vector<bool> visited_c_vec(indices.n_elem, false);
+
+    for(auto& id : indices)
+    {
+        if(!cluster_valid_sign_vec_[id]) continue;
+        if(visited_c_vec[id]) continue;
+        visited_c_vec[id] = true;
+        {
+            const SpiVec& c_nei_vec = cluster_adjacent_emat_.col(id);
+            const SpiVec::InnerIterator start(c_nei_vec,0);
+            // const SpiMat::InnerIterator end = c_nei_vec.end();
+            int cand_id = -1;
+            int max_share_adj_pt_num = 0;
+            int cur_core_pt_num = (cluster_cores_emat_.col(id)).nonZeros();
+            for(auto iter = start; iter ; ++iter)
+            {
+                if(!cluster_valid_sign_vec_[iter.row()]) continue;
+                if(visited_c_vec[iter.row()]) continue;
+                {
+                    // if(1)
+                    {
+                        // const arma::sp_uvec n_core_pt_vec(cluster_valid_cores_mat_.col(iter.row()));
+                        int n_core_pt_num = (cluster_cores_emat_.col(iter.row())).nonZeros();
+                        if(n_core_pt_num + cur_core_pt_num > max_group_pt_num_) continue;
+                        // const arma::sp_uvec n_nei_pt_vec(cluster_valid_adjacent_pt_mat_.col(iter.row()));
+                        int share_pt_num  = cluster_adjacent_share_pt_mat.coeff(id,iter.row());
+                        if(share_pt_num > max_share_adj_pt_num )
+                        {
+                            cand_id = iter.row();
+                            max_share_adj_pt_num = share_pt_num;
+                        }
+                    }                   
+                }
+            }
+            if(cand_id != -1)
+            {   
+                visited_c_vec[cand_id] = true; 
+                merged_cluster_ids.push_back(id);
+                merged_cluster_ids.push_back(cand_id);
+            }
+        }
+    }
+    // auto t1 = Clock::now();
+    // double merge_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
+    // printf("------get cluster merge pairs time : %f ! \n", merge_time);
+
+    size_t merged_pair_num = merged_cluster_ids.size() / 2;
+    if(merged_pair_num > 0)
+    {
+        size_t i;
+        size_t ca;
+        size_t cb;
+        for(i = 0; i < merged_pair_num; ++i)
+        {
+            ca = merged_cluster_ids[2 * i];
+            cb = merged_cluster_ids[2 * i + 1];
+            // cluster_core_pt_nums_[ca] += cluster_core_pt_nums_[cb];
+            cluster_cores_emat_.col(ca) +=   cluster_cores_emat_.col(cb); 
+            cluster_adjacent_pt_emat_.col(ca) += cluster_adjacent_pt_emat_.col(cb);
+            cluster_adjacent_emat_.col(ca)    += cluster_adjacent_emat_.col(cb);
+            cluster_valid_sign_vec_[cb] = 0;
+            valid_pt_diag_mat_(cb, cb) = 0;
+        }
+    }
+    cluster_adjacent_emat_ = cluster_adjacent_emat_.transpose();
+    for(size_t i = 0; i < merged_pair_num; ++i)
+    {
+        size_t ca = merged_cluster_ids[2 * i];
+        size_t cb = merged_cluster_ids[2 * i + 1];
+        cluster_adjacent_emat_.col(ca) += cluster_adjacent_emat_.col(cb);
+    }
+    // auto t2 = Clock::now();
+    // merge_time = std::chrono::nanoseconds(t2 - t1).count()/1e9;
+    // printf("------update cluster merge data time : %f ! \n", merge_time);
+
 }
 
 void LocalVipss::CalClusterDegrees()
@@ -1502,6 +1738,7 @@ void LocalVipss::CalClusterDegrees()
     // std::cout << " cluster_adjacent_mat_ nozero count : " << cluster_adjacent_mat_.n_nonzero << std::endl;
     size_t cluster_num = cluster_adjacent_mat_.n_cols;
     cluster_degrees_.resize(cluster_num);
+    int max_val = std::numeric_limits<int>::max();
     for(size_t i = 0; i < cluster_num; ++i)
     {
         // arma::sp_umat nei(cluster_adjacent_mat_.col(i));
@@ -1509,19 +1746,31 @@ void LocalVipss::CalClusterDegrees()
         // const arma::sp_umat::const_iterator end = nei.end();
         // size_t valid_count = cluster_adjacent_mat_.col(i).n_nonzero;
         // printf("origin nozero : %ld \n", valid_count);
-        arma::sp_umat valid_vec = valid_pt_diag_mat_ * cluster_adjacent_mat_.col(i);
-        // valid_count = valid_vec.n_nonzero;
-        // printf("22 origin nozero : %ld \n", valid_count);
-        cluster_degrees_[i] = valid_vec.n_nonzero;
+        if(cluster_valid_sign_vec_[i])
+        {
+            arma::sp_umat valid_vec = valid_pt_diag_mat_ * cluster_adjacent_mat_.col(i);
+            cluster_degrees_[i] = valid_vec.n_nonzero;
+        } else {
+            cluster_degrees_[i] = max_val;
+        }
     }
 }
 
+void LocalVipss::ConvertToEigenSparseMat()
+{
+    cluster_adjacent_emat_ = ConvertToEigenSp(cluster_adjacent_mat_opt_);
+    cluster_adjacent_pt_emat_ = ConvertToEigenSp(cluster_adjacent_mat_opt_);
+    cluster_cores_emat_ = ConvertToEigenSp(cluster_cores_mat_);
+    // int pt_num = cluster_adjacent_mat_.n_cols;
+    valid_pt_diag_emat_ = ConvertToEigenSp(valid_pt_diag_mat_);
+
+}
 
 void LocalVipss::MergeHRBFClustersWithDegree()
 {
     auto t0 = Clock::now();
     cluster_valid_adjacent_pt_mat_ = cluster_adjacent_pt_mat_ * valid_pt_diag_mat_;
-    cluster_valid_cores_mat_ = cluster_cores_mat_ * valid_pt_diag_mat_;
+    // cluster_valid_cores_mat_ = cluster_cores_mat_ * valid_pt_diag_mat_;
     cluster_adjacent_share_pt_mat_ = cluster_valid_adjacent_pt_mat_.t() * cluster_valid_adjacent_pt_mat_;
     // printf(" start to init merge cluster \n");
     // std::set<int> visited_clusters;
@@ -1544,7 +1793,7 @@ void LocalVipss::MergeHRBFClustersWithDegree()
             int cand_id = -1;
             int max_share_adj_pt_num = 0;
             const arma::sp_uvec c_nei_pt_vec(cluster_valid_adjacent_pt_mat_.col(id));
-            arma::sp_umat c_core_col(cluster_valid_cores_mat_.col(id));
+            arma::sp_umat c_core_col(cluster_cores_mat_.col(id));
 
             int cur_core_pt_num = c_core_col.n_nonzero;
             for(auto iter = start; iter != end; ++iter)
@@ -1575,28 +1824,34 @@ void LocalVipss::MergeHRBFClustersWithDegree()
             }
         }
     }
-    auto t1 = Clock::now();
-    double merge_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
-    printf("------get cluster merge pairs time : %f ! \n", merge_time);
+    // auto t1 = Clock::now();
+    // double merge_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
+    // printf("------get cluster merge pairs time : %f ! \n", merge_time);
 
     MergeClusterPairs(merged_cluster_ids);    
 
-    auto t2 = Clock::now();
-    merge_time = std::chrono::nanoseconds(t2 - t1).count()/1e9;
-    printf("------update cluster merge data time : %f ! \n", merge_time);
+    // auto t2 = Clock::now();
+    // merge_time = std::chrono::nanoseconds(t2 - t1).count()/1e9;
+    // printf("------update cluster merge data time : %f ! \n", merge_time);
 }
 
 void LocalVipss::MergeClusterPairs(std::vector<arma::uword>& merged_cluster_ids)
 {
     // auto t00 = Clock::now();
     size_t merged_pair_num = merged_cluster_ids.size() / 2;
-    arma::sp_umat new_cluster_cores_mat(merged_pair_num, cluster_cores_mat_.n_rows);
+    // arma::sp_umat new_cluster_cores_mat(merged_pair_num, cluster_cores_mat_.n_rows);
+
+
     if(merged_pair_num > 0)
     {
-        for(size_t i = 0; i < merged_pair_num; ++i)
+        size_t i;
+        size_t ca;
+        size_t cb;
+        // #pragma omp parallel for shared(cluster_adjacent_pt_mat_, merged_cluster_ids, cluster_adjacent_mat_) private(i, ca, cb)
+        for(i = 0; i < merged_pair_num; ++i)
         {
-            size_t ca = merged_cluster_ids[2 * i];
-            size_t cb = merged_cluster_ids[2 * i + 1];
+            ca = merged_cluster_ids[2 * i];
+            cb = merged_cluster_ids[2 * i + 1];
             
             cluster_cores_mat_.col(ca) +=   cluster_cores_mat_.col(cb);
             // cluster_adjacent_pt_mat_.col(ca) = cluster_adjacent_pt_mat_.col(ca) || cluster_adjacent_pt_mat_.col(cb);
@@ -1608,12 +1863,12 @@ void LocalVipss::MergeClusterPairs(std::vector<arma::uword>& merged_cluster_ids)
             cluster_valid_sign_vec_[cb] = 0;
             valid_pt_diag_mat_(cb, cb) = 0;
         }
-        // arma::sp_umat cluster_adjacent_mat_t = cluster_adjacent_mat_.t();
+        // cluster_adjacent_mat_ = cluster_adjacent_mat_.t();
         // for(size_t i = 0; i < merged_pair_num; ++i)
         // {
         //     size_t ca = merged_cluster_ids[2 * i];
         //     size_t cb = merged_cluster_ids[2 * i + 1];
-        //     cluster_adjacent_mat_t.col(ca) += cluster_adjacent_mat_t.col(cb);
+        //     cluster_adjacent_mat_.col(ca) += cluster_adjacent_mat_.col(cb);
         // }
         // cluster_adjacent_mat_ = cluster_adjacent_mat_t.t();
     }
@@ -1629,27 +1884,48 @@ void LocalVipss::SaveGroupPtsWithColor(const std::string& path)
     for(size_t i = 0; i < group_size; ++i)
     {
         if(!cluster_valid_sign_vec_[i]) continue;
-        const arma::sp_umat cluster_col(cluster_cores_mat_.col(i));
-        arma::sp_umat::const_iterator start = cluster_col.begin();
-        arma::sp_umat::const_iterator end = cluster_col.end();
         int base = 1000000;
         double r = ((double) (rand() % base) / double(base)); r = min(sqrt(r) , 1.0);
         double g = ((double) (rand() % base) / double(base)); g = max(sqrt(g) , 0.0);
         double b = ((double) (rand() % base) / double(base)); b = max(sqrt(b) , 0.0);
-        // std::cout << "current cluster pt number : " << cluster_col.n_nonzero << std::endl;
-        for(auto iter = start; iter != end; ++iter)
+        // const arma::sp_umat cluster_col(cluster_cores_mat_.col(i));
+        // arma::sp_umat::const_iterator start = cluster_col.begin();
+        // arma::sp_umat::const_iterator end = cluster_col.end();
+
+        // const SpiVec& cluster_col = cluster_cores_emat_.col(i);
+        // const SpiVec::InnerIterator start(cluster_col,0);
+        // for(auto iter = start; iter; ++iter)
+        // {
+        //     auto cur_pt = points_[iter.row()];
+        //     pt_file << "v " << cur_pt[0] << " " << cur_pt[1] << " " << cur_pt[2] ;
+        //     pt_file << " " << r << " " << g << " " << b << std::endl;
+        // }
+
+        const auto& cur_pids = cluster_core_pt_ids_vec_[i];
+        // printf("cur cluster core pt num : %ld \n", cur_pids.size());
+        for(auto pid : cur_pids)
         {
-            auto cur_pt = points_[iter.row()];
+            auto cur_pt = points_[pid];
             pt_file << "v " << cur_pt[0] << " " << cur_pt[1] << " " << cur_pt[2] ;
             pt_file << " " << r << " " << g << " " << b << std::endl;
         }
-        pt_file << "l"; 
-        for(size_t pi = pt_count; pi < pt_count + cluster_col.n_nonzero; ++ pi)
-        {
-            pt_file << " " << pi + 1;
-        }
-        pt_file << std::endl;
-        pt_count += cluster_col.n_nonzero;
+
+        // std::cout << "current cluster pt number : " << cluster_col.n_nonzero << std::endl;
+
+        // for(auto iter = start; iter != end; ++iter)
+        // {
+        //     auto cur_pt = points_[iter.row()];
+        //     pt_file << "v " << cur_pt[0] << " " << cur_pt[1] << " " << cur_pt[2] ;
+        //     pt_file << " " << r << " " << g << " " << b << std::endl;
+        // }
+        // pt_file << "l"; 
+        // for(size_t pi = pt_count; pi < pt_count + cluster_col.n_nonzero; ++ pi)
+        // {
+        //     pt_file << " " << pi + 1;
+        // }
+        // pt_file << std::endl;
+        // pt_count += cluster_col.n_nonzero;
+        // pt_count += cluster_col.n_nonzero;
     }
     pt_file.close();
 }
@@ -2079,10 +2355,7 @@ void LocalVipss::SaveClusterCorePts(const std::string& path,
     }
     writePLYFile_CO(path, pts, colors);  
 }
-double CalEdgeLen()
-{
 
-}
 
 void LocalVipss::OptimizeAdjacentMat()
 {   
@@ -2103,7 +2376,7 @@ void LocalVipss::OptimizeAdjacentMat()
             size_t n_id = iter.row();
             arma::vec3 n_normal = {out_normals_[3 *n_id],out_normals_[3 *n_id + 1],out_normals_[3 *n_id + 2]};
             double pro = arma::dot(p_normal, n_normal);
-            if(pro > -0.8)
+            // if(pro > -0.5)
             {
                 arma::vec3 n_pt = {out_pts_[3*n_id], out_pts_[3*n_id + 1], out_pts_[3*n_id +2]};
                 
@@ -2117,9 +2390,9 @@ void LocalVipss::OptimizeAdjacentMat()
         {
             v[j] = j;
         }
-        std::sort(v.begin(), v.end(), [&dist_vec](int a, int b){return dist_vec[a] < dist_vec[b];});
+        std::sort(v.begin(), v.end(), [&dist_vec](int a, int b){return dist_vec[a] <  dist_vec[b];});
         // int n_num = std::min(int(8), int(dist_vec.size()));
-        for(size_t j = 0; j < 5 && j < dist_vec.size() ; ++j)
+        for(size_t j = 0; j < 8 && j < dist_vec.size() ; ++j)
         {
             const auto& cur_e = cur_edges[v[j]];
             edge_ids.push_back(cur_e);
@@ -2127,23 +2400,23 @@ void LocalVipss::OptimizeAdjacentMat()
             cluster_adjacent_mat_opt_(cur_e.first, cur_e.second) = 1;
         }
     }
-    std::cout << "------- cluster_adjacent_mat_opt_  no zero count : " << cluster_adjacent_mat_opt_.n_nonzero << std::endl;
-    std::cout << "------- cluster_adjacent_mat_  no zero count : " << cluster_adjacent_mat_.n_nonzero << std::endl;
+    // std::cout << "------- cluster_adjacent_mat_opt_  no zero count : " << cluster_adjacent_mat_opt_.n_nonzero << std::endl;
+    // std::cout << "------- cluster_adjacent_mat_  no zero count : " << cluster_adjacent_mat_.n_nonzero << std::endl;
 
-    std::ofstream g_file;
-    std::string graph_path = out_dir_ + "/" + "opt_graph.obj";
-    std::cout << "~~~~~~~ out opt graph path : " << graph_path << std::endl;
-    g_file.open(graph_path);
-    for(size_t i  =0; i < pt_num; ++i)
-    {
-        g_file << "v " << out_pts_[3*i] << " " << out_pts_[3*i + 1] <<" "<< out_pts_[3*i+ 2] << std::endl;
-        g_file << "vn "  << out_normals_[3*i] << " " << out_normals_[3*i + 1] <<" "<< out_normals_[3*i+ 2] << std::endl;
-    }
-    for(auto e_id : edge_ids)
-    {
-        g_file << "l " << e_id.first + 1 << " " << e_id.second + 1 << std::endl; 
-    }
-    g_file.close();
+    // std::ofstream g_file;
+    // std::string graph_path = out_dir_ + "/" + "opt_graph.obj";
+    // std::cout << "~~~~~~~ out opt graph path : " << graph_path << std::endl;
+    // g_file.open(graph_path);
+    // for(size_t i  =0; i < pt_num; ++i)
+    // {
+    //     g_file << "v " << out_pts_[3*i] << " " << out_pts_[3*i + 1] <<" "<< out_pts_[3*i+ 2] << std::endl;
+    //     g_file << "vn "  << out_normals_[3*i] << " " << out_normals_[3*i + 1] <<" "<< out_normals_[3*i+ 2] << std::endl;
+    // }
+    // for(auto e_id : edge_ids)
+    // {
+    //     g_file << "l " << e_id.first + 1 << " " << e_id.second + 1 << std::endl; 
+    // }
+    // g_file.close();
 }
 
 
