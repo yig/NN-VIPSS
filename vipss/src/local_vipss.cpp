@@ -679,8 +679,6 @@ inline std::vector<double> LocalVipss::GetClusterSvalsFromIds(const std::vector<
     return svals;
 }
 
-
-
 void LocalVipss::BuildHRBFPerNode()
 {
     auto t00 = Clock::now(); 
@@ -713,6 +711,49 @@ void LocalVipss::BuildHRBFPerNode()
         // // std::cout << " Cluster pts : " << cluster_pt_path << std::endl;
         // output_opt_pts_with_color(cluster_pt_vec, cluster_sv_vec, cluster_pt_path);
         // printf("cluster_sv_vec size : %ld \n", cluster_sv_vec.size());
+        node_rbf_vec_[i] = std::make_shared<RBF_Core>();
+        vipss_api_.build_cluster_hrbf(cluster_pt_vec, cluster_nl_vec, cluster_sv_vec, node_rbf_vec_[i]);
+    }
+
+    auto t11 = Clock::now();
+    double build_HRBF_time_total = std::chrono::nanoseconds(t11 - t00).count()/1e9;
+    printf("--- build_HRBF_time_total sum  time : %f \n", build_HRBF_time_total);
+}
+
+
+void LocalVipss::BuildHRBFPerCluster()
+{
+    auto t00 = Clock::now(); 
+    size_t npt = this->points_.size();
+    size_t cluster_num = points_.size();
+    double time_sum = 0;
+    node_rbf_vec_.resize(cluster_num);
+    bool use_partial_vipss = false;
+    vipss_api_.user_lambda_ = user_lambda_;
+
+    printf("cluster num : %lu \n", cluster_num);
+
+    for(size_t i =0; i < cluster_num; ++i)
+    {
+        if(!cluster_valid_sign_vec_[0]) continue;
+        const auto& c_pids = cluster_pt_ids_[i];
+        std::vector<double> cluster_pt_vec;
+        std::vector<double> cluster_nl_vec;
+        std::vector<double> cluster_sv_vec;
+        for(const auto pid : c_pids)
+        {
+            cluster_pt_vec.push_back(points_[pid][0]);
+            cluster_pt_vec.push_back(points_[pid][1]);
+            cluster_pt_vec.push_back(points_[pid][2]);
+            cluster_nl_vec.push_back(normals_[3*pid]);
+            cluster_nl_vec.push_back(normals_[3*pid + 1]);
+            cluster_nl_vec.push_back(normals_[3*pid + 2]);
+            cluster_sv_vec.push_back(s_vals_[pid]);
+        }
+        // if(use_partial_vipss) 
+        // {
+        //     cluster_nl_vec = {normals_[3*i], normals_[3*i + 1], normals_[3*i + 2]};
+        // } 
         node_rbf_vec_[i] = std::make_shared<RBF_Core>();
         vipss_api_.build_cluster_hrbf(cluster_pt_vec, cluster_nl_vec, cluster_sv_vec, node_rbf_vec_[i]);
     }
@@ -1622,13 +1663,7 @@ void LocalVipss::MergeHRBFClustersWithMap()
             }
         }
     }
-    
-    // auto t2 = Clock::now();
-    // merge_time = std::chrono::nanoseconds(t2 - t1).count()/1e9;
-    // printf("------update cluster merge data time : %f ! \n", merge_time);
-
 }
-
 
 void LocalVipss::MergeHRBFClustersWithEigen()
 {
@@ -1640,13 +1675,11 @@ void LocalVipss::MergeHRBFClustersWithEigen()
     {
         if(cluster_valid_sign_vec_[i])
         {
-            // const SpiVec& valid_vec = cluster_adjacent_emat_.col(i);
             cluster_degrees_[i] = cluster_adjacent_emat_.col(i).nonZeros();
         } else {
             cluster_degrees_[i] = max_val;
         }
     }
-
     auto t0 = Clock::now();
     // SpiMat cluster_valid_adjacent_pt_mat = cluster_adjacent_pt_emat_ * valid_pt_diag_emat_;
     // cluster_valid_cores_mat_ = cluster_cores_mat_ * valid_pt_diag_mat_;
