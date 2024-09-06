@@ -323,8 +323,8 @@ void VoronoiGen::GenerateVoroData()
     double build_vo_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
     printf("-----------compute voronoi data time : %f \n", build_vo_time);
 
-    double prevo_time = std::chrono::nanoseconds(t2 - t1).count()/1e9;
-    printf("-----------pre iter voronoi data time : %f \n", prevo_time);
+    // double prevo_time = std::chrono::nanoseconds(t2 - t1).count()/1e9;
+    // printf("-----------pre iter voronoi data time : %f \n", prevo_time);
 
     if(0)
     {

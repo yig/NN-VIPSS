@@ -731,12 +731,16 @@ void LocalVipss::BuildHRBFPerCluster()
     bool use_partial_vipss = false;
     vipss_api_.user_lambda_ = user_lambda_;
 
-    printf("cluster num : %lu \n", cluster_num);
+    // printf("cluster num : %lu \n", cluster_num);
+    // size_t valid_cluster_num = arma::accu(cluster_valid_sign_vec_);
+    // valid_cluster_dist_map_.resize(valid_cluster_num);
 
     for(size_t i =0; i < cluster_num; ++i)
     {
-        if(!cluster_valid_sign_vec_[0]) continue;
+
+        if(!cluster_valid_sign_vec_[i]) continue;
         const auto& c_pids = cluster_pt_ids_[i];
+        printf("---- cur id : %ld group pt number : %ld \n", i, c_pids.size());
         std::vector<double> cluster_pt_vec;
         std::vector<double> cluster_nl_vec;
         std::vector<double> cluster_sv_vec;
@@ -749,18 +753,15 @@ void LocalVipss::BuildHRBFPerCluster()
             cluster_nl_vec.push_back(normals_[3*pid + 1]);
             cluster_nl_vec.push_back(normals_[3*pid + 2]);
             cluster_sv_vec.push_back(s_vals_[pid]);
+            cluster_id_map_[pid] = i;
         }
-        // if(use_partial_vipss) 
-        // {
-        //     cluster_nl_vec = {normals_[3*i], normals_[3*i + 1], normals_[3*i + 2]};
-        // } 
         node_rbf_vec_[i] = std::make_shared<RBF_Core>();
         vipss_api_.build_cluster_hrbf(cluster_pt_vec, cluster_nl_vec, cluster_sv_vec, node_rbf_vec_[i]);
     }
 
     auto t11 = Clock::now();
     double build_HRBF_time_total = std::chrono::nanoseconds(t11 - t00).count()/1e9;
-    printf("--- build_HRBF_time_total sum  time : %f \n", build_HRBF_time_total);
+    printf("--- build cluster HRBF total  time : %f \n", build_HRBF_time_total);
 }
 
 double LocalVipss::NodeDistanceFunction(const tetgenmesh::point nn_pt, const tetgenmesh::point cur_pt)
@@ -864,20 +865,57 @@ double LocalVipss::NatureNeighborDistanceFunction(const tetgenmesh::point cur_pt
     double volume_sum = 0;
     double weight_sum = 0;
     // printf("nn num %ld \n", nn_num);
-
+    std::unordered_set<size_t> cluster_ids;
+    if(is_group_cluster_)
+    {
+        
+        for(size_t i = 0; i < nn_num; ++i)
+        {
+            size_t pid = voro_gen_.point_id_map_[nei_pts[i]];
+            cluster_ids.insert(cluster_id_map_[pid]);
+        }
+        if(cluster_ids.size() == 1)
+        {
+            in_cluster_surface_pt_count++;
+            size_t c_id = *cluster_ids.begin();
+            // printf("cur search pt is in cluster : %ld \n", c_id);
+            return node_rbf_vec_[c_id]->Dist_Function(cur_pt);
+        }
+    }
+    std::unordered_map<size_t, double> volume_map;
+    
     for(size_t i = 0; i < nn_num; ++i)
     {
         auto nn_pt = nei_pts[i];
+        if(is_group_cluster_)
+        {
+            auto t0 = Clock::now();
+            size_t pid = voro_gen_.point_id_map_[nn_pt];
+            size_t cid = cluster_id_map_[pid];
+            double volume  = voro_gen_.CalTruncatedCellVolumePassOMP(cur_pt, nn_pt);
+            if(volume_map.find(cid) != volume_map.end())
+            {
+                volume_map[cid] += volume;
+            } else {
+                volume_map[cid] = volume;
+            }
+            auto t1 = Clock::now();
+            double pass_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
+            pass_time_sum_ += pass_time;
+        } else 
+        
         // if(nn_pt != (tetgenmesh::point)NULL && voro_gen_.tetMesh_.pointtype(nn_pt) != tetgenmesh::UNUSEDVERTEX)
         {
             auto td0 = Clock::now();
-            double nn_dist = NodeDistanceFunction(nn_pt, cur_pt);
+            // double nn_dist = NodeDistanceFunction(nn_pt, cur_pt);
+            size_t pid = voro_gen_.point_id_map_[nn_pt];
+            double nn_dist = node_rbf_vec_[pid]->Dist_Function(cur_pt);
             auto td1 = Clock::now();
             double dist_time = std::chrono::nanoseconds(td1 - td0).count()/1e9;
             dist_time_sum_ += dist_time;
             // printf("nn dist %f \n", nn_dist);
             auto t0 = Clock::now();
-            double volume  = voro_gen_.CalTruncatedCellVolumePass(cur_pt, nn_pt);
+            double volume  = voro_gen_.CalTruncatedCellVolumePassOMP(cur_pt, nn_pt);
             auto t1 = Clock::now();
             double pass_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
             pass_time_sum_ += pass_time;
@@ -888,6 +926,31 @@ double LocalVipss::NatureNeighborDistanceFunction(const tetgenmesh::point cur_pt
             volume_sum += volume;
         }
     }
+    if(is_group_cluster_)
+    {
+        // double dist = 0;
+        // double volume_sum = 0;
+        if(cluster_ids.size() > 1)
+        {
+            for(auto c_id : cluster_ids)
+            {
+                auto td0 = Clock::now();
+                double nn_dist =  node_rbf_vec_[c_id]->Dist_Function(cur_pt);
+                auto td1 = Clock::now();
+                double dist_time = std::chrono::nanoseconds(td1 - td0).count()/1e9;
+                dist_time_sum_ += dist_time;
+
+                volume_sum += volume_map[c_id];
+                weight_sum += volume_map[c_id] * nn_dist;
+            }
+        }
+        if(volume_sum > 0)
+        {
+            weight_sum /= volume_sum;
+        }
+        return weight_sum;
+    }
+    
 
     if(volume_sum != 0)
     {
@@ -918,6 +981,7 @@ double LocalVipss::NatureNeighborDistanceFunctionOMP(const tetgenmesh::point cur
         // if(nn_pt != (tetgenmesh::point)NULL && voro_gen_.tetMesh_.pointtype(nn_pt) != tetgenmesh::UNUSEDVERTEX)
         {
             size_t pid = voro_gen_.point_id_map_[nn_pt];
+            if(is_group_cluster_) pid = cluster_id_map_[pid];
             nn_dist_vec_[i] = node_rbf_vec_[pid]->Dist_Function(cur_pt);
             int thread_id = omp_get_thread_num();
             nn_volume_vec_[i] = voro_gen_.CalTruncatedCellVolumePassOMP(cur_pt, nn_pt, thread_id); 
@@ -992,8 +1056,8 @@ double LocalVipss::NNDistFunction(const R3Pt &in_pt)
     DistCallNum ++;
     auto t0 = Clock::now();
     double new_pt[3] = {in_pt[0], in_pt[1], in_pt[2]};
-    // double dist = local_vipss_ptr->NatureNeighborDistanceFunction(&(new_pt[0]));
-    double dist = local_vipss_ptr->NatureNeighborDistanceFunctionOMP(&(new_pt[0]));
+    double dist = local_vipss_ptr->NatureNeighborDistanceFunction(&(new_pt[0]));
+    // double dist = local_vipss_ptr->NatureNeighborDistanceFunctionOMP(&(new_pt[0]));
     auto t1 = Clock::now();
     double dist_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
     DistCallTime += dist_time;
@@ -1531,12 +1595,12 @@ void LocalVipss::GroupClustersWithDegree()
     
     // OptimizeAdjacentMat();
     // ConvertToEigenSparseMat();
-    std::cout << " start to init adjacent data " << std::endl;
+    // std::cout << " start to init adjacent data " << std::endl;
     InitAdjacentData();
     
     for(size_t i = 0; i < max_group_iter_; ++i)
     {
-        std::cout << " iter :: " << i << std::endl;
+        // std::cout << " iter :: " << i << std::endl;
         // CalClusterDegrees();
         // MergeHRBFClustersWithDegree();
         // MergeHRBFClustersWithEigen();

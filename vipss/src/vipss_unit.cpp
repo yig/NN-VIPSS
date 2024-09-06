@@ -600,47 +600,46 @@ void VIPSSUnit::ReconSurface()
     // local_vipss_.out_normals_ = newnormals_;
     // local_vipss_.OptimizeAdjacentMat();
     // TestSpectralClustering(local_vipss_.cluster_adjacent_mat_opt_);
-    
     // local_vipss_.voro_gen_.BuildTetMeshTetCenterMap();
     // local_vipss_.voro_gen_.BuildPicoTree();
-    
-    
     // bool use_nn_interpolation = true;
+    bool is_group_cluster = true;
+    local_vipss_.is_group_cluster_ = is_group_cluster;
     if(LOCAL_HRBF_NN == hrbf_type_)
     {
         printf(" start use_nn_interpolation \n");
         local_vipss_.normals_ = newnormals_;
         local_vipss_.s_vals_ = s_func_vals_;
         local_vipss_.user_lambda_ = user_lambda_;
-
-        local_vipss_.BuildHRBFPerNode(); 
+        if(is_group_cluster)
+        {
+            local_vipss_.GroupClustersWithDegree();
+            std::string group_pt_path = data_dir_  + file_name_ + "/" + "group_pts.obj";
+            std::cout << " save group pts to file : " << group_pt_path << std::endl;
+            local_vipss_.SaveGroupPtsWithColor(group_pt_path);
+            local_vipss_.BuildHRBFPerCluster();
+        } else {
+            local_vipss_.BuildHRBFPerNode(); 
+        }        
         // printf(" start set local vipss static ptr \n");
         local_vipss_.SetThis();
 
-        local_vipss_.GroupClustersWithDegree();
-        std::string group_pt_path = data_dir_  + file_name_ + "/" + "group_pts.obj";
-        std::cout << " save group pts to file : " << group_pt_path << std::endl;
-        local_vipss_.SaveGroupPtsWithColor(group_pt_path);
+        
+        
 
         // printf(" finish set local vipss static ptr \n");
         // local_vipss_.testNNPtDist();
         // return;
 
-    if(0)
-    {
-        // double p0[3] = {0.266693, 0.369411, 0.0690456};
-        // double p1[3] = {0.278074, 0.326238, 0.029064};
-        // double p2[3] = {0.373304, 0.289721, 0.0855713};
-        double p0[3] = {-0.142955, 0.147453, -0.273193};
-        double p1[3] = {-0.145742, 0.241941, -0.243457};
-        double p2[3] = {-0.146177, 0.201896, -0.202977};
-        VoroPlane visual_plane(&p0[0], &p1[0], &p2[0]);
-        // std::string plane_save_path = data_dir_ + file_name_ + "/visual_func_plane.obj";
-        // visual_plane.SavePlane(plane_save_path);
-
-        std::string visual_func_path = data_dir_ + file_name_ + "/visual_func_vals.obj";
-        local_vipss_.VisualFuncValues(LocalVipss::NNDistFunction, visual_plane, visual_func_path);
-    }
+    // if(0)
+    // {
+    //     double p0[3] = {-0.142955, 0.147453, -0.273193};
+    //     double p1[3] = {-0.145742, 0.241941, -0.243457};
+    //     double p2[3] = {-0.146177, 0.201896, -0.202977};
+    //     VoroPlane visual_plane(&p0[0], &p1[0], &p2[0]);
+    //     std::string visual_func_path = data_dir_ + file_name_ + "/visual_func_vals.obj";
+    //     local_vipss_.VisualFuncValues(LocalVipss::NNDistFunction, visual_plane, visual_func_path);
+    // }
     
         size_t n_voxels_1d = 100;
         Surfacer sf;
@@ -650,7 +649,7 @@ void VIPSSUnit::ReconSurface()
         printf("------- nn search time sum: %f \n", local_vipss_.search_nn_time_sum_);
         printf("------- nn coordinate cal time sum : %f \n", local_vipss_.pass_time_sum_);
         printf("------- HRBF dist time sum : %f \n", local_vipss_.dist_time_sum_);
-
+        printf(" ------ in_cluster_surface_pt_count : % ld  \n", local_vipss_.in_cluster_surface_pt_count);
         printf(" ------ DistCallNum : %d  \n", LocalVipss::DistCallNum);
         printf(" ------ DistCallTime : %f \n", LocalVipss::DistCallTime);
         std::string out_path = data_dir_ + "/" + file_name_  + "/nn_surface";

@@ -144,6 +144,7 @@ class LocalVipss {
 
         void InitAdjacentData();
         void MergeHRBFClustersWithMap();
+        void BuildHRBFPerCluster();
 
     private:
 
@@ -151,6 +152,7 @@ class LocalVipss {
         inline void ShedCols(arma::sp_mat& in_mat, const std::vector<arma::uword>& delete_ids);
     
     public:
+        bool is_group_cluster_ = false;
         VoronoiGen voro_gen_;
         RBF_API vipss_api_;
 
@@ -163,7 +165,8 @@ class LocalVipss {
         std::vector<std::unordered_set<size_t>> cluster_pt_ids_;
         std::vector<std::vector<size_t> > cluster_core_pt_ids_vec_; 
         arma::uvec cluster_core_pt_nums_;
-        std::vector<size_t> cluster_id_map_;;  
+        std::vector<size_t> cluster_id_map_;
+        std::vector<size_t> valid_cluster_dist_map_;
 
         arma::sp_umat adjacent_mat_;
         arma::sp_umat cluster_cores_mat_;
@@ -218,7 +221,7 @@ class LocalVipss {
         
     public:
         int max_group_iter_ = 10;
-        int max_group_pt_num_ = 512;
+        int max_group_pt_num_ = 128;
         bool flip_normal_ = false;
         double user_lambda_ = 0.0;
         double unit_lambda_ = 0.0;
@@ -240,4 +243,5 @@ class LocalVipss {
         double pass_time_sum_ = 0;
         double search_nn_time_sum_ = 0;
         double dist_time_sum_ = 0;
+        size_t in_cluster_surface_pt_count = 0;
 };
