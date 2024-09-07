@@ -25,7 +25,7 @@ class IncreVipss {
 
         double lambda_ = 0.0;
         double cur_sample_dist_ = 0.1;
-        size_t residual_beta_ = 0.5;
+        double residual_beta_ = 0.5;
         size_t init_sample_num_ = 10;
         size_t incremental_num_ = 10;
         size_t iter_num_ = 7;

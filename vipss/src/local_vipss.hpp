@@ -163,6 +163,7 @@ class LocalVipss {
         std::vector<std::unordered_set<size_t>> cluster_pt_ids_;
         std::vector<std::vector<size_t> > cluster_core_pt_ids_vec_; 
         arma::uvec cluster_core_pt_nums_;
+        arma::vec cluster_volume_vals_;
         std::vector<size_t> cluster_id_map_;
         std::vector<size_t> valid_cluster_dist_map_;
 
@@ -218,8 +219,8 @@ class LocalVipss {
         arma::vec nn_volume_vec_;
         
     public:
-        int max_group_iter_ = 10;
-        int max_group_pt_num_ = 16;
+        int max_group_iter_ = 12;
+        int max_group_pt_num_ = 1024;
         bool flip_normal_ = false;
         double user_lambda_ = 0.0;
         double unit_lambda_ = 0.0;
@@ -241,5 +242,6 @@ class LocalVipss {
         double pass_time_sum_ = 0;
         double search_nn_time_sum_ = 0;
         double dist_time_sum_ = 0;
+        size_t dist_call_num_ = 0;
         size_t in_cluster_surface_pt_count = 0;
 };

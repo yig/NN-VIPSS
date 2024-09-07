@@ -649,6 +649,7 @@ void VIPSSUnit::ReconSurface()
         printf("------- nn search time sum: %f \n", local_vipss_.search_nn_time_sum_);
         printf("------- nn coordinate cal time sum : %f \n", local_vipss_.pass_time_sum_);
         printf("------- HRBF dist time sum : %f \n", local_vipss_.dist_time_sum_);
+        printf("------- HRBF dist call num : %ld \n", local_vipss_.dist_call_num_);
         printf(" ------ in_cluster_surface_pt_count : % ld  \n", local_vipss_.in_cluster_surface_pt_count);
         printf(" ------ DistCallNum : %d  \n", LocalVipss::DistCallNum);
         printf(" ------ DistCallTime : %f \n", LocalVipss::DistCallTime);

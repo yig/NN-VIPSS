@@ -727,13 +727,15 @@ void LocalVipss::BuildHRBFPerCluster()
     size_t cluster_num = points_.size();
     double time_sum = 0;
     node_rbf_vec_.resize(cluster_num);
+    cluster_volume_vals_.resize(cluster_num);
     bool use_partial_vipss = false;
     vipss_api_.user_lambda_ = user_lambda_;
 
     // printf("cluster num : %lu \n", cluster_num);
-    // size_t valid_cluster_num = arma::accu(cluster_valid_sign_vec_);
+    size_t valid_cluster_num = arma::accu(cluster_valid_sign_vec_);
     // valid_cluster_dist_map_.resize(valid_cluster_num);
     int valid_pt_count =0;
+    int valid_core_pt_count =0;
     for(size_t i =0; i < cluster_num; ++i)
     {
 
@@ -755,7 +757,8 @@ void LocalVipss::BuildHRBFPerCluster()
             // cluster_id_map_[pid] = i;
         }
         const auto& core_ids = cluster_core_pt_ids_vec_[i];
-        valid_pt_count += core_ids.size();
+        valid_pt_count += c_pids.size();
+        valid_core_pt_count += core_ids.size();
         for(const auto id : core_ids)
         {
             cluster_id_map_[id] = i;
@@ -768,6 +771,8 @@ void LocalVipss::BuildHRBFPerCluster()
     double build_HRBF_time_total = std::chrono::nanoseconds(t11 - t00).count()/1e9;
     printf("--- build cluster HRBF total  time : %f \n", build_HRBF_time_total);
     printf("valid core pt count : %d \n", valid_pt_count);
+    printf("average cluster num : %d \n", valid_pt_count/int(valid_cluster_num));
+    printf("average cluster core pt num : %d \n", valid_core_pt_count/int(valid_cluster_num));
 }
 
 double LocalVipss::NodeDistanceFunction(const tetgenmesh::point nn_pt, const tetgenmesh::point cur_pt)
@@ -885,42 +890,44 @@ double LocalVipss::NatureNeighborDistanceFunction(const tetgenmesh::point cur_pt
             in_cluster_surface_pt_count++;
             size_t c_id = *cluster_ids.begin();
             // printf("cur search pt is in cluster : %ld \n", c_id);
-            return node_rbf_vec_[c_id]->Dist_Function(cur_pt);
+            auto td0 = Clock::now();
+            double dist = node_rbf_vec_[c_id]->Dist_Function(cur_pt);
+            auto td1 = Clock::now();
+            double dist_time = std::chrono::nanoseconds(td1 - td0).count()/1e9;
+            dist_time_sum_ += dist_time;
+            dist_call_num_ ++;
+
+            return dist;
         } else {
-            std::unordered_map<size_t, double> volume_map;
+            // std::unordered_map<size_t, double> volume_map;
+            cluster_volume_vals_.zeros();
             for(size_t i = 0; i < nn_num; ++i)
             {
                 auto nn_pt = nei_pts[i];
                 auto t0 = Clock::now();
-
                 size_t pid = voro_gen_.point_id_map_[nn_pt];
                 size_t cid = cluster_id_map_[pid];
-                // printf("cur pid : % ld, cur c id : %ld \n", pid, cid);
                 double volume  = voro_gen_.CalTruncatedCellVolumePassOMP(cur_pt, nn_pt);
-                if(volume_map.find(cid) != volume_map.end())
-                {
-                    volume_map[cid] += volume;
-                } else {
-                    volume_map[cid] = volume;
-                }
+                cluster_volume_vals_[cid] += volume;
                 auto t1 = Clock::now();
                 double pass_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
                 pass_time_sum_ += pass_time;
 
             }
             // printf("finish building volume map ! \n");
-            for(const auto ele : volume_map )
+            for(const auto cid : cluster_ids )
             {
                 // printf("cur cluster id : %ld \n", ele.first);
-                bool is_valid_cluster = cluster_valid_sign_vec_[ele.first];
+                bool is_valid_cluster = cluster_valid_sign_vec_[cid];
                 // printf("is valid cluster : %d \n", int(is_valid_cluster));
                 auto td0 = Clock::now();
-                double nn_dist =  node_rbf_vec_[ele.first]->Dist_Function(cur_pt);
+                double nn_dist =  node_rbf_vec_[cid]->Dist_Function(cur_pt);
                 auto td1 = Clock::now();
                 double dist_time = std::chrono::nanoseconds(td1 - td0).count()/1e9;
                 dist_time_sum_ += dist_time;
-                volume_sum += ele.second;
-                weight_sum += ele.second * nn_dist;
+                dist_call_num_ ++;
+                volume_sum += cluster_volume_vals_[cid];
+                weight_sum += cluster_volume_vals_[cid] * nn_dist;
             }
             // printf("finish cal weight_sum ! \n");
         }
@@ -953,12 +960,6 @@ double LocalVipss::NatureNeighborDistanceFunction(const tetgenmesh::point cur_pt
         }
 
     }
-    
-    
-    
-   
-    
-
     if(volume_sum != 0)
     {
         double weight_dist = weight_sum / volume_sum;
