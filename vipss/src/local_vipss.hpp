@@ -221,7 +221,7 @@ class LocalVipss {
         
     public:
         int max_group_iter_ = 10;
-        int max_group_pt_num_ = 1;
+        int max_group_pt_num_ = 16;
         bool flip_normal_ = false;
         double user_lambda_ = 0.0;
         double unit_lambda_ = 0.0;

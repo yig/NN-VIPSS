@@ -594,7 +594,7 @@ void VIPSSUnit::ReconSurface()
 {
     printf(" start ReconSurface \n");
     // local_vipss_.TestVoronoiPts();
-    local_vipss_.voro_gen_.BuildTetMeshTetCenterMap();
+    // local_vipss_.voro_gen_.BuildTetMeshTetCenterMap();
     local_vipss_.voro_gen_.GenerateVoroData();
     // local_vipss_.PtPCA(local_vipss_.out_pts_);
     // local_vipss_.out_normals_ = newnormals_;
