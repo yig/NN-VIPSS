@@ -740,7 +740,7 @@ void LocalVipss::BuildHRBFPerCluster()
 
         if(!cluster_valid_sign_vec_[i]) continue;
         const auto& c_pids = cluster_pt_ids_[i];
-        printf("---- cur id : %ld group pt number : %ld \n", i, c_pids.size());
+        // printf("---- cur id : %ld group pt number : %ld \n", i, c_pids.size());
         std::vector<double> cluster_pt_vec;
         std::vector<double> cluster_nl_vec;
         std::vector<double> cluster_sv_vec;
@@ -753,7 +753,7 @@ void LocalVipss::BuildHRBFPerCluster()
             cluster_nl_vec.push_back(normals_[3*pid + 1]);
             cluster_nl_vec.push_back(normals_[3*pid + 2]);
             cluster_sv_vec.push_back(s_vals_[pid]);
-            cluster_id_map_[pid] = i;
+            // cluster_id_map_[pid] = i;
         }
         node_rbf_vec_[i] = std::make_shared<RBF_Core>();
         vipss_api_.build_cluster_hrbf(cluster_pt_vec, cluster_nl_vec, cluster_sv_vec, node_rbf_vec_[i]);
