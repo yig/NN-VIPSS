@@ -143,6 +143,7 @@ void VIPSSUnit::BuildVipssUnitMatrixP()
 
 // double acc_tim1;
 // static int countopt = 0;
+
 double optfunc_unit_vipss_simple(const std::vector<double>&x, std::vector<double>&grad, void *fdata){
 
     auto t1 = Clock::now();
@@ -206,6 +207,67 @@ double optfunc_unit_vipss_simple(const std::vector<double>&x, std::vector<double
     return re;
 }
 
+
+double optfunc_unit_vipss_simple_eigen(const std::vector<double>&x, std::vector<double>&grad, void *fdata){
+
+    auto t1 = Clock::now();
+    VIPSSUnit *drbf = reinterpret_cast<VIPSSUnit*>(fdata);
+    // size_t n = drbf->npt;
+    size_t n = drbf->npt_;
+    // printf("input point number : %llu \n", n);
+    Eigen::VectorXd arma_x(n*3);
+
+    //(  sin(a)cos(b), sin(a)sin(b), cos(a)  )  a =>[0, pi], b => [-pi, pi];
+    std::vector<double>sina_cosa_sinb_cosb(n * 4);
+    for(size_t i=0;i<n;++i){
+        size_t ind = i*4;
+        sina_cosa_sinb_cosb[ind] = sin(x[i*2]);
+        sina_cosa_sinb_cosb[ind+1] = cos(x[i*2]);
+        sina_cosa_sinb_cosb[ind+2] = sin(x[i*2+1]);
+        sina_cosa_sinb_cosb[ind+3] = cos(x[i*2+1]);
+    }
+    for(int i=0;i<n;++i){
+        auto p_scsc = sina_cosa_sinb_cosb.data()+i*4;
+
+        if(drbf->axi_plane_ == AXI_PlANE::XYZ)
+        {
+            arma_x(i) = p_scsc[0] * p_scsc[3];
+            arma_x(i+n) = p_scsc[0] * p_scsc[2];
+            arma_x(i+n*2) = p_scsc[1];
+        } else {
+            arma_x(i) = p_scsc[0] * p_scsc[3];
+            arma_x(i+n) = p_scsc[1];
+            arma_x(i+n*2) = p_scsc[0] * p_scsc[2];
+        }
+    }
+
+    Eigen::VectorXd a2 = drbf->local_vipss_.final_h_eigen_ * arma_x;
+    if (!grad.empty()) {
+        grad.resize(n*2);
+        for(size_t i=0;i<n;++i){
+            auto p_scsc = sina_cosa_sinb_cosb.data()+i*4;
+
+            if(drbf->axi_plane_ == AXI_PlANE::XYZ)
+            {
+                grad[i*2] = a2(i) * p_scsc[1] * p_scsc[3] + a2(i+n) * p_scsc[1] * p_scsc[2] - a2(i+n*2) * p_scsc[0];
+                grad[i*2+1] = -a2(i) * p_scsc[0] * p_scsc[2] + a2(i+n) * p_scsc[0] * p_scsc[3];
+            } else {
+                grad[i*2] = a2(i) * p_scsc[1] * p_scsc[3] + a2(i+n*2) * p_scsc[1] * p_scsc[2] - a2(i+n) * p_scsc[0];
+                grad[i*2+1] = -a2(i) * p_scsc[0] * p_scsc[2] + a2(i+n*2) * p_scsc[0] * p_scsc[3];
+            }
+            
+
+            
+        }
+    }
+    double re =  arma_x.dot( a2 );
+    // printf("residual val : %f \n", re);
+    // printf("Final_H_ non zero  : %d \n", drbf->Final_H_.n_nonzero);
+    // countopt++;
+    // acc_time+=(std::chrono::nanoseconds(Clock::now() - t1).count()/1e9);
+    return re;
+}
+
 double optfunc_unit_vipss_direct_simple(const std::vector<double>&x, std::vector<double>&grad, void *fdata){
 
     auto t1 = Clock::now();
@@ -231,6 +293,48 @@ double optfunc_unit_vipss_direct_simple(const std::vector<double>&x, std::vector
         }
     }
     double re = arma::dot(arma_x, a2);
+    double alpha = 100.0;
+
+    for(size_t id =0; id < n; ++id)
+    {
+        double cur_re = x[3*id] * x[3*id] + x[3*id + 1] * x[3*id + 1] + x[3*id + 2] * x[3*id + 2] - 1;
+        if(!grad.empty()) 
+        {
+            grad[3* id]     += alpha * 2 * x[3*id] * cur_re; 
+            grad[3* id + 1] += alpha * 2 * x[3*id + 1] * cur_re; 
+            grad[3* id + 2] += alpha * 2 * x[3*id + 2] * cur_re; 
+        }
+        re += alpha* cur_re * cur_re;
+    }
+    // printf("res val : %f \n", re);
+    return re;
+}
+
+double optfunc_unit_vipss_direct_simple_eigen(const std::vector<double>&x, std::vector<double>&grad, void *fdata){
+
+    auto t1 = Clock::now();
+    VIPSSUnit *drbf = reinterpret_cast<VIPSSUnit*>(fdata);
+    // size_t n = drbf->npt;
+    size_t n = drbf->npt_;
+    Eigen::VectorXd arma_x(n*3);
+    for(int i=0;i<n;++i){
+        // auto p_scsc = sina_cosa_sinb_cosb.data()+i*4;
+        arma_x(i)     = x[3*i];
+        arma_x(i+n)   = x[3*i + 1];
+        arma_x(i+n*2) = x[3*i + 2];
+    }
+    // arma::vec a2;
+    Eigen::VectorXd a2 = drbf->local_vipss_.final_h_eigen_ * arma_x;
+    if (!grad.empty()) {
+        // std::cout << " grad size " <<grad.size() << std::endl;
+        grad.resize(n*3);
+        for(size_t i=0;i<n;++i){
+            grad[i*3]   = a2(i);
+            grad[i*3+1] = a2(n+i);
+            grad[i*3+2] = a2(2*n+i);
+        }
+    }
+    double re = arma_x.dot(a2);
     double alpha = 100.0;
 
     for(size_t id =0; id < n; ++id)
@@ -295,6 +399,53 @@ double optfunc_unit_vipss_direct(const std::vector<double>&x, std::vector<double
     return re;
 }
 
+
+
+double optfunc_unit_vipss_direct_eigen(const std::vector<double>&x, std::vector<double>&grad, void *fdata){
+
+    auto t1 = Clock::now();
+    VIPSSUnit *drbf = reinterpret_cast<VIPSSUnit*>(fdata);
+    // size_t n = drbf->npt;
+    size_t n = drbf->npt_;
+    size_t u_size = 4;
+    Eigen::VectorXd arma_x(n * u_size);
+    for(int i=0;i<n;++i){
+        // auto p_scsc = sina_cosa_sinb_cosb.data()+i*4;
+        arma_x(i)     = x[u_size*i ];
+        arma_x(i+n)   = x[u_size*i + 1];
+        arma_x(i+n*2) = x[u_size*i + 2];
+        arma_x(i+n*3) = x[u_size*i + 3];
+    }
+   
+    Eigen::VectorXd a2 = drbf->local_vipss_.final_h_eigen_ * arma_x;
+    if (!grad.empty()) {
+        // std::cout << " grad size " <<grad.size() << std::endl;
+        grad.resize(n*u_size);
+        for(size_t i=0;i<n;++i){
+            grad[i*u_size]   = a2(i);
+            grad[i*u_size+1] = a2(i + n);
+            grad[i*u_size+2] = a2(i + 2*n);
+            grad[i*u_size+3] = a2(i + 3*n);
+        }
+    }
+    double re = arma_x.dot(a2);
+    double alpha = 100.0;
+
+    for(size_t id =0; id < n; ++id)
+    {
+        double cur_re = x[u_size*id + 1] * x[u_size*id + 1] + x[u_size*id + 2] * x[u_size*id + 2] 
+                        + x[u_size*id + 3] * x[u_size*id + 3] - 1;
+        if(!grad.empty()) 
+        {
+            grad[u_size* id + 1] += alpha * 2 * x[u_size*id + 1] * cur_re; 
+            grad[u_size* id + 2] += alpha * 2 * x[u_size*id + 2] * cur_re; 
+            grad[u_size* id + 3] += alpha * 2 * x[u_size*id + 3] * cur_re; 
+        }
+        re += alpha* cur_re * cur_re;
+    }
+    // printf("res val : %f \n", re);
+    return re;
+}
 // double myconstraint(unsigned n, const double *x, double *grad, void *data)
 
 double contraint_simple(const std::vector<double>&x, std::vector<double>&grad, void *fdata)
@@ -460,7 +611,7 @@ void VIPSSUnit::OptUnitVipssNormalDirectSimple(){
         lower[i*3 + 2] = -1.0;
     }
 
-    Solver::nloptwrapperDirect(lower,upper,optfunc_unit_vipss_direct_simple,
+    Solver::nloptwrapperDirect(lower,upper,optfunc_unit_vipss_direct_simple_eigen,
                 this,1e-7,3000,solver_);
     // Solver::nloptwrapper(lower,upper,optfunc_unit_vipss_simple,this,1e-7,3000,solver_);
     
@@ -504,7 +655,7 @@ void VIPSSUnit::OptUnitVipssNormalDirect(){
         }
     }
 
-    Solver::nloptwrapperDirect(lower,upper,optfunc_unit_vipss_direct,
+    Solver::nloptwrapperDirect(lower,upper,optfunc_unit_vipss_direct_eigen,
                 this, 1e-7, 3000, solver_);
     // Solver::nloptwrapper(lower,upper,optfunc_unit_vipss_simple,this,1e-7,3000,solver_);
     newnormals_.resize(npt_*3);
@@ -687,9 +838,10 @@ if(1)
 {
     if(user_lambda_ < 1e-10)
     {
-        Final_H_ = local_vipss_.final_H_(npt_, npt_, arma::size(3 *npt_, 3 * npt_));
+        // Final_H_ = local_vipss_.final_H_(npt_, npt_, arma::size(3 * npt_, 3 * npt_));
+         local_vipss_.final_h_eigen_ = local_vipss_.final_h_eigen_.block(npt_, npt_, 3 * npt_, 3 * npt_);
     } else {
-        Final_H_ = local_vipss_.final_H_;
+        // Final_H_ = local_vipss_.final_H_;
     }
     auto tn1 = Clock::now();
     double build_H_time = std::chrono::nanoseconds(tn1 - tn0).count() / 1e9;

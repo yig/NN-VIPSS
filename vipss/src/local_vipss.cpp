@@ -412,7 +412,7 @@ void LocalVipss::AddClusterHMatrix(const std::vector<size_t>& p_ids, const arma:
 {
     size_t unit_npt = p_ids.size();
     // printf("uint pt num : %lu \n", unit_npt);
-    auto& final_H = final_H_;
+    // auto& final_H = final_H_;
     // #pragma omp parallel shared(final_H)
     // arma::sp_mat final_H(npt * 4, npt * 4); 
     double sum = 0;
@@ -423,7 +423,7 @@ void LocalVipss::AddClusterHMatrix(const std::vector<size_t>& p_ids, const arma:
     // arma::vec values(unit_npt * 4 * unit_npt * 4);
 
     size_t e_id = 0;
-    long col_num = 4 * npt;
+    // long col_num = 4 * npt;
     std::vector<Triplet> coefficients;
     for(size_t i = 0; i < unit_npt; ++i)
     {
@@ -442,10 +442,10 @@ void LocalVipss::AddClusterHMatrix(const std::vector<size_t>& p_ids, const arma:
                 // h_row_map[npt * 2 + pj] += J_m(j_row, j + unit_npt * 2);
                 // h_row_map[npt * 3 + pj] += J_m(j_row, j + unit_npt * 3);
 
-                // for(size_t k = 0; k < 4; ++k)
-                // {
-                //     h_ele_triplets_.push_back(std::move(Triplet(row, pj + npt * k, J_m(j_row, j + unit_npt * k))));
-                // }
+                for(size_t k = 0; k < 4; ++k)
+                {
+                    h_ele_triplets_.push_back(std::move(Triplet(row, pj + npt * k, J_m(j_row, j + unit_npt * k))));
+                }
                 
                 // long id0 = row * col_num + pj;
                 // h_pos_value_map_[id0] += J_m(j_row, j);
@@ -466,10 +466,10 @@ void LocalVipss::AddClusterHMatrix(const std::vector<size_t>& p_ids, const arma:
                 //     e_id ++;
                 // }
                 
-                final_H(row, pj)           += J_m(j_row, j);
-                final_H(row, npt + pj)     += J_m(j_row, j + unit_npt);
-                final_H(row, npt * 2 + pj) += J_m(j_row, j + unit_npt * 2);
-                final_H(row, npt * 3 + pj) += J_m(j_row, j + unit_npt * 3);
+                // final_H(row, pj)           += J_m(j_row, j);
+                // final_H(row, npt + pj)     += J_m(j_row, j + unit_npt);
+                // final_H(row, npt * 2 + pj) += J_m(j_row, j + unit_npt * 2);
+                // final_H(row, npt * 3 + pj) += J_m(j_row, j + unit_npt * 3);
                 
                 // final_H(pi + npt * step, pj)           += J_m(i + unit_npt* step, j);
                 // final_H(pi + npt * step, npt + pj)     += J_m(i + unit_npt* step, j + unit_npt);
@@ -637,7 +637,7 @@ void LocalVipss::BuildMatrixH()
     // auto t_h1 = Clock::now();
     // final_H_ = arma::sp_mat(locations, values, 4* npt, 4 * npt);
     // printf("------- X : %llu, %llu \n", X.n_rows, X.n_cols);
-    // final_h_eigen_.setFromTriplets(h_ele_triplets_.begin(), h_ele_triplets_.end());
+    final_h_eigen_.setFromTriplets(h_ele_triplets_.begin(), h_ele_triplets_.end());
     auto t_h2 = Clock::now();
     double build_h_time = std::chrono::nanoseconds(t_h2 - t_h1).count()/1e9;
     printf("--- build_H_time from map : %f \n", build_h_time);
