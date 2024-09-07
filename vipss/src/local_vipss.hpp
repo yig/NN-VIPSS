@@ -131,16 +131,14 @@ class LocalVipss {
         static int DistCallNum;
         static double DistCallTime;
 
-        void CalClusterDegrees();
-        void MergeHRBFClustersWithDegree();
-        void MergeClusterPairs(std::vector<arma::uword>& merged_cluster_ids);
+        // void CalClusterDegrees();
+        // void MergeHRBFClustersWithDegree();
+        // void MergeClusterPairs(std::vector<arma::uword>& merged_cluster_ids);
         void GroupClustersWithDegree();
 
         void SaveGroupPtsWithColor(const std::string& path);
         void PtPCA(std::vector<double>& pts);
         void OptimizeAdjacentMat();
-        void ConvertToEigenSparseMat(); 
-        void MergeHRBFClustersWithEigen();
 
         void InitAdjacentData();
         void MergeHRBFClustersWithMap();
