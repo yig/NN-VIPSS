@@ -1753,16 +1753,6 @@ void LocalVipss::SaveGroupPtsWithColor(const std::string& path)
         // const arma::sp_umat cluster_col(cluster_cores_mat_.col(i));
         // arma::sp_umat::const_iterator start = cluster_col.begin();
         // arma::sp_umat::const_iterator end = cluster_col.end();
-
-        // const SpiVec& cluster_col = cluster_cores_emat_.col(i);
-        // const SpiVec::InnerIterator start(cluster_col,0);
-        // for(auto iter = start; iter; ++iter)
-        // {
-        //     auto cur_pt = points_[iter.row()];
-        //     pt_file << "v " << cur_pt[0] << " " << cur_pt[1] << " " << cur_pt[2] ;
-        //     pt_file << " " << r << " " << g << " " << b << std::endl;
-        // }
-
         const auto& cur_pids = cluster_core_pt_ids_vec_[i];
         // printf("cur cluster core pt num : %ld \n", cur_pids.size());
         for(auto pid : cur_pids)
@@ -1771,23 +1761,6 @@ void LocalVipss::SaveGroupPtsWithColor(const std::string& path)
             pt_file << "v " << cur_pt[0] << " " << cur_pt[1] << " " << cur_pt[2] ;
             pt_file << " " << r << " " << g << " " << b << std::endl;
         }
-
-        // std::cout << "current cluster pt number : " << cluster_col.n_nonzero << std::endl;
-
-        // for(auto iter = start; iter != end; ++iter)
-        // {
-        //     auto cur_pt = points_[iter.row()];
-        //     pt_file << "v " << cur_pt[0] << " " << cur_pt[1] << " " << cur_pt[2] ;
-        //     pt_file << " " << r << " " << g << " " << b << std::endl;
-        // }
-        // pt_file << "l"; 
-        // for(size_t pi = pt_count; pi < pt_count + cluster_col.n_nonzero; ++ pi)
-        // {
-        //     pt_file << " " << pi + 1;
-        // }
-        // pt_file << std::endl;
-        // pt_count += cluster_col.n_nonzero;
-        // pt_count += cluster_col.n_nonzero;
     }
     pt_file.close();
 }

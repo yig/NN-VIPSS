@@ -14,10 +14,7 @@ namespace cluster
     typedef std::set<P3d_Ptr> P_Set; 
     typedef std::unordered_map<P3d_Ptr, vec3d> PtN_MAP;
     
-
-
     class PtCluster{
-
         public:
             PtCluster(){};
             ~PtCluster(){};
