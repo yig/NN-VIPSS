@@ -1064,8 +1064,8 @@ double LocalVipss::NNDistFunction(const R3Pt &in_pt)
     DistCallNum ++;
     auto t0 = Clock::now();
     double new_pt[3] = {in_pt[0], in_pt[1], in_pt[2]};
-    double dist = local_vipss_ptr->NatureNeighborDistanceFunction(&(new_pt[0]));
-    // double dist = local_vipss_ptr->NatureNeighborDistanceFunctionOMP(&(new_pt[0]));
+    // double dist = local_vipss_ptr->NatureNeighborDistanceFunction(&(new_pt[0]));
+    double dist = local_vipss_ptr->NatureNeighborDistanceFunctionOMP(&(new_pt[0]));
     auto t1 = Clock::now();
     double dist_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
     DistCallTime += dist_time;

@@ -199,7 +199,7 @@ double RBF_Core::Dist_Function(const double x, const double y, const double z){
 
 inline double RBF_Core::Dist_Function(const double *p){
 
-    n_evacalls++;
+    // n_evacalls++;
     const double *p_pts = pts.data();
     // static arma::vec kern(npt), kb;
     arma::vec kern(npt), kb;
@@ -231,14 +231,6 @@ inline double RBF_Core::Dist_Function(const double *p){
         for(int j=0;j<4;++j)for(int k=j;k<4;++k)kb(ind++) = buf[j] * buf[k];
     }
     double poly_part = dot(kb,b);
-
-    if(0){
-        cout<<"dist: "<<p[0]<<' '<<p[1]<<' '<<p[2]<<' '<<p_pts[3]<<' '<<p_pts[4]<<' '<<p_pts[5]<<' '<<
-              Kernal_Function_2p(p,p_pts+3)<<endl;
-        for(int i=0;i<npt;++i)cout<<kern(i)<<' ';
-        for(int i=0;i<bsize;++i)cout<<kb(i)<<' ';
-        cout<<endl;
-    }
 
     double re = loc_part + poly_part;
     return re;

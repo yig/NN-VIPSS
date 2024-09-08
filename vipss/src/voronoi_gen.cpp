@@ -101,10 +101,15 @@ void VoronoiGen::InsertSphereBoundryPts()
     int pt_num = 32;
     auto sphere_pts = CreateSpherePoints(cx, cy, cz, radius, pt_num);
     pt_num = sphere_pts.size()/3;
+    
     printf("sphere pt size : %ld \n",sphere_pts.size()/3 );
-    std::string out_sphere_path = out_dir_ + "sphere_boundry.xyz";
-    writeXYZ(out_sphere_path, sphere_pts);
-    printf("successfully write sphere boundary pts to file : %s\n", out_sphere_path.c_str());
+    if(0)
+    {
+        std::string out_sphere_path = out_dir_ + "sphere_boundry.xyz";
+        writeXYZ(out_sphere_path, sphere_pts);
+        printf("successfully write sphere boundary pts to file : %s\n", out_sphere_path.c_str());
+    }
+    
     // printf(out_sphere_path);
     std::vector<tetgenmesh::point> boundary_pts;
 

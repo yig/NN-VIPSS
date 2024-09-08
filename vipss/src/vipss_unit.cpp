@@ -754,7 +754,7 @@ void VIPSSUnit::ReconSurface()
     // local_vipss_.voro_gen_.BuildTetMeshTetCenterMap();
     // local_vipss_.voro_gen_.BuildPicoTree();
     // bool use_nn_interpolation = true;
-    bool is_group_cluster = true;
+    bool is_group_cluster = false;
     local_vipss_.is_group_cluster_ = is_group_cluster;
     if(LOCAL_HRBF_NN == hrbf_type_)
     {
