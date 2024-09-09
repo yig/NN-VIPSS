@@ -2,8 +2,8 @@
 
 SpiMat ConvertToEigenSp(const arma::sp_imat& inmat)
 {
-    int cols = inmat.n_cols;
-    int rows = inmat.n_rows;
+    int cols = int(inmat.n_cols);
+    int rows = int(inmat.n_rows);
     SpiMat new_mat(rows, cols);
     std::vector<TripletInt> eles;
     arma::sp_imat::const_iterator it     = inmat.begin();

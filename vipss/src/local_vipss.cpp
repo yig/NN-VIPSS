@@ -27,7 +27,7 @@ void LocalVipss::TestInsertPt()
         // insert_pts_.push_back(pt);
         // auto v_gen = voro_gen_;
         // voro_gen_.InsertPt(pt);
-        printf("insert id : %lu \n", i);
+        printf("insert id : %ld \n", i);
     }
 
     auto t1 = Clock::now();
@@ -1328,7 +1328,7 @@ void LocalVipss::MergeClusters()
         {
             continue;
         }
-        visited_clusters.insert(id);
+        visited_clusters.insert(int(id));
         if(cluster_scores_vec_[id] > angle_threshold_) 
         {
             const arma::sp_mat c_scores_vec(cluster_scores_mat_.col(id));
@@ -1627,9 +1627,9 @@ void LocalVipss::SaveGroupPtsWithColor(const std::string& path)
     {
         if(!cluster_valid_sign_vec_[i]) continue;
         int base = 1000000;
-        double r = ((double) (rand() % base) / double(base)); r = min(sqrt(r) , 1.0);
-        double g = ((double) (rand() % base) / double(base)); g = max(sqrt(g) , 0.0);
-        double b = ((double) (rand() % base) / double(base)); b = max(sqrt(b) , 0.0);
+        double r = ((double) (rand() % base) / double(base)); r = std::min(sqrt(r) , 1.0);
+        double g = ((double) (rand() % base) / double(base)); g = std::max(sqrt(g) , 0.0);
+        double b = ((double) (rand() % base) / double(base)); b = std::max(sqrt(b) , 0.0);
         // const arma::sp_umat cluster_col(cluster_cores_mat_.col(i));
         // arma::sp_umat::const_iterator start = cluster_col.begin();
         // arma::sp_umat::const_iterator end = cluster_col.end();

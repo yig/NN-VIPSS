@@ -9,7 +9,7 @@
 
 ///
 template<class Coord>
-inline ostream& operator<<( ostream &out, const R4VectorTC<Coord> &v )
+inline std::ostream& operator<<(std::ostream &out, const R4VectorTC<Coord> &v )
 {
     out << v[0] << " " << v[1] << " " << v[2] << " " << v[3] << " ";
     return out;
@@ -17,7 +17,7 @@ inline ostream& operator<<( ostream &out, const R4VectorTC<Coord> &v )
 
 ///
 template<class Coord>
-inline istream& operator>>( istream &in, R4VectorTC<Coord> &v )
+inline std::istream& operator>>(std::istream &in, R4VectorTC<Coord> &v )
 {
     in >> v[0] >> v[1] >> v[2] >> v[3];
     return in;
@@ -26,7 +26,7 @@ inline istream& operator>>( istream &in, R4VectorTC<Coord> &v )
 
 ///
 template<class Coord>
-inline ostream& operator<<( ostream &out, const R4CoVectorTC<Coord> &v )
+inline std::ostream& operator<<(std::ostream &out, const R4CoVectorTC<Coord> &v )
 {
     out << v[0] << " " << v[1] << " " << v[2] << " " << v[3] << " ";
     return out;
@@ -34,7 +34,7 @@ inline ostream& operator<<( ostream &out, const R4CoVectorTC<Coord> &v )
 
 ///
 template<class Coord>
-inline istream& operator>>( istream &in, R4CoVectorTC<Coord> &v )
+inline std::istream& operator>>(std::istream &in, R4CoVectorTC<Coord> &v )
 {
     in >> v[0] >> v[1] >> v[2] >> v[3];
     return in;
@@ -44,7 +44,7 @@ inline istream& operator>>( istream &in, R4CoVectorTC<Coord> &v )
 
 ///
 template<class Coord>
-inline ostream& operator<<( ostream &out, const R4PointTC<Coord> &p )
+inline std::ostream& operator<<(std::ostream &out, const R4PointTC<Coord> &p )
 {
     out << p[0] << " " << p[1] << " " << p[2] << " " << p[3] << " ";
     return out;
@@ -52,7 +52,7 @@ inline ostream& operator<<( ostream &out, const R4PointTC<Coord> &p )
 
 ///
 template<class Coord>
-inline istream& operator>>( istream &in, R4PointTC<Coord> &p )
+inline std::istream& operator>>(std::istream &in, R4PointTC<Coord> &p )
 {
     in >> p[0] >> p[1] >> p[2] >> p[3];
     return in;
@@ -62,7 +62,7 @@ inline istream& operator>>( istream &in, R4PointTC<Coord> &p )
 
 ///
 template<class Coord>
-inline ostream& operator<<( ostream &out, const R4MatrixTC<Coord> &m )
+inline std::ostream& operator<<(std::ostream &out, const R4MatrixTC<Coord> &m )
 {
     for (int i = 0; i < 4; i++) {
         for ( int j = 0; j < 4; j++) {
@@ -76,7 +76,7 @@ inline ostream& operator<<( ostream &out, const R4MatrixTC<Coord> &m )
 
 ///
 template<class Coord>
-inline istream& operator>>( istream &in, R4MatrixTC<Coord> &m )
+inline std::istream& operator>>(std::istream &in, R4MatrixTC<Coord> &m )
 {
     for (int i = 0; i < 4; i++)
         for ( int j = 0; j < 4; j++)

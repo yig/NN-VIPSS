@@ -80,7 +80,7 @@ Affine RNZero(Affine &out_a)
 inline WINbool RNApproxEqual( const double in_d1, const double in_d2,
                               const double in_dEpsilon = RNEpsilon_d)
 {
-    if (fabs(in_d1 - in_d2) > in_dEpsilon) return FALSE;
+    if (std::fabs(in_d1 - in_d2) > in_dEpsilon) return FALSE;
     return TRUE;
 }
 
@@ -104,13 +104,13 @@ inline double DotToAngle( const double in_dDot )
 /** \brief Read binary  
  Read a single number in binary from ifstream. Note: won't work across operating systems that have different byte order (little indian versus big) 
 */
-inline void ReadBinary( double &in_d, ifstream &in ) 
+inline void ReadBinary( double &in_d, std::ifstream &in )
 { in.read( (char *) &in_d, sizeof(double) ); }
 
 /** \brief Write binary  
 Write a single number in binary to ofstream. Note: won't work across operating systems that have different byte order (little indian versus big) 
 */
-inline void WriteBinary( const double in_d, ofstream &out ) 
+inline void WriteBinary( const double in_d, std::ofstream &out )
 { out.write( (const char *) &in_d, sizeof(double) ); }
 
 

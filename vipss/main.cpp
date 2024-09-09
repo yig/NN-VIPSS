@@ -3,7 +3,6 @@
 #include "src/rbfcore.h"
 #include "src/readers.h"
 #include "src/voronoi_gen.h"
-#include "src/pt_vipss.h"
 #include "src/local_vipss.hpp"
 #include "src/vipss_unit.hpp"
 #include "src/sample.h"

@@ -73,13 +73,13 @@ R4PointTC<Coord>::operator<= ( const R4PointTC<Coord>& p ) const
 // Read/write/print functions
 // -------------------------------------
 template<class Coord>
-inline void R4PointTC<Coord>::Write(ofstream &out) const
+inline void R4PointTC<Coord>::Write(std::ofstream &out) const
 {
     out << x << " " << y << " " << z << " " << w << " ";
 }
 
 template<class Coord>
-inline WINbool R4PointTC<Coord>::Read(ifstream &in) 
+inline WINbool R4PointTC<Coord>::Read(std::ifstream &in)
 {
     in >> x >> y >> z >> w;
 

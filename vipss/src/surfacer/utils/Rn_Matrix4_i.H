@@ -180,7 +180,7 @@ inline R4MatrixTC<Coord> R4MatrixTC<Coord>::Inverse( WINbool &out_bSuccess ) con
 // Read/write/print functions
 // -------------------------------------
 template<class Coord>
-inline void R4MatrixTC<Coord>::Write(ofstream &out) const
+inline void R4MatrixTC<Coord>::Write(std::ofstream &out) const
 {
     for (int i = 0; i < 4; i++) {
         for ( int j = 0; j < 4; j++) {
@@ -192,7 +192,7 @@ inline void R4MatrixTC<Coord>::Write(ofstream &out) const
 }
 
 template<class Coord>
-inline WINbool R4MatrixTC<Coord>::Read(ifstream &in) 
+inline WINbool R4MatrixTC<Coord>::Read(std::ifstream &in)
 {
     for (int i = 0; i < 4; i++) {
         for ( int j = 0; j < 4; j++) {
@@ -208,26 +208,26 @@ inline void R4MatrixTC<Coord>::Print( const WINbool in_bDoReturn ) const
 {
     for (int i = 0; i < 4; i++) {
         for ( int j = 0; j < 4; j++) {
-            cout << (*this)(i,j) << " ";
+            std::cout << (*this)(i,j) << " ";
         }
         if ( in_bDoReturn == TRUE )
-            cout << "\n";
+            std::cout << "\n";
         else
-            cout << " ";
+            std::cout << " ";
     }
 }
 
 template<class Coord>
 inline void R4MatrixTC<Coord>::PrintMatlab( ) const
 {
-    cout << "[" ;
+    std::cout << "[" ;
     for (int i = 0; i < 4; i++) {
         for ( int j = 0; j < 4; j++) {
-            if (j < 3) cout << (*this)(i,j) << ", ";
-            else cout << (*this)(i,j) << "\n";
+            if (j < 3) std::cout << (*this)(i,j) << ", ";
+            else std::cout << (*this)(i,j) << "\n";
         }
     }
-    cout << "];";
+    std::cout << "];";
 }
 
 
@@ -564,8 +564,8 @@ inline double R4MatrixTC<Coord>::Norm( ) const
    double lowboundf = normf/sqrt(2.0);
    double highboundf = normf;
 
-   double lowbound = max(lowbound1, max(lowboundinf, lowboundf));
-   double highbound = min(highbound1, min(highboundinf, highboundf));
+   double lowbound = std::max(lowbound1, std::max(lowboundinf, lowboundf));
+   double highbound = std::min(highbound1, std::min(highboundinf, highboundf));
 
    double err = abs(lowbound - highbound)/2.0;
    if (err > 1.0) printf("warning: norm error = %f\n", err);

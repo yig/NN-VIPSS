@@ -1635,7 +1635,7 @@ void VoronoiGen::OutputVoronisMesh()
     std::string out_path2 = out_dir_ + "voronoi_split_pts.obj";
     std::cout << " voronoi out put size : " << out_path << std::endl;
     // std::cout << " voronoi tet size : " << tetMesh_.tetrahedrons->items << std::endl;
-    ofstream myfile;
+    std::ofstream myfile;
     myfile.open(out_path);
     // ofstream myfile_split;
     // myfile_split.open(out_path2);

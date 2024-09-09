@@ -134,19 +134,19 @@ inline Coord R3VectorTC<Coord>::Normalize()
 // Read/write/print functions
 // -------------------------------------
 template<class Coord>
-inline void R3VectorTC<Coord>::Write(ofstream &out) const
+inline void R3VectorTC<Coord>::Write(std::ofstream &out) const
 {
     out << dx << " " << dy << " " << dz << " ";
 }
 
 template<class Coord>
-inline void R3VectorTC<Coord>::WriteBinary(ofstream &out) const
+inline void R3VectorTC<Coord>::WriteBinary(std::ofstream &out) const
 {
     out.write( (const char *) &dx, Dim() * sizeof(Coord) );
 }
 
 template<class Coord>
-inline WINbool R3VectorTC<Coord>::Read(ifstream &in) 
+inline WINbool R3VectorTC<Coord>::Read(std::ifstream &in)
 {
 
     in >> dx >> dy >> dz;
@@ -155,7 +155,7 @@ inline WINbool R3VectorTC<Coord>::Read(ifstream &in)
 }
 
 template<class Coord>
-inline WINbool R3VectorTC<Coord>::ReadBinary(ifstream &in) 
+inline WINbool R3VectorTC<Coord>::ReadBinary(std::ifstream &in)
 {
     in.read( (char *) &dx, Dim() * sizeof(Coord) );
 
@@ -165,11 +165,11 @@ inline WINbool R3VectorTC<Coord>::ReadBinary(ifstream &in)
 template<class Coord>
 inline void R3VectorTC<Coord>::Print( const WINbool in_bDoReturn ) const
 {
-    cout << dx << " " << dy << " " << dz;
+    std::cout << dx << " " << dy << " " << dz;
     if ( in_bDoReturn == TRUE )
-        cout << "\n";
+        std::cout << "\n";
     else
-        cout << " ";
+        std::cout << " ";
 }
 
 

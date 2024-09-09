@@ -77,9 +77,9 @@ public:
     /**@name Read/write/print */
     //@{
     /// Writes number [space]
-    inline void    Write(ofstream &out) const;
+    inline void    Write(std::ofstream &out) const;
     ///
-    inline WINbool Read(ifstream &in) ;
+    inline WINbool Read(std::ifstream &in) ;
     /** \brief Prints to standard out.
      * @param in_bDoReturn Default is number [space]; if true, replaces space with a carriage return */
     inline void    Print( const WINbool in_bDoReturn = FALSE ) const;
@@ -150,9 +150,9 @@ public:
     /**@name Read/write/print */
     //@{
     ///
-    inline void    Write(ofstream &out) const;
+    inline void    Write(std::ofstream &out) const;
     ///
-    inline WINbool Read(ifstream &in) ;
+    inline WINbool Read(std::ifstream &in) ;
     /** \brief Prints to standard out.
      * @param in_bDoReturn Default is number [space]; if true, replaces space with a carriage return */
     inline void    Print( const WINbool in_bDoReturn = FALSE ) const;
@@ -216,9 +216,9 @@ public:
     /**@name Read/write/print */
     //@{
     ///
-    inline void    Write(ofstream &out) const;
+    inline void    Write(std::ofstream &out) const;
     ///
-    inline WINbool Read(ifstream &in) ;
+    inline WINbool Read(std::ifstream &in) ;
     /** \brief Prints to standard out.
      * @param in_bDoReturn Default is number [space]; if true, replaces space with a carriage return */
     inline void    Print( const WINbool in_bDoReturn = FALSE ) const;
@@ -281,9 +281,9 @@ public:
     /**@name Read/write/print */
     //@{
     ///
-    inline void    Write(ofstream &out) const { pOrg.Write(out); vDir.Write(out); }
+    inline void    Write(std::ofstream &out) const { pOrg.Write(out); vDir.Write(out); }
     ///
-    inline WINbool Read(ifstream &in) { pOrg.Read(in); return vDir.Read(in); }
+    inline WINbool Read(std::ifstream &in) { pOrg.Read(in); return vDir.Read(in); }
     /** \brief Prints to standard out.
      * @param in_bDoReturn Default is point [space] ray [space]; if true, replaces spaces with carriage returns */
     ///

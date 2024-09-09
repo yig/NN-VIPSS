@@ -71,19 +71,19 @@ R3PointTC<Coord>::operator<= ( const R3PointTC<Coord>& p ) const
 // Read/write/print functions
 // -------------------------------------
 template<class Coord>
-inline void R3PointTC<Coord>::Write(ofstream &out) const
+inline void R3PointTC<Coord>::Write(std::ofstream &out) const
 {
     out << x << " " << y << " " << z << " ";
 }
 
 template<class Coord>
-inline void R3PointTC<Coord>::WriteBinary(ofstream &out) const
+inline void R3PointTC<Coord>::WriteBinary(std::ofstream &out) const
 {
     out.write( (const char *) &x, Dim() * sizeof(Coord) );
 }
 
 template<class Coord>
-inline WINbool R3PointTC<Coord>::Read(ifstream &in) 
+inline WINbool R3PointTC<Coord>::Read(std::ifstream &in)
 {
     in >> x >> y >> z;
 
@@ -91,7 +91,7 @@ inline WINbool R3PointTC<Coord>::Read(ifstream &in)
 }
 
 template<class Coord>
-inline WINbool R3PointTC<Coord>::ReadBinary(ifstream &in) 
+inline WINbool R3PointTC<Coord>::ReadBinary(std::ifstream &in)
 {
     in.read( (char *) &x, Dim() * sizeof(Coord) );
 

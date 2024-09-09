@@ -47,6 +47,7 @@
 
 #include "tetgen.h"
 #include <fstream>
+#include <string>
 //== io_cxx ==================================================================//
 //                                                                            //
 //                                                                            //

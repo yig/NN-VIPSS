@@ -419,7 +419,7 @@ void Write ( )
 
    }
 
-   for (FORINT i = 0; i < g_aiFaces0.num(); i++) {
+   for (int i = 0; i < g_aiFaces0.num(); i++) {
 
 		fprintf(g_out, "Face %d  %d %d %d\n", i+1, g_aiFaces0[i]+1, g_aiFaces2[i]+1, g_aiFaces1[i]+1 );
 

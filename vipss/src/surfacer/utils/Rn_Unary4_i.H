@@ -86,7 +86,7 @@ MaximumNorm( const R4VectorTC<Coord>& v )
 
 /// Returns non-negative number
 template<class Coord>
-tinline Coord
+inline Coord
 Length( const R4CoVectorTC<Coord>& v )
 {
     return (Coord) sqrt( v[0]*v[0] + v[1]*v[1] + v[2]*v[2] + v[3]*v[3] );
