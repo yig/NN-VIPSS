@@ -1,0 +1,3 @@
+/home/jianjun/Documents/projects/VIPSS_LOCAL/vipss/src/CMakeFiles/vipss.dir
+/home/jianjun/Documents/projects/VIPSS_LOCAL/vipss/src/CMakeFiles/edit_cache.dir
+/home/jianjun/Documents/projects/VIPSS_LOCAL/vipss/src/CMakeFiles/rebuild_cache.dir

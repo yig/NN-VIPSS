@@ -133,6 +133,8 @@ class LocalVipss {
         void MergeHRBFClustersWithMap();
         void BuildHRBFPerCluster();
 
+        void ClearPartialMemory();
+
     private:
 
         inline void ShedCols(arma::sp_umat& in_mat, const std::vector<arma::uword>& delete_ids);
@@ -157,23 +159,16 @@ class LocalVipss {
 
         arma::sp_umat adjacent_mat_;
         arma::sp_umat cluster_cores_mat_;
-        arma::sp_umat cluster_valid_cores_mat_;
         arma::sp_umat cluster_adjacent_mat_;
         
         arma::sp_umat cluster_adjacent_mat_opt_;
         arma::sp_umat cluster_MST_mat_;
         arma::sp_mat cluster_scores_mat_;
         arma::sp_umat cluster_adjacent_pt_mat_;
-        arma::sp_umat cluster_valid_adjacent_pt_mat_;
-        arma::sp_umat cluster_adjacent_share_pt_mat_;
-        arma::sp_umat cluster_adjacent_flip_mat_;
         arma::sp_mat cluster_normal_x_;
         arma::sp_mat cluster_normal_y_;
         arma::sp_mat cluster_normal_z_;
         arma::sp_mat final_H_; 
-        arma::sp_mat final_H_temp_;
-        arma::vec cluster_degrees_; 
-        arma::sp_umat valid_pt_diag_mat_;
         arma::uvec cluster_valid_sign_vec_;
 
         std::vector<tetgenmesh::point> points_; 
@@ -194,10 +189,7 @@ class LocalVipss {
         std::vector<arma::mat> cluster_J_mat_vec_;
         std::vector<arma::sp_mat> temp_H_vec_;
         const size_t temp_H_max_num_ = 2048;
-        // std::vector<std::vector<size_t>> cluster_pt_ids_vec_;
-        std::vector< std::unordered_map<int,double>> temp_Hmat_values_;
         SpMat final_h_eigen_;
-        // std::unordered_map<long ,double> h_pos_value_map_;
         std::vector<Triplet> h_ele_triplets_;
         std::set<P3tr> sample_cluster_pts_;
         std::vector<std::shared_ptr<RBF_Core>> node_rbf_vec_;

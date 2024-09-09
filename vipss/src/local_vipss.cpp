@@ -488,11 +488,7 @@ void LocalVipss::BuildMatrixH()
     auto t00 = Clock::now(); 
     size_t npt = this->points_.size();
     size_t cluster_num = cluster_cores_mat_.n_cols;
-    final_H_.resize(4 * npt , 4 * npt);
-    // final_H_ = arma::speye<arma::sp_mat>(4 * npt , 4 * npt) * 1e-16; 
     double time_sum = 0;
-    temp_Hmat_values_.resize(4 * npt);
-    // temp_Hmat_values_.eye();
     final_h_eigen_.resize(4 * npt , 4 * npt);
     // h_ele_triplets_.reserve(cluster_num * 300 * 300);
     for(size_t i =0; i < cluster_num; ++i)
@@ -912,7 +908,6 @@ void LocalVipss::InitNormalWithVipss()
     size_t npt = this->points_.size();
 
     final_H_.resize(4 * npt , 4 * npt);
-    // final_H_temp_.resize(4 * npt , 4 * npt);
     for(size_t i =0; i < cluster_num; ++i)
     {
         std::vector<double> vts;
@@ -1185,8 +1180,6 @@ void LocalVipss::InitSingleClusterNeiScores(size_t i)
         if(s2 > s1) 
         {
             s1 = s2;
-            // cluster_adjacent_flip_mat_(i, n_pos) = 1;
-            // cluster_adjacent_flip_mat_(n_pos, i) = 1;
         }
         double score = std::min(1.0, std::max(-1.0, s1));
         score = acos(score) * Anlge_PI_Rate ;
@@ -1217,12 +1210,7 @@ void LocalVipss::CalculateSingleClusterNeiScores(size_t i)
         }
         bool flip_normal = false;
         double score = CalculateClusterPairScore(i, n_pos, flip_normal);
-        // if(flip_normal)
-        // {
-        //     cluster_adjacent_flip_mat_(i, n_pos) = 1;
-        //     cluster_adjacent_flip_mat_(n_pos, i) = 1;
-        // }
-        // printf("cluster id : %d \n", i);
+
         cluster_scores_mat_(i, n_pos) = score;
         cluster_scores_mat_(n_pos, i) = score;
         update_score_cluster_ids_.insert(n_pos);
@@ -1491,7 +1479,6 @@ void LocalVipss::GroupClustersWithDegree()
     auto t0 = Clock::now();
     size_t cluster_size = cluster_adjacent_mat_.n_cols;
 
-    valid_pt_diag_mat_.eye(cluster_size, cluster_size);
     cluster_valid_sign_vec_.ones(cluster_size);
     cluster_core_pt_nums_.ones(cluster_size);
     
@@ -1551,7 +1538,6 @@ void LocalVipss::MergeHRBFClustersWithMap()
 {
     // auto t0 = Clock::now();
     size_t cluster_num = cluster_adjacent_mat_.n_cols;
-    // cluster_degrees_.resize(cluster_num);
     int max_val = std::numeric_limits<int>::max();
     for(size_t i = 0; i < cluster_num; ++i)
     {
@@ -1709,11 +1695,6 @@ void LocalVipss::UpdateClusterScoreMat()
     new_scores_mat(0, 0, arma::size(s_rows, s_cols)) = cluster_scores_mat_(0, 0, arma::size(s_rows, s_cols));
     cluster_scores_mat_ = new_scores_mat;
 
-    // arma::sp_umat new_cluster_adjacent_flip_mat(c_num, c_num);
-    // new_cluster_adjacent_flip_mat(0, 0, arma::size(s_rows -1, s_cols -1)) =
-    //          cluster_adjacent_flip_mat_(0, 0, arma::size(s_rows -1, s_cols -1));
-    // cluster_adjacent_flip_mat_ = new_cluster_adjacent_flip_mat;
-
     // auto t1 = Clock::now();
     // double update_score_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
     // printf("finish update_score_time time : %f ! \n", update_score_time);
@@ -1832,15 +1813,8 @@ void LocalVipss::FlipClusterNormalsByMST()
             size_t n_cid = iter.row();
             if(flipped_cluster_ids.find(n_cid) != flipped_cluster_ids.end()) continue;
             flipped_cluster_ids.insert(n_cid);
-            // CalculateClusterPairScore(cur_cid, n_cid);
-            // FlipClusterNormal
-            // bool flip = false;
-            // CalculateClusterPairScore(cur_cid, n_cid, flip);
-            // bool new_flip = FlipClusterNormal(cur_cid, n_cid);
-            // bool pre_flip = cluster_adjacent_flip_mat_(cur_cid, n_cid);
-            // printf("flip %d , new flip %d, pre_flip \n", flip, new_flip);
+
             if(FlipClusterNormal(cur_cid, n_cid))
-            // if(cluster_adjacent_flip_mat_(cur_cid, n_cid) > 0)
             {
                 cluster_normal_x_.col(n_cid) *= -1.0;
                 cluster_normal_y_.col(n_cid) *= -1.0;
@@ -2248,15 +2222,10 @@ void LocalVipss::InitNormals()
     double total_time = 0;
     auto t0 = Clock::now();
     BuildClusterAdjacentMat();
-    // printf("finish build cluster adjacent mat ! \n");
-
-    // printf("2 adjacent mat rows : %d, cols : %d \n", adjacent_mat_.n_rows, adjacent_mat_.n_cols);
     BuidClusterCoresPtIds();
     auto t1 = Clock::now();
     double build_mat_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
     printf("finish init core pt ids time : %f ! \n", build_mat_time);
-    // std::string init_ptn_path = out_dir_ + filename_ + "_init_ptn";
-    // OuputPtN(init_ptn_path);
 
     InitNormalWithVipss();
     auto t12 = Clock::now();
@@ -2431,4 +2400,17 @@ void LocalVipss::InitNormalsWithMerge()
         vipss_api_.is_surfacing_ = true;
         vipss_api_.run_vipss(out_pts_, out_normals_);
     }
+}
+
+
+void LocalVipss::ClearPartialMemory()
+{
+    adjacent_mat_.clear();
+    cluster_adjacent_mat_.clear();
+    cluster_MST_mat_.clear();
+    cluster_scores_mat_.clear();
+
+    cluster_normal_x_.clear();
+    cluster_normal_y_.clear();
+    cluster_normal_z_.clear();
 }

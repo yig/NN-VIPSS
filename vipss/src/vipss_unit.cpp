@@ -30,6 +30,7 @@ void VIPSSUnit::InitPtNormalWithLocalVipss()
     } else {
         local_vipss_.InitNormals();
     }
+    local_vipss_.ClearPartialMemory();
     
     local_vipss_.BuildMatrixH();
     npt_ = local_vipss_.points_.size();
