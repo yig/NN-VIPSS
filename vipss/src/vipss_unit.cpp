@@ -221,7 +221,8 @@ double optfunc_unit_vipss_direct_simple_eigen(const std::vector<double>&x, std::
         arma_x(i+n*2) = x[3*i + 2];
     }
     // arma::vec a2;
-    Eigen::VectorXd a2 = drbf->local_vipss_.final_h_eigen_ * arma_x;
+    // Eigen::VectorXd a2 = drbf->local_vipss_.final_h_eigen_ * arma_x;
+    Eigen::VectorXd a2 = (arma_x.transpose() * drbf->local_vipss_.final_h_eigen_).transpose();
     if (!grad.empty()) {
         // std::cout << " grad size " <<grad.size() << std::endl;
         grad.resize(n*3);
