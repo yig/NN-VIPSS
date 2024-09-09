@@ -16,8 +16,6 @@ enum HRBF_SURFACE_TYPE{
 };
 
 class VIPSSUnit {
-    
-
     public:
         VIPSSUnit(){};
         ~VIPSSUnit(){};
@@ -65,6 +63,8 @@ class VIPSSUnit {
 
         bool init_with_cluster_merge_ = false;
         double merge_angle_ = 40;
+        static int opt_func_count;
+        
 
         std::vector<std::shared_ptr<RBF_Core*>> node_rbf_vec;
         std::vector<double>finalMesh_v_;

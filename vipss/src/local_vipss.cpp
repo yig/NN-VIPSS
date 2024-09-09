@@ -2,7 +2,6 @@
 #include <cmath>
 #include <algorithm>
 #include "readers.h"  
-#include "orient_normal.h"
 #include <chrono>
 #include <queue>
 #include <omp.h>

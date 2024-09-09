@@ -5,7 +5,6 @@
 #include "rbf_api.h"
 #include <unordered_map>
 #include <set>
-#include "pt_cluster.h"
 #include "pico_tree.h"
 // #include <eigen3/Eigen/Dense>
 
@@ -94,7 +93,7 @@ class VoronoiGen{
     }
 
     public:
-        typedef cluster::PtCluster PtCluster;
+
         VoronoiGen() {};
         ~VoronoiGen() {};
         void loadData(const std::string& path );
@@ -104,11 +103,8 @@ class VoronoiGen{
 
         void BuildAdjecentMat();
         void GetVertexStar(tetgenmesh::point& p_st, std::set<tetgenmesh::point>& candid_pts, int level);
-        void EstimateNormals();
         void CalcualteNormalWithVIPSS(std::vector<double>& vts, std::vector<double>& normal);
-        void OrientPtNormals();
         void SavePtVn(const std::string& path, bool orient_normal = false);
-        bool IsGoodNormal();
         void BuildPtIdMap();
         
         std::vector<double> ConvertPtAndNeighborsToVect(std::set<tetgenmesh::point>& candid_pts);
@@ -123,7 +119,6 @@ class VoronoiGen{
 
         void Run();
         void InsertPt(tetgenmesh::point pt);
-        std::unordered_map<tetgenmesh::point, PtCluster> BuildAllClusters(); 
 
         void GetVoroCellEdgeList(tetgenmesh::point nei_pt, std::vector<tetgenio::voroedge*>& edge_list);
         void GetVoroCellPtIdList(tetgenmesh::point nei_pt, std::set<int>& vcell_pt_list);
@@ -206,9 +201,8 @@ class VoronoiGen{
         arma::sp_mat pt_score_mat_;
         arma::sp_mat pt_dist_mat_;
         arma::sp_umat pt_adjecent_mat_;
-        std::unordered_map<PtCluster*, std::set<PtCluster*>> cluster_adjacent_map_;
+
         std::unordered_map<tetgenmesh::point, size_t> point_id_map_;
-        std::unordered_map<tetgenmesh::point, PtCluster> point_cluster_map_;
         std::unordered_map<tetgenmesh::point, P_Set> point_cluster_pts_map_;
         std::unordered_map<tetgenmesh::point, PtNCluster> point_cluster_normal_map_;
         std::unordered_map<tetgenmesh::point, double> pt_score_map_;

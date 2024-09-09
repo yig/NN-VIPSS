@@ -1,6 +1,5 @@
 #include <chrono>
 #include "vipss_unit.hpp"
-#include "spectral_clustering.h"
 
 typedef std::chrono::high_resolution_clock Clock;
 
@@ -92,9 +91,6 @@ double optfunc_unit_vipss_simple(const std::vector<double>&x, std::vector<double
                 grad[i*2] = a2(i) * p_scsc[1] * p_scsc[3] + a2(i+n*2) * p_scsc[1] * p_scsc[2] - a2(i+n) * p_scsc[0];
                 grad[i*2+1] = -a2(i) * p_scsc[0] * p_scsc[2] + a2(i+n*2) * p_scsc[0] * p_scsc[3];
             }
-            
-
-            
         }
     }
     double re = arma::dot( arma_x, a2 );
@@ -298,6 +294,7 @@ double optfunc_unit_vipss_direct(const std::vector<double>&x, std::vector<double
     return re;
 }
 
+int VIPSSUnit::opt_func_count = 0;
 
 
 double optfunc_unit_vipss_direct_eigen(const std::vector<double>&x, std::vector<double>&grad, void *fdata){
@@ -347,6 +344,7 @@ double optfunc_unit_vipss_direct_eigen(const std::vector<double>&x, std::vector<
         re_vec[id] = alpha* cur_re * cur_re;
     }
     re += arma::accu(re_vec);
+    VIPSSUnit::opt_func_count ++;
 
     // printf("res val : %f \n", re);
     return re;
@@ -768,6 +766,7 @@ if(1)
     auto ts1 = Clock::now();
     double solve_time = std::chrono::nanoseconds(ts1 - ts0).count() / 1e9;
     printf("opt solve time : %f ! \n", solve_time);
+    printf("opt fun call count : %d \n", VIPSSUnit::opt_func_count);
 }
 
     auto t01 = Clock::now();
