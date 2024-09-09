@@ -38,109 +38,6 @@ void VIPSSUnit::InitPtNormalWithLocalVipss()
     // printf("unit vipss J mat init time : %f \n", local_vipss_.vipss_api_.u_v_time);
 }
 
-
-void VIPSSUnit::BuildVipssUnitMatrixP()
-{
-    auto& cluster_pt_mat_vec = local_vipss_.cluster_pt_mat_vec_;
-    auto& cluster_J_mat_vec  = local_vipss_.cluster_J_mat_vec_;
-    // auto& cluster_pt_ids_vec = local_vipss_.cluster_pt_ids_vec_;
-
-    auto& pts = local_vipss_.points_;
-    npt_ = pts.size();
-    Final_H_.resize(4 * npt_, 4 * npt_);
-    temp_Hs_.resize(npt_);
-// #pragma omp parallel for
-    for(size_t i = 0; i < cluster_pt_mat_vec.size(); ++i)
-    {
-        const auto& unit_cluster_mat = cluster_pt_mat_vec[i];
-        const auto& J_m = cluster_J_mat_vec[i];
-        // const auto& current_ids = cluster_pt_ids_vec[i];
-        if(user_lambda_ < 1e-10)
-        {            
-            arma::sp_mat sp_J(J_m); 
-            arma::sp_mat temp_H = unit_cluster_mat.t() * sp_J * unit_cluster_mat;
-            temp_Hs_[i] = temp_H;
-        } else {
-            size_t unit_npt = unit_cluster_mat.n_rows / 4; 
-            arma::mat F(4 * unit_npt, 4 * unit_npt);
-            arma::mat E(unit_npt, unit_npt);
-            E.eye();
-            F(0, 0, arma::size(unit_npt, unit_npt)) = E;
-            arma::mat K = (F + J_m * (user_lambda_));
-            arma::sp_mat sp_K(K);  
-            arma::sp_mat temp_H = unit_cluster_mat.t() * sp_K * unit_cluster_mat;
-            temp_Hs_[i] = temp_H;
-        }
-    }
-    size_t cur_n = npt_;
-    size_t cur_loop = 0;
-    printf("npt_ %lu log 2 : %d \n", npt_, (int)log2(npt_));
-    size_t loop_level = (size_t)log2(npt_);
-    if(npt_ > pow(2, loop_level)) loop_level ++;
-    for(size_t cur_loop = 1; cur_loop <= loop_level; ++cur_loop)
-    {
-        size_t cur_step = pow(2, cur_loop);
-        // printf("-----current N : %llu \n", cur_n);
-        // size_t remain =  cur_n % 2;
-        if(cur_n / 2 == 0) break;
-        cur_n = cur_n / 2 + cur_n % 2; 
-        // printf("current N 0: %llu \n", cur_n);
-    // #pragma omp parallel for
-        for(size_t m_i = 0; m_i < cur_n; ++m_i)
-        {
-            if(m_i*cur_step + cur_step/2 < npt_)
-            {
-                temp_Hs_[m_i*cur_step] += temp_Hs_[m_i*cur_step + cur_step/2]; 
-            }
-        } 
-    }
-    Final_H_ = temp_Hs_[0];
-    // auto& voro_gen = local_vipss_.voro_gen_;
-    // auto& pt_ids = local_vipss_.cluster_core_pt_ids_;
-    // auto& cluster_pt_id_map = voro_gen.point_id_map_;
-     
-    // Final_H_.resize(4 * npt_, 4 * npt_);
-    // for(auto& pt : pts)
-    // {
-    //     const auto& cluster_pts = voro_gen.point_cluster_pts_map_[pt];
-    //     std::vector<size_t> unit_pt_ids;
-    //     std::vector<double> pts_data;
-    //     size_t pt_id = cluster_pt_id_map[pt];
-    //     local_vipss_.GetInitClusterPtIds(pt_id, pts_data, unit_pt_ids);
-    //     size_t unit_npt = unit_pt_ids.size();
-    //     arma::sp_mat unit_cluster_mat(unit_npt*4, npt_ * 4);
-    //     for(size_t id = 0; id < unit_pt_ids.size(); ++id)
-    //     {
-    //         size_t pid = unit_pt_ids[id];
-    //         unit_cluster_mat(id, pid) = 1.0;
-    //         unit_cluster_mat(id + unit_npt,     pid + npt_ ) = 1.0;
-    //         unit_cluster_mat(id + unit_npt * 2, pid + npt_ * 2) = 1.0;
-    //         unit_cluster_mat(id + unit_npt * 3, pid + npt_ * 3) = 1.0;
-    //     }
-    //     rbf_api_.build_unit_vipss(pts_data);
-    //     arma::sp_mat J_m(rbf_api_.rbf_core_.Minv);
-    //     if(lambda_ < 1e-10)
-    //     {
-    //         Final_H_ += unit_cluster_mat.t() * J_m * unit_cluster_mat;
-    //     } else {
-    //         arma::sp_mat F(4 * unit_npt, 4 * unit_npt);
-    //         arma::sp_mat E(unit_npt, unit_npt);
-    //         E.eye();
-    //         F(0, 0, arma::size(unit_npt, unit_npt)) = E;
-    //         Final_H_ += unit_cluster_mat.t() * (F + J_m * lambda_) * unit_cluster_mat;
-    //     }
-    // }
-    if(user_lambda_ < 1e-10)
-    {
-        // printf("Final_H_ rows : %llu, cols : %llu \n", Final_H_.n_rows, Final_H_.n_cols);
-        // auto sub_H_ = Final_H_(0, 0, arma::size(npt_, npt_));
-        // printf("sub_H_ non zero final : %d \n", sub_H_.n_nonzero);
-        Final_H_ = Final_H_(npt_, npt_, arma::size(3 *npt_, 3 * npt_));
-        // printf("Final_H_ rows : %llu, cols : %llu \n", Final_H_.n_rows, Final_H_.n_cols);
-        // printf("Final_H_ non zero final : %d \n", Final_H_.n_nonzero);
-    }    
-}
-
 // double acc_tim1;
 // static int countopt = 0;
 
@@ -335,7 +232,7 @@ double optfunc_unit_vipss_direct_simple_eigen(const std::vector<double>&x, std::
         }
     }
     double re = arma_x.dot(a2);
-    double alpha = 100.0;
+    double alpha = 1000.0;
 
     for(size_t id =0; id < n; ++id)
     {
@@ -429,9 +326,11 @@ double optfunc_unit_vipss_direct_eigen(const std::vector<double>&x, std::vector<
         }
     }
     double re = arma_x.dot(a2);
-    double alpha = 100.0;
-
-    for(size_t id =0; id < n; ++id)
+    double alpha = 1000.0;
+    arma::vec re_vec(n);
+    size_t id;
+// #pragma omp parallel for shared(x, alpha, grad, re_vec) private(id)
+    for(id =0; id < n; ++id)
     {
         double cur_re = x[u_size*id + 1] * x[u_size*id + 1] + x[u_size*id + 2] * x[u_size*id + 2] 
                         + x[u_size*id + 3] * x[u_size*id + 3] - 1;
@@ -441,8 +340,11 @@ double optfunc_unit_vipss_direct_eigen(const std::vector<double>&x, std::vector<
             grad[u_size* id + 2] += alpha * 2 * x[u_size*id + 2] * cur_re; 
             grad[u_size* id + 3] += alpha * 2 * x[u_size*id + 3] * cur_re; 
         }
-        re += alpha* cur_re * cur_re;
+        // re += alpha* cur_re * cur_re;
+        re_vec[id] = alpha* cur_re * cur_re;
     }
+    re += arma::accu(re_vec);
+
     // printf("res val : %f \n", re);
     return re;
 }
@@ -792,7 +694,7 @@ void VIPSSUnit::ReconSurface()
     //     local_vipss_.VisualFuncValues(LocalVipss::NNDistFunction, visual_plane, visual_func_path);
     // }
     
-        size_t n_voxels_1d = 100;
+        size_t n_voxels_1d = volume_dim_;
         Surfacer sf;
         auto surf_time = sf.Surfacing_Implicit(local_vipss_.out_pts_, n_voxels_1d, false, LocalVipss::NNDistFunction);
         sf.WriteSurface(finalMesh_v_,finalMesh_fv_);

@@ -170,7 +170,7 @@ void VoronoiGen::InsertBoundryPts()
         max_z = max_z > in_pts[3*i + 2] ? max_z : in_pts[3*i + 2];
     }
     // bbox final_scale = scale + 1 
-    double scale = 2.0;
+    double scale = 1.0;
     double dx = (max_x - min_x) / 2.0 * scale;
     double dy = (max_y - min_y) / 2.0 * scale;
     double dz = (max_z - min_z) / 2.0 * scale;
@@ -308,6 +308,7 @@ void VoronoiGen::GenerateVoroData()
 // 
     auto t0 = Clock::now();
     InsertSphereBoundryPts();
+    InsertBoundryPts();
     
 
     // printf("finsh InsertBoundryPts \n");

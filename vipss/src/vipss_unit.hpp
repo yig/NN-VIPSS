@@ -22,9 +22,9 @@ class VIPSSUnit {
         VIPSSUnit(){};
         ~VIPSSUnit(){};
 
-        void GetLocalVipssClusters();
+        // void GetLocalVipssClusters();
         void InitPtNormalWithLocalVipss();
-        void BuildVipssUnitMatrixP();
+        // void BuildVipssUnitMatrixP();
         void OptUnitVipssNormalSimple();
         void OptUnitVipssNormalDirectSimple();
         void OptUnitVipssNormalDirect();

@@ -417,6 +417,7 @@ void LocalVipss::SampleClusterPts()
 
 }
 
+
 void LocalVipss::AddClusterHMatrix(const std::vector<size_t>& p_ids, const arma::mat& J_m, size_t npt)
 {
     size_t unit_npt = p_ids.size();
@@ -437,7 +438,6 @@ void LocalVipss::AddClusterHMatrix(const std::vector<size_t>& p_ids, const arma:
                 h_ele_triplets_.push_back(std::move(Triplet(pi, p_ids[j] + npt*2, J_m(i, j + unit_npt + unit_key_npt)))); 
                 h_ele_triplets_.push_back(std::move(Triplet(pi, p_ids[j] + npt*3, J_m(i, j + unit_npt + unit_key_npt* 2))));   
             }
-
             for(size_t j = 0; j < unit_key_npt; ++j)
             {
                 h_ele_triplets_.push_back(std::move(Triplet(p_ids[j] + npt,   pi, J_m(i, j + unit_npt))));
@@ -454,12 +454,11 @@ void LocalVipss::AddClusterHMatrix(const std::vector<size_t>& p_ids, const arma:
                 size_t rowv_i = i + unit_npt + unit_key_npt * step;
                 for(size_t j = 0; j < unit_key_npt; ++j)
                 {
-                    h_ele_triplets_.push_back(std::move(Triplet(row_i, p_ids[j] + npt, J_m( rowv_i, j + unit_npt))));
+                    h_ele_triplets_.push_back(std::move(Triplet(row_i, p_ids[j] + npt,     J_m( rowv_i, j + unit_npt))));
                     h_ele_triplets_.push_back(std::move(Triplet(row_i, p_ids[j] + npt * 2, J_m( rowv_i, j + unit_npt + unit_key_npt))));
                     h_ele_triplets_.push_back(std::move(Triplet(row_i, p_ids[j] + npt * 3, J_m( rowv_i, j + unit_npt + unit_key_npt * 2))));
                 }
             }
-            
         }
 
         // for(size_t step = 0; step < 4; ++step)
