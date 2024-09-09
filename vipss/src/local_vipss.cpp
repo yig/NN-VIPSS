@@ -532,48 +532,6 @@ void LocalVipss::BuildMatrixH()
         build_h_time_total_ += build_h_time;
     }
     auto t_h1 = Clock::now();
-    // size_t ele_num = h_pos_value_map_.size();
-    // arma::umat locations(2, ele_num);
-    // arma::vec values(ele_num);
-
-    // size_t e_id = 0;
-    // for(const auto& ele : h_pos_value_map_)
-    // {
-    //     locations(0,e_id) = ele.first / (4 * npt);
-    //     locations(1,e_id) = ele.first % (4 * npt);
-    //     values(e_id)      = ele.second;
-    //     e_id++;
-    // }
-
-    // std::vector<size_t> rows_vec;
-    // std::vector<size_t> cols_vec;
-    // std::vector<double> val_vec;
-    
-    // std::vector<Triplet> coefficients;
-    // for(size_t i = 0; i < 4 * npt; ++i)
-    // {
-    //     const auto& row = temp_Hmat_values_[i];
-    //     for(const auto& ele : row)
-    //     {
-    //         coefficients.push_back(Triplet(i, ele.first, ele.second));
-    //         // rows_vec.push_back(i);
-    //         // cols_vec.push_back(ele.first);
-    //         // val_vec.push_back(ele.second);
-    //     }
-    // }
-    // size_t ele_num = coefficients.size();
-    // arma::umat locations(2, ele_num);
-    // arma::vec values(ele_num);
-    // for(size_t i = 0; i < ele_num; ++i)
-    // {
-    //     locations(0,i) = coefficients[i].row();
-    //     locations(1,i) = coefficients[i].col();
-    //     values(i)      = coefficients[i].value();
-    // } 
-
-    // auto t_h1 = Clock::now();
-    // final_H_ = arma::sp_mat(locations, values, 4* npt, 4 * npt);
-    // printf("------- X : %llu, %llu \n", X.n_rows, X.n_cols);
     final_h_eigen_.setFromTriplets(h_ele_triplets_.begin(), h_ele_triplets_.end());
     auto t_h2 = Clock::now();
     double build_h_time = std::chrono::nanoseconds(t_h2 - t_h1).count()/1e9;
