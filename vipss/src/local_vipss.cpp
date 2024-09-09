@@ -6,6 +6,7 @@
 #include <chrono>
 #include <queue>
 #include <omp.h>
+#include <random>
 
 typedef std::chrono::high_resolution_clock Clock;
 
@@ -316,9 +317,8 @@ void LocalVipss::GetInitClusterPtIds(size_t cluster_id,
 
 inline std::vector<size_t> LocalVipss::GetClusterPtIds(size_t cluster_id) const
 {
-
     std::vector<size_t> pt_ids;
-    std::set<size_t> key_ids;
+    std::unordered_set<size_t> key_ids;
     arma::sp_umat cluster_core_ids(cluster_cores_mat_.col(cluster_id));
     arma::sp_umat::const_iterator c_start = cluster_core_ids.begin();
     arma::sp_umat::const_iterator c_end = cluster_core_ids.end();
@@ -327,14 +327,23 @@ inline std::vector<size_t> LocalVipss::GetClusterPtIds(size_t cluster_id) const
         pt_ids.push_back(i.row());
         key_ids.insert(i.row());
     }
+
     arma::sp_umat cluster_pt_ids (cluster_adjacent_pt_mat_.col(cluster_id));
     arma::sp_umat::const_iterator start = cluster_pt_ids.begin();
     arma::sp_umat::const_iterator end = cluster_pt_ids.end();
+    std::vector<size_t> temp_ids;
     for ( auto i = start; i != end; ++i )
     {
         if(key_ids.find(i.row()) != key_ids.end()) continue;
         pt_ids.push_back(i.row());
+        // temp_ids.push_back(i.row());
     }
+    // auto rng = std::default_random_engine {};
+    // std::shuffle(std::begin(temp_ids), std::end(temp_ids), rng);
+    // for(auto id : temp_ids)
+    // {
+    //     pt_ids.push_back(id);
+    // }
     return pt_ids;
 }
 
@@ -411,139 +420,68 @@ void LocalVipss::SampleClusterPts()
 void LocalVipss::AddClusterHMatrix(const std::vector<size_t>& p_ids, const arma::mat& J_m, size_t npt)
 {
     size_t unit_npt = p_ids.size();
-    // printf("uint pt num : %lu \n", unit_npt);
-    // auto& final_H = final_H_;
-    // #pragma omp parallel shared(final_H)
-    // arma::sp_mat final_H(npt * 4, npt * 4); 
-    double sum = 0;
-    // std::vector< std::unordered_map<int,double>> temp_map_values;
-    // temp_map_values.resize(npt * 4);
-    // #pragma omp parallel for
-    // arma::umat locations(2, unit_npt * 4 * unit_npt * 4);
-    // arma::vec values(unit_npt * 4 * unit_npt * 4);
-
-    size_t e_id = 0;
-    // long col_num = 4 * npt;
+    size_t unit_key_npt = unit_npt;
     std::vector<Triplet> coefficients;
     for(size_t i = 0; i < unit_npt; ++i)
     {
         size_t pi = p_ids[i];
-        for(size_t step = 0; step < 4; ++step)
+        if(user_lambda_ > 1e-12)
         {
-            size_t row = pi + npt * step;
-            // auto& h_row_map = temp_Hmat_values_[row];
-            // #pragma omp parallel for
-            size_t j_row = i + unit_npt* step;
             for(size_t j = 0; j < unit_npt; ++j)
             {
-                size_t pj = p_ids[j];
-                // h_row_map[pj]           += J_m(j_row, j);
-                // h_row_map[npt + pj]     += J_m(j_row, j + unit_npt);
-                // h_row_map[npt * 2 + pj] += J_m(j_row, j + unit_npt * 2);
-                // h_row_map[npt * 3 + pj] += J_m(j_row, j + unit_npt * 3);
-
-                for(size_t k = 0; k < 4; ++k)
-                {
-                    h_ele_triplets_.push_back(std::move(Triplet(row, pj + npt * k, J_m(j_row, j + unit_npt * k))));
-                }
-                
-                // long id0 = row * col_num + pj;
-                // h_pos_value_map_[id0] += J_m(j_row, j);
-                // long id1 = row * col_num + npt + pj ;
-                // h_pos_value_map_[id1] += J_m(j_row, j + unit_npt);
-
-                // long id2 = row * col_num + npt * 2 + pj ;
-                // h_pos_value_map_[id2] += J_m(j_row, j + unit_npt * 2);
-
-                // long id3 = row * col_num + npt * 3 + pj ;
-                // h_pos_value_map_[id3] += J_m(j_row, j + unit_npt * 3);
-
-                // for(size_t k = 0; k < 4; ++k)
-                // {
-                //     locations(0, e_id) = row;
-                //     locations(1, e_id) = pj + npt * k;
-                //     values(e_id)       = J_m(j_row, j + unit_npt * k);
-                //     e_id ++;
-                // }
-                
-                // final_H(row, pj)           += J_m(j_row, j);
-                // final_H(row, npt + pj)     += J_m(j_row, j + unit_npt);
-                // final_H(row, npt * 2 + pj) += J_m(j_row, j + unit_npt * 2);
-                // final_H(row, npt * 3 + pj) += J_m(j_row, j + unit_npt * 3);
-                
-                // final_H(pi + npt * step, pj)           += J_m(i + unit_npt* step, j);
-                // final_H(pi + npt * step, npt + pj)     += J_m(i + unit_npt* step, j + unit_npt);
-                // final_H(pi + npt * step, npt * 2 + pj) += J_m(i + unit_npt* step, j + unit_npt * 2);
-                // final_H(pi + npt * step, npt * 3 + pj) += J_m(i + unit_npt* step, j + unit_npt * 3);
+                h_ele_triplets_.push_back(std::move(Triplet(pi, p_ids[j], J_m(i, j))));
             }
-        }
-    }
-
-    // SpMat cur_H(4 * npt, 4 * npt);
-    // cur_H.setFromTriplets(coefficients.begin(), coefficients.end());
-    // final_h_eigen_ += cur_H;
-    // auto cur_H = arma::sp_mat(locations, values, 4 * npt, 4 * npt);
-    // final_H_ =  cur_H + final_H_;
-    // temp_H_vec_.push_back(std::move(final_H));
-    // printf("----final h nozero: %llu \n", final_H_.n_nonzero);
-    // printf("----J  ele number: %llu \n", J_m.n_elem);
-    // printf("----final h sum: %lf \n", arma::accu(final_H_));
-    // printf("----J  sum: %lf \n", arma::accu(J_m));
-}
-
-void LocalVipss::BuildCurrentH(const arma::sp_mat& unit_cluster_mat, const arma::sp_mat&J_m, double lambda)
-{
-        // const auto& unit_cluster_mat = cluster_pt_mat_vec[i];
-        // const auto& J_m = cluster_J_mat_vec[i];
-        // const auto& current_ids = cluster_pt_ids_vec[i];
-        if(lambda < 1e-10)
-        {            
-            arma::sp_mat sp_J(J_m); 
-            arma::sp_mat temp_H = unit_cluster_mat.t() * sp_J * unit_cluster_mat;
-            temp_H_vec_.push_back(std::move(temp_H));
-            // final_H_temp_  += temp_H;
-            // auto delt_sum = arma::accu(final_H_temp_ - final_H_);
-            // printf("delt_sum : %lf \n", delt_sum);
-        } else {
-            size_t unit_npt = unit_cluster_mat.n_rows / 4; 
-            arma::mat F(4 * unit_npt, 4 * unit_npt);
-            arma::mat E(unit_npt, unit_npt);
-            E.eye();
-            F(0, 0, arma::size(unit_npt, unit_npt)) = E;
-            arma::mat K = (F + J_m * (lambda));
-            arma::sp_mat sp_K(K);  
-            arma::sp_mat temp_H = unit_cluster_mat.t() * sp_K * unit_cluster_mat;
-            temp_H_vec_.push_back(std::move(temp_H));
-            // final_H_  += temp_H;
-        }
-}
-
-void LocalVipss::CalHVecSum()
-{
-    size_t cur_n = temp_H_vec_.size();
-    size_t H_n = temp_H_vec_.size();
-    size_t cur_loop = 0;
-    // printf("npt_ %lu log 2 : %d \n", npt_, (int)log2(npt_));
-    size_t loop_level = (size_t)log2(cur_n);
-    if(cur_n > pow(2, loop_level)) loop_level ++;
-    for(size_t cur_loop = 1; cur_loop <= loop_level; ++cur_loop)
-    {
-        size_t cur_step = pow(2, cur_loop);
-        
-        if(cur_n / 2 == 0) break;
-        cur_n = cur_n / 2 + cur_n % 2; 
-        // printf("current N 0: %llu \n", cur_n);
-    // #pragma omp parallel for
-        for(size_t m_i = 0; m_i < cur_n; ++m_i)
-        {
-            if(m_i*cur_step + cur_step/2 < H_n)
+            for(size_t j = 0; j < unit_key_npt; ++j)
             {
-                temp_H_vec_[m_i*cur_step] += temp_H_vec_[m_i*cur_step + cur_step/2]; 
+                h_ele_triplets_.push_back(std::move(Triplet(pi, p_ids[j] + npt, J_m(i, j + unit_npt))));
+                h_ele_triplets_.push_back(std::move(Triplet(pi, p_ids[j] + npt*2, J_m(i, j + unit_npt + unit_key_npt)))); 
+                h_ele_triplets_.push_back(std::move(Triplet(pi, p_ids[j] + npt*3, J_m(i, j + unit_npt + unit_key_npt* 2))));   
             }
-        } 
+
+            for(size_t j = 0; j < unit_key_npt; ++j)
+            {
+                h_ele_triplets_.push_back(std::move(Triplet(p_ids[j] + npt,   pi, J_m(i, j + unit_npt))));
+                h_ele_triplets_.push_back(std::move(Triplet(p_ids[j] + npt*2, pi, J_m(i, j + unit_npt + unit_key_npt)))); 
+                h_ele_triplets_.push_back(std::move(Triplet(p_ids[j] + npt*3, pi, J_m(i, j + unit_npt + unit_key_npt* 2))));   
+            }
+        }
+        
+        if(i < unit_key_npt)
+        {
+            for(size_t step = 0; step < 3; ++step)
+            {
+                size_t row_i = npt + npt * step + pi;
+                size_t rowv_i = i + unit_npt + unit_key_npt * step;
+                for(size_t j = 0; j < unit_key_npt; ++j)
+                {
+                    h_ele_triplets_.push_back(std::move(Triplet(row_i, p_ids[j] + npt, J_m( rowv_i, j + unit_npt))));
+                    h_ele_triplets_.push_back(std::move(Triplet(row_i, p_ids[j] + npt * 2, J_m( rowv_i, j + unit_npt + unit_key_npt))));
+                    h_ele_triplets_.push_back(std::move(Triplet(row_i, p_ids[j] + npt * 3, J_m( rowv_i, j + unit_npt + unit_key_npt * 2))));
+                }
+            }
+            
+        }
+
+        // for(size_t step = 0; step < 4; ++step)
+        // {
+        //     size_t row = pi + npt * step;
+        //     size_t j_row = i + unit_npt* step;
+        //     for(size_t j = 0; j < unit_npt; ++j)
+        //     {
+        //         size_t pj = p_ids[j];
+        //         // h_row_map[pj]           += J_m(j_row, j);
+        //         // h_row_map[npt + pj]     += J_m(j_row, j + unit_npt);
+        //         // h_row_map[npt * 2 + pj] += J_m(j_row, j + unit_npt * 2);
+        //         // h_row_map[npt * 3 + pj] += J_m(j_row, j + unit_npt * 3);
+
+                    
+        //         for(size_t k = 0; k < 4; ++k)
+        //         {
+        //             h_ele_triplets_.push_back(std::move(Triplet(row, pj + npt * k, J_m(j_row, j + unit_npt * k))));
+        //         }    
+        //     }
+        // }
     }
-    final_H_ += temp_H_vec_[0];
-    temp_H_vec_.clear();
 }
 
 void LocalVipss::BuildMatrixH()
@@ -565,7 +503,8 @@ void LocalVipss::BuildMatrixH()
         auto cluster_pt_ids = GetClusterPtIds(i);
         auto cluster_pt_vec = GetClusterVerticesFromIds(cluster_pt_ids);
         auto t3 = Clock::now();
-        vipss_api_.build_unit_vipss(cluster_pt_vec);
+        size_t key_npt = cluster_pt_ids.size();
+        vipss_api_.build_unit_vipss(cluster_pt_vec, key_npt);
         time_sum += vipss_api_.rbf_core_.bigM_inv_time;
         auto t4 = Clock::now();
         double build_j_time = std::chrono::nanoseconds(t4 - t3).count()/1e9;
@@ -587,9 +526,7 @@ void LocalVipss::BuildMatrixH()
         } else {
             AddClusterHMatrix(cluster_pt_ids, vipss_api_.rbf_core_.Minv, npt);
         }
-        // auto unit_pt_mat = BuildClusterPtIdMatrix(p_ids, cluster_num);
-        // arma::sp_mat new_J(vipss_api_.rbf_core_.Minv);
-        // BuildCurrentH(unit_pt_mat, new_J, user_lambda_);  
+
         auto t6 = Clock::now();
         double build_h_time = std::chrono::nanoseconds(t6 - t5).count()/1e9;
         build_h_time_total_ += build_h_time;
@@ -640,16 +577,16 @@ void LocalVipss::BuildMatrixH()
     final_h_eigen_.setFromTriplets(h_ele_triplets_.begin(), h_ele_triplets_.end());
     auto t_h2 = Clock::now();
     double build_h_time = std::chrono::nanoseconds(t_h2 - t_h1).count()/1e9;
-    printf("--- build_H_time from map : %f \n", build_h_time);
-    build_h_time_total_ += build_h_time;
-
+    
+    // build_h_time_total_ += build_h_time;
     auto t11 = Clock::now();
     double build_H_time_total = std::chrono::nanoseconds(t11 - t00).count()/1e9;
 
-    printf("--- build_j_time_total_  time : %f \n", build_j_time_total_);
-    printf("--- add_h_time_total_  time : %f \n", build_h_time_total_);
+    printf("--- build_j_time_total_  time : %f , include matrix inverse total time %f \n", build_j_time_total_, time_sum);
+    printf("--- add each local vipps J matrix to triplet vector time : %f \n", build_h_time_total_);
+    printf("--- build eigen sparse matrix final_h time from triplets vector : %f \n", build_h_time);
     printf("--- build_H_time_total sum  time : %f \n", build_H_time_total);
-    printf("--- big M inv sum  time : %f \n", time_sum);
+
 
 }
 
@@ -1867,44 +1804,6 @@ void LocalVipss::UpdateClusterNormals()
     cluster_ptn_vipss_time_stats_.push_back(vipss_time_stats_);
 }
 
-
-
-void LocalVipss::FlipClusterNormalsByScores()
-{
-    size_t c_num = cluster_cores_mat_.n_cols;
-
-    std::queue<size_t> cluster_queued_ids;
-    cluster_queued_ids.push(0);
-    std::set<size_t> visited_cluster_ids;
-    std::set<size_t> flipped_cluster_ids;
-    flipped_cluster_ids.insert(0);
-    while(!cluster_queued_ids.empty())
-    {
-        size_t cur_cid = cluster_queued_ids.front();
-        cluster_queued_ids.pop();
-        if(visited_cluster_ids.find(cur_cid) != visited_cluster_ids.end()) continue;
-
-        const arma::sp_urowvec& adj_row = cluster_adjacent_mat_.row(cur_cid);
-        const arma::sp_urowvec::const_iterator start = adj_row.begin();
-        const arma::sp_urowvec::const_iterator end = adj_row.end();
-        for(auto iter = start; iter != end; ++iter)
-        {   
-            size_t n_cid = iter.internal_col;
-            if(flipped_cluster_ids.find(n_cid) != flipped_cluster_ids.end()) continue;
-            flipped_cluster_ids.insert(n_cid);
-            // CalculateClusterPairScore(cur_cid, n_cid);
-            // if(cluster_adjacent_flip_mat_(cur_cid, n_cid) == 1)
-            if(FlipClusterNormal(cur_cid, n_cid))
-            {
-                cluster_normal_x_.col(n_cid) *= -1.0;
-                cluster_normal_y_.col(n_cid) *= -1.0;
-                cluster_normal_z_.col(n_cid) *= -1.0;
-            }
-            cluster_queued_ids.push(n_cid);
-        }
-    }
-}
-
 void LocalVipss::BuildClusterMST()
 {
     std::set<std::string> visited_edge_ids;
@@ -2368,12 +2267,10 @@ void LocalVipss::Run()
     printf("normal MST_time time used : %f \n", MST_time); 
     auto ti0 = Clock::now();
     FlipClusterNormalsByMST();
-    // FlipClusterNormalsByScores();
     auto ti1 = Clock::now();
     double flip_time = std::chrono::nanoseconds(ti1 - ti0).count()/1e9;
     total_time += flip_time;
     printf("normal flip time used : %f \n", flip_time);
-    // flipClusterNormalsByScores();
     std::string init_ptn_path_iter = out_dir_ + filename_ + "_flipped" + std::to_string(iter_num);
     OuputPtN(init_ptn_path_iter);
     SaveCluster();
@@ -2561,12 +2458,10 @@ void LocalVipss::InitNormalsWithMerge()
     printf("normal MST_time time used : %f \n", MST_time); 
     auto ti0 = Clock::now();
     FlipClusterNormalsByMST();
-    // FlipClusterNormalsByScores();
     auto ti1 = Clock::now();
     double flip_time = std::chrono::nanoseconds(ti1 - ti0).count()/1e9;
     total_time += flip_time;
     printf("normal flip time used : %f \n", flip_time);
-    // flipClusterNormalsByScores();
     std::string init_ptn_path_iter = out_dir_ + filename_ + "_flipped" + std::to_string(iter_num);
     OuputPtN(init_ptn_path_iter);
     SaveCluster();

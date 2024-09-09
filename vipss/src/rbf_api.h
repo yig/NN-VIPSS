@@ -13,6 +13,7 @@ class RBF_API{
         void run_vipss(std::vector<double> &Vs, std::vector<double> &Vn);
         void run_vipss(std::vector<double> &Vs, std::vector<double> &Vn, const std::vector<double>& s_vals);
         void build_unit_vipss(std::vector<double> &Vs); 
+        void build_unit_vipss(std::vector<double> &Vs, size_t key_npt); 
         void BuildLocalVipssVec();
 
         void build_cluster_hrbf(std::vector<double> &Vs, std::vector<double> &Vn, 

@@ -66,24 +66,22 @@ class LocalVipss {
         void UpdateClusterNormals();
 
         inline double CalculateClusterPairScore(size_t c_a, size_t c_b, bool& flip) const;
-        // double CalculateClusterPairScore(size_t c_a, size_t c_b);
         void BuildClusterAdjacentMat();
         void CalculateSingleClusterNeiScores(size_t i);
 
         void CalculateClusterNeiScores(bool is_init = false);
         void CalculateClusterScores();
         void MergeClusters();
-        void MergeGoodNeighborClusters();
+
         void UpdateClusterScoreMat();
         void OuputPtN(const std::string& out_path, bool orient_normal = false);
-        void FlipClusterNormalsByScores();
-
-        void FlipClusterNormalsByMinST();
         void GetClusterCenters();
+
+        inline bool IsFlipNormal(const arma::mat& a_normals, const arma::mat& b_normals) const;
+        inline bool FlipClusterNormal(size_t c_a, size_t c_b) const;
         void BuildClusterMST();
         void FlipClusterNormalsByMST();
         void WriteVipssTimeLog();
-        void SaveClusterCorePts(const std::string& path);
         void SaveCluster();
         void SaveClusterPts(const std::string& path,
                             const std::vector<P3tr>& key_pts, 
@@ -107,17 +105,12 @@ class LocalVipss {
         inline double CalculateScores(const std::vector<arma::vec3>& a_normals, const std::vector<arma::vec3>& b_normals) const;
         inline double CalculateScores(const arma::mat& a_normals, const arma::mat& b_normals) const;
 
-        inline bool IsFlipNormal(const arma::mat& a_normals, const arma::mat& b_normals) const;
-        inline bool FlipClusterNormal(size_t c_a, size_t c_b) const;
-        void BuildCurrentH(const arma::sp_mat& unit_cluster_mat, const arma::sp_mat&J_m, double lambda);
         inline void AddClusterHMatrix(const std::vector<size_t>& p_ids, const arma::mat& J_m,size_t npt);
-        void CalHVecSum();
         void BuildMatrixH();
-
         void SampleClusterPts();
         void TestInsertPt();
         void TestVoronoiPts();
-        // double DistanceFunction(const std::vector<tetgenmesh::point>& nn_pts);
+
         double NodeDistanceFunction(const tetgenmesh::point nn_pt, const tetgenmesh::point cur_pt);
         double NatureNeighborDistanceFunction(const tetgenmesh::point cur_pt);
         double NatureNeighborDistanceFunctionOMP(const tetgenmesh::point cur_pt);
@@ -131,11 +124,7 @@ class LocalVipss {
         static int DistCallNum;
         static double DistCallTime;
 
-        // void CalClusterDegrees();
-        // void MergeHRBFClustersWithDegree();
-        // void MergeClusterPairs(std::vector<arma::uword>& merged_cluster_ids);
         void GroupClustersWithDegree();
-
         void SaveGroupPtsWithColor(const std::string& path);
         void PtPCA(std::vector<double>& pts);
         void OptimizeAdjacentMat();
@@ -154,11 +143,6 @@ class LocalVipss {
         VoronoiGen voro_gen_;
         RBF_API vipss_api_;
 
-        SpiMat cluster_adjacent_emat_;
-        SpiMat cluster_adjacent_pt_emat_;
-        SpiMat cluster_cores_emat_;
-        SpiMat valid_pt_diag_emat_;
-
         std::vector<std::unordered_set<size_t>> cluster_adjacent_ids_;
         std::vector<std::unordered_set<size_t>> cluster_pt_ids_;
         std::vector<std::vector<size_t> > cluster_core_pt_ids_vec_; 
@@ -166,6 +150,10 @@ class LocalVipss {
         arma::vec cluster_volume_vals_;
         std::vector<size_t> cluster_id_map_;
         std::vector<size_t> valid_cluster_dist_map_;
+
+        SpiMat cluster_adjacent_emat_;
+        SpiMat cluster_pt_emat_;
+        SpiMat cluster_cores_emat_;
 
         arma::sp_umat adjacent_mat_;
         arma::sp_umat cluster_cores_mat_;

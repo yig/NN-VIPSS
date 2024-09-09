@@ -300,10 +300,20 @@ void RBF_API::build_unit_vipss(std::vector<double> &Vs)
     auto t1 = Clock::now();
     double t_time =  std::chrono::nanoseconds(t1 - t0).count()/1e9;
     u_v_time += t_time;
-    // if(Vs.size() > 60)
-    // {
-    //     printf("------u v size : %llu \n", rbf_core_.key_npt);
-    //     printf("current time : %f \n", t_time); 
-    // }
-    // printf("minv rows %d, cols %d", rbf_core_.Minv.n_rows, rbf_core_.Minv.n_cols);
+}
+
+void RBF_API::build_unit_vipss(std::vector<double> &Vs, size_t key_npt)
+{
+    // auto t0 = Clock::now();
+
+    para_.user_lamnbda = unit_lambda_;
+    // std::cout << "start inject data "<< std::endl;
+    rbf_core_.key_npt = key_npt;
+    rbf_core_.InjectData(Vs, para_);
+    // rbf_core_.npt = Vs.size()/3;
+    auto t0 = Clock::now();
+    rbf_core_.BuildUnitVipssMat(Vs);
+    auto t1 = Clock::now();
+    double t_time =  std::chrono::nanoseconds(t1 - t0).count()/1e9;
+    u_v_time += t_time;
 }

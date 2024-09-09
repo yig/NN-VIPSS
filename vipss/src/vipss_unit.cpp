@@ -35,7 +35,7 @@ void VIPSSUnit::InitPtNormalWithLocalVipss()
     npt_ = local_vipss_.points_.size();
     initnormals_ = local_vipss_.out_normals_;
 
-    printf("unit vipss J mat init time : %f \n", local_vipss_.vipss_api_.u_v_time);
+    // printf("unit vipss J mat init time : %f \n", local_vipss_.vipss_api_.u_v_time);
 }
 
 
