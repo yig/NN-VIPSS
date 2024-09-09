@@ -10,27 +10,11 @@ find_package(NLopt REQUIRED)
 # set(NLopt_LIB ${NLOPT_LIBRARIES})
 # add_definitions(-w)
 
-# find_package(PicoTree REQUIRED)
-# find_package(Qhull CONFIG REQUIRED)
-find_package(Qhull CONFIG QUIET)
-
-if(Qhull_FOUND)
-#   unset(Qhull_FOUND)
-#   set(QHULL_FOUND ON)
-#   set(HAVE_QHULL ON)
-  set(QHULL_INCLUDE_DIR /usr/local/include/libqhull)
-  message(STATUS "Found Qhull version ${Qhull_VERSION}")
-  message(STATUS "Qhull Include dir ${QHULL_INCLUDE_DIR}")
-  message(STATUS "Qhull Include dir ${QHULL_LIBRARY_STATIC}")
-endif()
-
 find_package(OpenMP REQUIRED)
 find_package(Armadillo REQUIRED)
 # set(ARMADILLO_LIB_DIRS "")
 set(ARMADILLO_LIB ${ARMADILLO_LIBRARIES})
 include_directories( ${EIGEN3_INCLUDE_DIR} )
-include_directories( ${QHULL_INCLUDE_DIR} )
-
 
 # set(PicoTree_INCLUDE_DIR "/usr/local/include/pico_tree")
 # include(CMakePrintHelpers)
@@ -50,4 +34,4 @@ LINK_DIRECTORIES(${ARMADILLO_LIB_DIRS} ${NLOPT_LIB_DIR} )
 add_executable(${PROJECT_NAME} ${SRC_LIST} ${MAIN} ${SURFACER_LIST})
 
 target_link_libraries(${PROJECT_NAME} ${ARMADILLO_LIB} ${NLOPT_LIBRARIES} 
-            OpenMP::OpenMP_CXX qhullcpp qhullstatic_r)
+            OpenMP::OpenMP_CXX)
