@@ -36,7 +36,7 @@ class VIPSSUnit {
     public:
         std::string file_name_;
         std::string data_dir_; 
-        VoronoiGen voro_gen_;
+        //VoronoiGen voro_gen_;
         LocalVipss local_vipss_;
         RBF_API rbf_api_;
         arma::sp_imat adjacent_mat_;

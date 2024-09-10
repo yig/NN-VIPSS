@@ -585,8 +585,10 @@ public:
       delete [] vfacetlist;
     }
     if (vcelllist != (int **) NULL) {
+       printf("--------- v cell deallocated size %d \n", numberofvcells);
       for (i = 0; i < numberofvcells; i++) {
-        delete [] vcelllist[i];
+          if(vcelllist[i] != NULL)
+           delete [] vcelllist[i];
       }
       delete [] vcelllist;
     }

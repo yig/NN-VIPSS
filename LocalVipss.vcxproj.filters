@@ -116,6 +116,9 @@
     <ClCompile Include="vipss\src\surfacer\polygonizer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="vipss\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="vipss\src\vipss">

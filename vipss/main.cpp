@@ -23,49 +23,19 @@ void test_sphere_creation()
     // writeXYZ(out_dir, spts);
 }
 
-void test_voronoi()
-{
-    std::string path = "../data/doghead200/doghead200";
-    // std::string path = "../../data/doghead_wire/doghead_wire";
-    VoronoiGen v_gen;
-    v_gen.filename_ = "doghead200";
-    v_gen.out_dir_ = "../data/doghead200/";
-    v_gen.loadData(path);
-    v_gen.Run();
-}
-
-void test_local_vipss()
-{
-    std::string data_dir =  "../../data/";
-    
-    LocalVipss l_vp;
-    l_vp.filename_ = "arma";
-    // l_vp.filename_ = "planck";
-    l_vp.out_dir_ = data_dir + l_vp.filename_ + "/";
-    std::string path = data_dir + l_vp.filename_ + "/" + l_vp.filename_ + ".ply";
-
-    l_vp.angle_threshold_ = 25;
-    l_vp.user_lambda_ = 0.0;
-    l_vp.max_iter_ = 30;
-    l_vp.use_hrbf_surface_ = false;
-    l_vp.volume_dim_ = 100;
-    l_vp.Init(path);
-    l_vp.Run();
-}
-
 void test_vipss_unit()
 {
     VIPSSUnit vu;
-    vu.data_dir_ = "../../data/";
+    vu.data_dir_ = "data/";
     // vu.file_name_ = "arma_100k";
-    vu.file_name_ = "walrus";
-    vu.user_lambda_ = 0.005;
+    vu.file_name_ = "bar_chair";
+    vu.user_lambda_ = 0.000003;
     // vu.init_lambda_ = 0.0001;
     vu.init_with_cluster_merge_ = false;
     vu.merge_angle_ = 45;
     // vu.init_lambda_ = 0;
     vu.use_hrbf_surface_ = true;
-    vu.volume_dim_ = 100;
+    vu.volume_dim_ = 150;
     vu.axi_plane_ = AXI_PlANE::XYZ;
     vu.hrbf_type_ = HRBF_SURFACE_TYPE::LOCAL_HRBF_NN;
     // vu.hrbf_type_ = HRBF_SURFACE_TYPE::GLOBAL_HRBF;

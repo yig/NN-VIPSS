@@ -566,12 +566,14 @@ inline std::vector<double> LocalVipss::GetClusterSvalsFromIds(const std::vector<
     }
     return svals;
 }
+std::vector<std::shared_ptr<RBF_Core>> LocalVipss::node_rbf_vec_;
+VoronoiGen LocalVipss::voro_gen_;
 
 void LocalVipss::BuildHRBFPerNode()
 {
     auto t00 = Clock::now(); 
 // if(0)
-
+    
     size_t npt = this->points_.size();
     size_t cluster_num = cluster_cores_mat_.n_cols;
     double time_sum = 0;
@@ -869,16 +871,16 @@ double LocalVipss::NatureNeighborDistanceFunctionOMP(const tetgenmesh::point cur
     size_t nn_num = nei_pts.size();
     int i;  
     auto t0 = Clock::now();
-    nn_dist_vec_.resize(nn_num);
-    nn_volume_vec_.resize(nn_num);
-#pragma omp parallel for shared(node_rbf_vec_, voro_gen_, nei_pts, cur_pt, nn_dist_vec_, nn_volume_vec_) private(i)
+    arma::vec nn_dist_vec_(nn_num);
+    arma::vec nn_volume_vec_(nn_num);
+
+#pragma omp parallel for shared(node_rbf_vec_, voro_gen_, VoronoiGen::point_id_map_, nei_pts, cur_pt, nn_dist_vec_, nn_volume_vec_) private(i)
     for( i = 0; i < nn_num; ++i)
     {
         auto nn_pt = nei_pts[i];
-        // if(nn_pt != (tetgenmesh::point)NULL && voro_gen_.tetMesh_.pointtype(nn_pt) != tetgenmesh::UNUSEDVERTEX)
+        if(VoronoiGen::point_id_map_.find(nn_pt) != VoronoiGen::point_id_map_.end())
         {
-            size_t pid = voro_gen_.point_id_map_[nn_pt];
-            if(is_group_cluster_) pid = cluster_id_map_[pid];
+            size_t pid = VoronoiGen::point_id_map_[nn_pt];
             nn_dist_vec_[i] = node_rbf_vec_[pid]->Dist_Function(cur_pt);
             int thread_id = omp_get_thread_num();
             nn_volume_vec_[i] = voro_gen_.CalTruncatedCellVolumePassOMP(cur_pt, nn_pt, thread_id); 
