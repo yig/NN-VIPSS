@@ -29,7 +29,7 @@ void test_vipss_unit()
     vu.data_dir_ = "data/";
     // vu.file_name_ = "arma_100k";
     vu.file_name_ = "bar_chair";
-    vu.user_lambda_ = 0.000003;
+    vu.user_lambda_ = 0.000008;
     // vu.init_lambda_ = 0.0001;
     vu.init_with_cluster_merge_ = false;
     vu.merge_angle_ = 45;
