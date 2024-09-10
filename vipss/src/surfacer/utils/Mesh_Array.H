@@ -273,14 +273,14 @@ public:
     /**@name Read and write binary. Use at own risk - assumes class type T has no pointers */
     //@{
     /// Not valid if cross-platform (big vs little indian)
-    inline void ReadBinary( ifstream &in ) {
+    inline void ReadBinary(std::ifstream &in ) {
         int iN;
         in.read( (char *) &iN, sizeof(int) );
         need(iN);
         in.read( (char *) a, iN * sizeof(T) );
     }
     /// Not valid if cross-platform (big vs little indian)
-    inline void WriteBinary( ofstream &out ) const {
+    inline void WriteBinary(std::ofstream &out ) const {
         out.write( (const char *) &n, sizeof(int) );
         out.write( (const char *) a, n * sizeof(T) );
     }
@@ -307,11 +307,11 @@ inline void Array<T>::copy_array(T* na, const T* oa, const int in_iN) \
 { copy_raw_bits(na,oa,in_iN); }
 
 ///
-ARRAY_BIT_COPY(int)
+//ARRAY_BIT_COPY(int)
 ///
-ARRAY_BIT_COPY(float)
+//ARRAY_BIT_COPY(float)
 ///
-ARRAY_BIT_COPY(double)
+//ARRAY_BIT_COPY(double)
 
 
 //@}

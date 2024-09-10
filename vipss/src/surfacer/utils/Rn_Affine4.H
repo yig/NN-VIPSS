@@ -73,9 +73,9 @@ public:
     /**@name Read/write/print */
     //@{
     ///
-    inline void    Write(ofstream &out) const;
+    inline void    Write(std::ofstream &out) const;
     ///
-    inline WINbool Read(ifstream &in) ;
+    inline WINbool Read(std::ifstream &in) ;
     /** \brief Prints to standard out.
      * @param in_bDoReturn Default is number [space] ...; if true, replaces last space with a carriage return */
     inline void    Print( const WINbool in_bDoReturn = FALSE ) const;
@@ -141,9 +141,9 @@ public:
     /**@name Read/write/print */
     //@{
     ///
-    inline void    Write(ofstream &out) const;
+    inline void    Write(std::ofstream &out) const;
     ///
-    inline WINbool Read(ifstream &in) ;
+    inline WINbool Read(std::ifstream &in) ;
     /** \brief Prints to standard out.
      * @param in_bDoReturn Default is number [space] ...; if true, replaces last space with a carriage return */
     inline void    Print( const WINbool in_bDoReturn = FALSE ) const;
@@ -206,9 +206,9 @@ public:
     /**@name Read/write/print */
     //@{
     ///
-    inline void    Write(ofstream &out) const;
+    inline void    Write(std::ofstream &out) const;
     ///
-    inline WINbool Read(ifstream &in) ;
+    inline WINbool Read(std::ifstream &in) ;
     /** \brief Prints to standard out.
      * @param in_bDoReturn Default is number [space] ...; if true, replaces last space with a carriage return */
     inline void    Print( const WINbool in_bDoReturn = FALSE ) const;
@@ -271,9 +271,9 @@ public:
     /**@name Read/write/print */
     //@{
     ///
-    inline void    Write(ofstream &out) const { pOrg.Write(out); vDir.Write(out); }
+    inline void    Write(std::ofstream &out) const { pOrg.Write(out); vDir.Write(out); }
     ///
-    inline WINbool Read(ifstream &in) { pOrg.Read(in); return vDir.Read(in); }
+    inline WINbool Read(std::ifstream &in) { pOrg.Read(in); return vDir.Read(in); }
     /** \brief Prints to standard out.
      * @param in_bDoReturn Default is spaces between pt and vec ...; if true, replaces spaces with a carriage return */
     inline void    Print( const WINbool in_bDoReturn = FALSE ) const { pOrg.Print( in_bDoReturn ); vDir.Print( in_bDoReturn ); }
@@ -407,9 +407,9 @@ public:
     /**@name Read/write/print */
     //@{
     /// Writes 3 X 3 matrix, formatted
-    inline void    Write(ofstream &out) const;
+    inline void    Write(std::ofstream &out) const;
     ///
-    inline WINbool Read(ifstream &in) ;
+    inline WINbool Read(std::ifstream &in) ;
     /** \brief Prints to standard out.
      * @param in_bDoReturn Default is formatted; if true, replaces spaces with a carriage return */
     inline void    Print( const WINbool in_bDoReturn = FALSE ) const;

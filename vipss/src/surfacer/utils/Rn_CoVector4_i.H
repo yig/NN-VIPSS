@@ -90,13 +90,13 @@ R4CoVectorTC<Coord>::operator - () const
 // Read/write/print functions
 // -------------------------------------
 template<class Coord>
-inline void R4CoVectorTC<Coord>::Write(ofstream &out) const
+inline void R4CoVectorTC<Coord>::Write(std::ofstream &out) const
 {
     out << dx << " " << dy << " " << dz << " " << dw << " ";
 }
 
 template<class Coord>
-inline WINbool R4CoVectorTC<Coord>::Read(ifstream &in) 
+inline WINbool R4CoVectorTC<Coord>::Read(std::ifstream &in)
 {
     in >> dx >> dy >> dz >> dw;
 
@@ -106,9 +106,9 @@ inline WINbool R4CoVectorTC<Coord>::Read(ifstream &in)
 template<class Coord>
 inline void R4CoVectorTC<Coord>::Print( WINbool in_bDoReturn ) const
 {
-    cout << dx << " " << dy << " " << dz << " " << dw;
+    std::cout << dx << " " << dy << " " << dz << " " << dw;
     if ( in_bDoReturn == TRUE )
-        cout << "\n";
+        std::cout << "\n";
     else
-        cout << " ";
+        std::cout << " ";
 }

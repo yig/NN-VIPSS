@@ -39,3 +39,11 @@ x64
 3rd
 .vs
 .vscode
+
+#output 
+output
+output/
+x64
+3rd
+.vs
+.vscode

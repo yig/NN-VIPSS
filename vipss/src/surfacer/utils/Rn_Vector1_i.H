@@ -84,13 +84,13 @@ inline double R1VectorTC<Coord>::Normalize()
 // Read/write/print functions
 // -------------------------------------
 template<class Coord>
-inline void R1VectorTC<Coord>::Write(ofstream &out) const
+inline void R1VectorTC<Coord>::Write(std::ofstream &out) const
 {
     out << d << " ";
 }
 
 template<class Coord>
-inline WINbool R1VectorTC<Coord>::Read(ifstream &in) 
+inline WINbool R1VectorTC<Coord>::Read(std::ifstream &in)
 {
     in >> d;
 
@@ -100,9 +100,9 @@ inline WINbool R1VectorTC<Coord>::Read(ifstream &in)
 template<class Coord>
 inline void R1VectorTC<Coord>::Print( const WINbool in_bDoReturn ) const
 {
-    cout << d;
+    std::cout << d;
     if ( in_bDoReturn == TRUE )
-        cout << "\n";
+        std::cout << "\n";
     else
-        cout << " ";
+        std::cout << " ";
 }

@@ -16,8 +16,8 @@ public:
    Array<R3Pt_i>				s_afaceSurface;
 
 
-   vector<double>all_v;
-   vector<uint>all_fv;
+   std::vector<double>all_v;
+   std::vector<uint>all_fv;
 
    R3Pt st;
    double dSize;
@@ -26,24 +26,24 @@ public:
 
    Surfacer(){}
 
-   void CalSurfacingPara(vector<double>&Vs, int nvoxels);
+   void CalSurfacingPara(std::vector<double>&Vs, int nvoxels);
 
-   double Surfacing_Implicit(vector<double>&Vs, int n_voxels, bool ischeckall,
+   double Surfacing_Implicit(std::vector<double>&Vs, int n_voxels, bool ischeckall,
                   double (*function)(const R3Pt &in_pt));
 
 
 
-   void WriteSurface(string fname);
-   void WriteSurface(vector<double> &v, vector<uint>&fv);
-   void WriteSurface(vector<double> **v, vector<uint>**fv);
+   void WriteSurface(std::string fname);
+   void WriteSurface(std::vector<double> &v, std::vector<uint>&fv);
+   void WriteSurface(std::vector<double> **v, std::vector<uint>**fv);
 
    void ClearBuffer();
 
    void ClearSingleComponentBuffer();
 
 private:
-   void GetCurSurface(vector<double> &v, vector<uint>&fv);
-   void InsertToCurSurface(vector<double>&v,vector<uint>&fv);
+   void GetCurSurface(std::vector<double> &v, std::vector<uint>&fv);
+   void InsertToCurSurface(std::vector<double>&v, std::vector<uint>&fv);
 
 
 

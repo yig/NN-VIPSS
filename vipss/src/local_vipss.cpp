@@ -27,7 +27,7 @@ void LocalVipss::TestInsertPt()
         // insert_pts_.push_back(pt);
         // auto v_gen = voro_gen_;
         // voro_gen_.InsertPt(pt);
-        printf("insert id : %lu \n", i);
+        printf("insert id : %ld \n", i);
     }
 
     auto t1 = Clock::now();
@@ -566,12 +566,14 @@ inline std::vector<double> LocalVipss::GetClusterSvalsFromIds(const std::vector<
     }
     return svals;
 }
+std::vector<std::shared_ptr<RBF_Core>> LocalVipss::node_rbf_vec_;
+VoronoiGen LocalVipss::voro_gen_;
 
 void LocalVipss::BuildHRBFPerNode()
 {
     auto t00 = Clock::now(); 
 // if(0)
-
+    
     size_t npt = this->points_.size();
     size_t cluster_num = cluster_cores_mat_.n_cols;
     double time_sum = 0;
@@ -869,16 +871,16 @@ double LocalVipss::NatureNeighborDistanceFunctionOMP(const tetgenmesh::point cur
     size_t nn_num = nei_pts.size();
     int i;  
     auto t0 = Clock::now();
-    nn_dist_vec_.resize(nn_num);
-    nn_volume_vec_.resize(nn_num);
-#pragma omp parallel for shared(node_rbf_vec_, voro_gen_, nei_pts, cur_pt, nn_dist_vec_, nn_volume_vec_) private(i)
+    arma::vec nn_dist_vec_(nn_num);
+    arma::vec nn_volume_vec_(nn_num);
+
+#pragma omp parallel for shared(node_rbf_vec_, voro_gen_, VoronoiGen::point_id_map_, nei_pts, cur_pt, nn_dist_vec_, nn_volume_vec_) private(i)
     for( i = 0; i < nn_num; ++i)
     {
         auto nn_pt = nei_pts[i];
-        // if(nn_pt != (tetgenmesh::point)NULL && voro_gen_.tetMesh_.pointtype(nn_pt) != tetgenmesh::UNUSEDVERTEX)
+        if(VoronoiGen::point_id_map_.find(nn_pt) != VoronoiGen::point_id_map_.end())
         {
-            size_t pid = voro_gen_.point_id_map_[nn_pt];
-            if(is_group_cluster_) pid = cluster_id_map_[pid];
+            size_t pid = VoronoiGen::point_id_map_[nn_pt];
             nn_dist_vec_[i] = node_rbf_vec_[pid]->Dist_Function(cur_pt);
             int thread_id = omp_get_thread_num();
             nn_volume_vec_[i] = voro_gen_.CalTruncatedCellVolumePassOMP(cur_pt, nn_pt, thread_id); 
@@ -1328,7 +1330,7 @@ void LocalVipss::MergeClusters()
         {
             continue;
         }
-        visited_clusters.insert(id);
+        visited_clusters.insert(int(id));
         if(cluster_scores_vec_[id] > angle_threshold_) 
         {
             const arma::sp_mat c_scores_vec(cluster_scores_mat_.col(id));
@@ -1627,9 +1629,9 @@ void LocalVipss::SaveGroupPtsWithColor(const std::string& path)
     {
         if(!cluster_valid_sign_vec_[i]) continue;
         int base = 1000000;
-        double r = ((double) (rand() % base) / double(base)); r = min(sqrt(r) , 1.0);
-        double g = ((double) (rand() % base) / double(base)); g = max(sqrt(g) , 0.0);
-        double b = ((double) (rand() % base) / double(base)); b = max(sqrt(b) , 0.0);
+        double r = ((double) (rand() % base) / double(base)); r = std::min(sqrt(r) , 1.0);
+        double g = ((double) (rand() % base) / double(base)); g = std::max(sqrt(g) , 0.0);
+        double b = ((double) (rand() % base) / double(base)); b = std::max(sqrt(b) , 0.0);
         // const arma::sp_umat cluster_col(cluster_cores_mat_.col(i));
         // arma::sp_umat::const_iterator start = cluster_col.begin();
         // arma::sp_umat::const_iterator end = cluster_col.end();

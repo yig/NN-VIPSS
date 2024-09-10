@@ -96,13 +96,13 @@ inline Coord R2VectorTC<Coord>::Normalize()
 // Read/write/print functions
 // -------------------------------------
 template<class Coord>
-inline void R2VectorTC<Coord>::Write(ofstream &out) const
+inline void R2VectorTC<Coord>::Write(std::ofstream &out) const
 {
     out << du << " " << dv << " ";
 }
 
 template<class Coord>
-inline WINbool R2VectorTC<Coord>::Read(ifstream &in) 
+inline WINbool R2VectorTC<Coord>::Read(std::ifstream &in)
 {
     in >> du >> dv;
 
@@ -110,14 +110,14 @@ inline WINbool R2VectorTC<Coord>::Read(ifstream &in)
 }
 
 template<class Coord>
-inline void R2VectorTC<Coord>::WriteBinary(ofstream &out) const
+inline void R2VectorTC<Coord>::WriteBinary(std::ofstream &out) const
 {
     out.write( (const char *) &du, Dim() * sizeof(Coord) );
 }
 
 
 template<class Coord>
-inline WINbool R2VectorTC<Coord>::ReadBinary(ifstream &in) 
+inline WINbool R2VectorTC<Coord>::ReadBinary(std::ifstream &in)
 {
     in.read( (char *) &du, Dim() * sizeof(Coord) );
     
@@ -128,10 +128,10 @@ inline WINbool R2VectorTC<Coord>::ReadBinary(ifstream &in)
 template<class Coord>
 inline void R2VectorTC<Coord>::Print( const WINbool in_bDoReturn ) const
 {
-    cout << du << " " << dv;
+    std::cout << du << " " << dv;
     if ( in_bDoReturn == TRUE )
-        cout << "\n";
+        std::cout << "\n";
     else
-        cout << " ";
+        std::cout << " ";
 }
 

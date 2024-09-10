@@ -314,19 +314,15 @@ void VoronoiGen::GenerateVoroData()
     tetMesh_.generate_voronoi_cell(&voronoi_data_);
     
 
-    printf("voronoi pt num : %d \n", voronoi_data_.numberofvpoints);
+    // printf("voronoi pt num : %d \n", voronoi_data_.numberofvpoints);
     // printf("voronoi edge num : %d \n", voronoi_data_.numberofvedges);
     // printf("voronoi facet num : %d \n", voronoi_data_.numberofvfacets);
-    printf("voronoi cell num : %d \n", voronoi_data_.numberofvcells);
+    // printf("voronoi cell num : %d \n", voronoi_data_.numberofvcells);
     // printf("finsh generate_voronoi_cell \n");
     // InitVoronoiDataForCellVolume();
     // return;
-    printf("finsh InitVoronoiDataForCellVolume \n");
-    auto t1 = Clock::now();
-    // PrecomputeVoroData();
-    auto t2 = Clock::now();
-    double build_vo_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
-    printf("-----------compute voronoi data time : %f \n", build_vo_time);
+    // printf("finsh InitVoronoiDataForCellVolume \n");
+
 
     // double prevo_time = std::chrono::nanoseconds(t2 - t1).count()/1e9;
     // printf("-----------pre iter voronoi data time : %f \n", prevo_time);
@@ -344,7 +340,7 @@ void VoronoiGen::GetVoroCellEdgeList(tetgenmesh::point nei_pt, std::vector<tetge
 {
     // printf("pt size 0000 : %ld \n", points_.size());
     auto vc_id   = point_id_map_[nei_pt];
-    auto v_cell  = voronoi_data_.vcelllist[vc_id];
+    const auto v_cell  = voronoi_data_.vcelllist[vc_id];
     // printf("pt size 000000 : %ld \n", points_.size());
     auto vf_list = voronoi_data_.vfacetlist;
     auto ve_list = voronoi_data_.vedgelist;
@@ -390,10 +386,10 @@ void VoronoiGen::GetVoroCellPtList(std::vector<tetgenio::voroedge*>& edge_list, 
 
 void VoronoiGen::GetVoroCellPtAndEdgeIdList(tetgenmesh::point nei_pt, std::set<int>& vcell_pt_list, std::set<int>& vcell_edge_list)
 {
-    auto vc_id   = point_id_map_[nei_pt];
-    auto v_cell  = voronoi_data_.vcelllist[vc_id];
-    auto vf_list = voronoi_data_.vfacetlist;
-    auto ve_list = voronoi_data_.vedgelist;
+    const auto vc_id   = point_id_map_[nei_pt];
+    const auto v_cell  = voronoi_data_.vcelllist[vc_id];
+    const auto vf_list = voronoi_data_.vfacetlist;
+    const auto ve_list = voronoi_data_.vedgelist;
     // printf("pt size 0001 : %ld \n", points_.size());
     if(v_cell == NULL) return;
     int f_num = v_cell[0];
@@ -906,11 +902,11 @@ double VoronoiGen::CalTruncatedCellVolumePass(tetgenmesh::point in_pt, tetgenmes
     // SavePlane(v_plane);
     if(point_id_map_.find(nei_pt) == point_id_map_.end())
     return 0;
-    auto vc_id   = point_id_map_[nei_pt];
-    auto v_cell  = voronoi_data_.vcelllist[vc_id];
-    auto vf_list = voronoi_data_.vfacetlist;
-    auto ve_list = voronoi_data_.vedgelist;
-    auto vp_list = voronoi_data_.vpointlist;
+    const auto vc_id   = point_id_map_[nei_pt];
+    const auto v_cell  = voronoi_data_.vcelllist[vc_id];
+    const auto vf_list = voronoi_data_.vfacetlist;
+    const auto ve_list = voronoi_data_.vedgelist;
+    const auto vp_list = voronoi_data_.vpointlist;
     // printf("pt size 0001 : %ld \n", points_.size());
     if(v_cell == NULL) return 0;
     int f_num = v_cell[0];
@@ -1328,10 +1324,10 @@ double VoronoiGen::CalTruncatedCellVolumePass2(tetgenmesh::point in_pt, tetgenme
     // if(point_id_map_.find(nei_pt) == point_id_map_.end())
     // return 0;
     auto vc_id = point_id_map_[nei_pt];
-    auto v_cell  = voronoi_data_.vcelllist[vc_id];
-    auto vf_list = voronoi_data_.vfacetlist;
-    auto ve_list = voronoi_data_.vedgelist;
-    auto vp_list = voronoi_data_.vpointlist;
+    const auto v_cell  = voronoi_data_.vcelllist[vc_id];
+    const auto vf_list = voronoi_data_.vfacetlist;
+    const auto ve_list = voronoi_data_.vedgelist;
+    const auto vp_list = voronoi_data_.vpointlist;
     // printf("pt size 0001 : %ld \n", points_.size());
     if(v_cell == NULL) return 0;
     int f_num = v_cell[0];
@@ -1635,7 +1631,7 @@ void VoronoiGen::OutputVoronisMesh()
     std::string out_path2 = out_dir_ + "voronoi_split_pts.obj";
     std::cout << " voronoi out put size : " << out_path << std::endl;
     // std::cout << " voronoi tet size : " << tetMesh_.tetrahedrons->items << std::endl;
-    ofstream myfile;
+    std::ofstream myfile;
     myfile.open(out_path);
     // ofstream myfile_split;
     // myfile_split.open(out_path2);
@@ -1777,114 +1773,6 @@ void VoronoiGen::OutputVoronisMesh()
 
 }
 
-
-
-void VoronoiGen::PrecomputeVoroData()
-{
-    auto vf_list = voronoi_data_.vfacetlist;
-    auto ve_list = voronoi_data_.vedgelist;
-    auto vp_list = voronoi_data_.vpointlist;
-    auto vc_list = voronoi_data_.vcelllist;
-    // vids_status_.resize(voronoi_data_.numberofvpoints, false);
-    v_sign_vals_.resize(voronoi_data_.numberofvpoints, 0);
-
-    // eids_status_.resize(voronoi_data_.numberofvedges, false);
-    e_sign_vals_.resize(voronoi_data_.numberofvedges);
-    ve_intersect_pts_.resize(voronoi_data_.numberofvedges * 3);
-    int vc_num = voronoi_data_.numberofvcells;
-
-    vorocell_pids_.resize(vc_num);
-    vorocell_eids_.resize(vc_num);
-
-    for(int vci =0; vci < vc_num; ++vci)
-    {
-        auto v_cell  = voronoi_data_.vcelllist[vci];
-        // printf("pt size 0001 : %ld \n", points_.size());
-        if(v_cell == NULL) continue;
-        int f_num = v_cell[0];
-        std::set<int> vcell_pt_list;
-        std::set<int> vcell_edge_list ;
-        for(size_t i = 0; i < f_num; ++i)
-        {
-            size_t f_id = v_cell[i + 1];
-            auto facet = vf_list[f_id];
-            size_t e_num = facet.elist[0];
-            arma::vec3 f_center;
-            for(size_t j = 0; j < e_num; ++j)
-            {
-                int e_id = facet.elist[1 + j];
-                vcell_edge_list.insert(e_id);
-                const auto& ve = ve_list[e_id];
-
-                
-                vcell_pt_list.insert(ve.v1);
-                vcell_pt_list.insert(ve.v2);
-            }
-        }
-        vorocell_pids_[vci] = std::vector<int>(vcell_pt_list.begin(), vcell_pt_list.end());
-        vorocell_eids_[vci] = std::vector<int>(vcell_edge_list.begin(), vcell_edge_list.end());;
-        
-    }   
-    // for(auto vc_ids : vorocell_pids_)
-    // {
-    //     for(auto id : vc_ids)
-    //     {
-    //         if(id > voronoi_data_.numberofvpoints)
-    //         {
-    //             std::cout << " too large ids : " << id << std::endl;
-    //         }
-    //     }
-    // }
-    
-
-    // for(int i =0; i < vc_num; ++i)
-    // {
-    //     eids_status_.resize(voronoi_data_.numberofvedges, false);
-    //     vids_status_.resize(voronoi_data_.numberofvpoints, false);
-    //     // std::vector<int> vids;
-    //     // std::vector<int> eids;
-    //     auto vcell = vc_list[i];
-    //     if(vcell != NULL)
-    //     {
-    //         int f_num = vcell[0];
-    //         for(size_t fi = 0; fi < f_num; ++fi)
-    //         {
-    //             int f_id = vcell[fi + 1];
-    //             const auto& facet = vf_list[f_id];
-    //             size_t e_num = facet.elist[0];
-    //             for(size_t ei = 0; ei < e_num; ++ei)
-    //             {
-    //                 size_t e_id = facet.elist[1 + ei];
-    //                 if(eids_status_[e_id]) continue;
-    //                 eids_status_[e_id] = true;
-    //                 vorocell_eids_[i].push_back(e_id);
-    //                 const auto& ve = ve_list[e_id];
-    //                 if(ve.v1 == -1 || ve.v2 == -1) continue;
-    //                 if(!vids_status_[ve.v1])
-    //                 {
-    //                     vorocell_pids_[i].push_back(ve.v1);
-    //                     vids_status_[ve.v1] = true;
-    //                 }
-    //                 if(!vids_status_[ve.v2])
-    //                 {
-    //                     vorocell_pids_[i].push_back(ve.v2);
-    //                     vids_status_[ve.v2] = true;
-    //                 }
-    //             } 
-    //         }
-    //     }
-        // for(auto vid : vorocell_pids_[i])
-        // {
-        //     vids_status_[vid] = false;
-        // }
-        // for(auto eid : vorocell_eids_[i])
-        // {
-        //     eids_status_[eid] = false;
-        // }
-        // vorocell_pids_[i] = vids;
-        // vorocell_eids_[i] = eids;
-    // }
-}
 
 void VoronoiGen::GetVertexStar(tetgenmesh::point &p_st, 
             std::set<tetgenmesh::point>& candid_pts, int level = 1)
@@ -2208,3 +2096,6 @@ typedef std::pair<tetgenmesh::point, double> PtScore;
 
 // }
 
+
+
+std::unordered_map<tetgenmesh::point, size_t> VoronoiGen::point_id_map_;

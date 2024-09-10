@@ -200,14 +200,14 @@ R2MatrixTC<Coord>::SetScale( const Coord in_fScaleU, const Coord in_fScaleV )
 // Read/write/print functions
 // -------------------------------------
 template<class Coord>
-inline void R2MatrixTC<Coord>::Write(ofstream &out) const
+inline void R2MatrixTC<Coord>::Write(std::ofstream &out) const
 {
     out << mat[0][0] << " " << mat[0][1] << "\n";
     out << mat[1][0] << " " << mat[1][1] << "\n";
 }
 
 template<class Coord>
-inline WINbool R2MatrixTC<Coord>::Read(ifstream &in) 
+inline WINbool R2MatrixTC<Coord>::Read(std::ifstream &in)
 {
     in >> mat[0][0] >> mat[0][1] >> mat[1][0] >> mat[1][1];
 
@@ -217,17 +217,17 @@ inline WINbool R2MatrixTC<Coord>::Read(ifstream &in)
 template<class Coord>
 inline void R2MatrixTC<Coord>::Print( const WINbool in_bDoReturn ) const
 {
-    cout << mat[0][0] << " " << mat[0][1];
+    std::cout << mat[0][0] << " " << mat[0][1];
     if ( in_bDoReturn == TRUE )
-        cout << "\n";
+        std::cout << "\n";
     else
-        cout << " ";
+        std::cout << " ";
 
-    cout << mat[1][0] << " " << mat[1][1];
+    std::cout << mat[1][0] << " " << mat[1][1];
     if ( in_bDoReturn == TRUE )
-        cout << "\n";
+        std::cout << "\n";
     else
-        cout << " ";
+        std::cout << " ";
 }
 
 template<class Coord>
@@ -532,7 +532,7 @@ WINbool R2MatrixTC<Coord>::Takagi( R2MatrixTC<Coord> &out_matU, R2MatrixTC<Coord
         }
     }
 
-    for ( FORINT i = 0; i < 4; i++ ) {
+    for ( int i = 0; i < 4; i++ ) {
         const int i1 = (i / 2 == 0) ? 1 : -1;
         const int i2 = (i % 2 == 0) ? 1 : -1;
         for ( int j = 0; j < 4; j++ ) {

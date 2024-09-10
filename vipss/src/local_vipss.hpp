@@ -142,7 +142,7 @@ class LocalVipss {
     
     public:
         bool is_group_cluster_ = false;
-        VoronoiGen voro_gen_;
+        static VoronoiGen voro_gen_;
         RBF_API vipss_api_;
 
         std::vector<std::unordered_set<size_t>> cluster_adjacent_ids_;
@@ -192,11 +192,11 @@ class LocalVipss {
         SpMat final_h_eigen_;
         std::vector<Triplet> h_ele_triplets_;
         std::set<P3tr> sample_cluster_pts_;
-        std::vector<std::shared_ptr<RBF_Core>> node_rbf_vec_;
+        static std::vector<std::shared_ptr<RBF_Core>> node_rbf_vec_;
         std::vector<double>finalMesh_v_;
         std::vector<uint>finalMesh_fv_;
-        arma::vec nn_dist_vec_;
-        arma::vec nn_volume_vec_;
+        //arma::vec nn_dist_vec_;
+        //arma::vec nn_volume_vec_;
         
     public:
         int max_group_iter_ = 12;

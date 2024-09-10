@@ -70,14 +70,14 @@ R1PointTC<Coord>::operator<= ( const R1PointTC<Coord>& p ) const
 // Read/write/print functions
 // -------------------------------------
 template<class Coord>
-inline void R1PointTC<Coord>::Write(ofstream &out) const
+inline void R1PointTC<Coord>::Write(std::ofstream &out) const
 {
     out << u;
     out << " ";
 }
 
 template<class Coord>
-inline WINbool R1PointTC<Coord>::Read(ifstream &in) 
+inline WINbool R1PointTC<Coord>::Read(std::ifstream &in)
 {
     in >> u;
 

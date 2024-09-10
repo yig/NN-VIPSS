@@ -47,6 +47,7 @@
 
 #include "tetgen.h"
 #include <fstream>
+#include <string>
 //== io_cxx ==================================================================//
 //                                                                            //
 //                                                                            //
@@ -37969,7 +37970,7 @@ void tetgenmesh::generate_voronoi_cell(tetgenio* voronoi_data)
     tetloop.tet = tetrahedrontraverse();
   }
 
-  printf(" real voronoi pt num : %d \n", vpointcount);
+  // printf(" real voronoi pt num : %d \n", vpointcount);
 
   int numberofvedges = (int) faces;
   voronoi_data->numberofvedges = numberofvedges;
@@ -38193,6 +38194,7 @@ void tetgenmesh::generate_voronoi_cell(tetgenio* voronoi_data)
   //   fprintf(outfile, "%ld\n", points->items - unuverts - dupverts);
   // } else {
   voronoi_data->numberofvcells = points->items - unuverts - dupverts;
+  printf("v cell allocated size %d \n", voronoi_data->numberofvcells);
   voronoi_data->vcelllist = new int*[voronoi_data->numberofvcells];
   auto vcelllist = voronoi_data->vcelllist;
     // if (out->vcelllist == (int **) NULL) {

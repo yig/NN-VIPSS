@@ -113,7 +113,7 @@ R3MatrixTC<Coord>::operator - ( )
 // Read/write/print functions
 // -------------------------------------
 template<class Coord>
-inline void R3MatrixTC<Coord>::Write(ofstream &out) const
+inline void R3MatrixTC<Coord>::Write(std::ofstream &out) const
 {
     for (int i = 0; i < 3; i++) {
         for ( int j = 0; j < 3; j++) {
@@ -125,13 +125,13 @@ inline void R3MatrixTC<Coord>::Write(ofstream &out) const
 }
 
 template<class Coord>
-inline void R3MatrixTC<Coord>::WriteBinary(ofstream &out) const
+inline void R3MatrixTC<Coord>::WriteBinary(std::ofstream &out) const
 {
     out.write( (const char *) m_mat, 9 * sizeof(Coord) );
 }
 
 template<class Coord>
-inline WINbool R3MatrixTC<Coord>::Read(ifstream &in) 
+inline WINbool R3MatrixTC<Coord>::Read(std::ifstream &in)
 {
     for (int i = 0; i < 3; i++) {
         for ( int j = 0; j < 3; j++) {
@@ -143,7 +143,7 @@ inline WINbool R3MatrixTC<Coord>::Read(ifstream &in)
 }
 
 template<class Coord>
-inline WINbool R3MatrixTC<Coord>::ReadBinary(ifstream &in) 
+inline WINbool R3MatrixTC<Coord>::ReadBinary(std::ifstream &in)
 {
     in.read( (char *) &m_mat, 9 * sizeof(Coord) );
 
@@ -729,8 +729,8 @@ inline double R3MatrixTC<Coord>::Norm( ) const
    double lowboundf = normf/sqrt(2.0);
    double highboundf = normf;
 
-   double lowbound = max(lowbound1, max(lowboundinf, lowboundf));
-   double highbound = min(highbound1, min(highboundinf, highboundf));
+   double lowbound = std::max(lowbound1, std::max(lowboundinf, lowboundf));
+   double highbound = std::min(highbound1, std::min(highboundinf, highboundf));
 
    double err = abs(lowbound - highbound)/2.0;
    if (err > 1.0) printf("warning: norm error = %f\n", err);

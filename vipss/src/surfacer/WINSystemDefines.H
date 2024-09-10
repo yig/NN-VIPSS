@@ -29,6 +29,15 @@
    @{
    */
 
+#include <string>
+#include <iostream>
+#include <iomanip>
+#include <fstream>
+#include <memory>             // memcpy()
+#include <float.h>
+#include <math.h>
+
+using namespace std;
 
 #if defined(WIN32) || defined(WIN64)
 typedef __int64 LONGLONG;
@@ -303,7 +312,7 @@ inline bool Do_mkpath( const string &in_str, const mode_t mode = S_IRWXU )
 
 
 /// Helper functions to read/write booleans in binary
-inline WINbool WINBoolRead( istream &in )
+inline WINbool WINBoolRead(std::istream &in )
 {
     char c;
     in >> c;
@@ -315,7 +324,7 @@ inline WINbool WINBoolRead( istream &in )
 }
 
 /// Helper functions to read/write booleans in binary
-inline void WINBoolWrite( ostream &out, const WINbool &in_b )
+inline void WINBoolWrite(std::ostream &out, const WINbool &in_b )
 {
     if ( in_b == FALSE ) {
         out << " f ";
@@ -333,32 +342,32 @@ inline void WINBoolWrite( ostream &out, const WINbool &in_b )
  * @{
  */
 ///
-inline void WINWriteBinary(const char *name, ofstream &out)
+inline void WINWriteBinary(const char *name, std::ofstream &out)
 { 
     out.clear();
 
 #ifdef sgi
-    out.open(name, ios::out); 
+    out.open(name, std::ios::out);
 #else
-    out.open(name, ios::out | ios::binary); 
+    out.open(name, std::ios::out | std::ios::binary);
 #endif
     if (!out.good()) {
-        cerr << "Bad file " << name << "\n";
+        std::cerr << "Bad file " << name << "\n";
         ASSERT(FALSE); 
     }
 }
 /// Returns TRUE if file was created
-inline WINbool WINWriteBinaryTest(const char *name, ofstream &out)
+inline WINbool WINWriteBinaryTest(const char *name, std::ofstream &out)
 { 
     out.clear();
 
 #ifdef sgi
-    out.open(name, ios::out); 
+    out.open(name, std::ios::out);
 #else
-    out.open(name, ios::out | ios::binary); 
+    out.open(name, std::ios::out | std::ios::binary);
 #endif
     if (!out.good()) {
-        cerr << "Bad file " << name << "\n";
+        std::cerr << "Bad file " << name << "\n";
         return FALSE; 
     }
     return TRUE;
@@ -366,47 +375,47 @@ inline WINbool WINWriteBinaryTest(const char *name, ofstream &out)
 
 
 ///
-inline void WINAppendBinary(const char *name, ofstream &out)
+inline void WINAppendBinary(const char *name, std::ofstream &out)
 { 
     out.clear();
 #ifdef sgi
-    out.open(name, ios::app); 
+    out.open(name, std::ios::app);
 #else
-    out.open(name, ios::app | ios::binary); 
+    out.open(name, std::ios::app | std::ios::binary);
 #endif
 
     if (!out.good()) {
-        cerr << "Bad file " << name << "\n";
+        std::cerr << "Bad file " << name << "\n";
         ASSERT(FALSE); 
     }
 }
 ///
-inline void WINReadBinary(const char *name, ifstream &in)
+inline void WINReadBinary(const char *name, std::ifstream &in)
 { 
     in.clear();
 #ifdef sgi
     in.open(name, ios::in); 
 #else
-    in.open(name, ios::in | ios::binary); 
+    in.open(name, std::ios::in | std::ios::binary);
 #endif
 
     if (!in.good()) {
-        cerr << "Bad file " << name << "\n";
+        std::cerr << "Bad file " << name << "\n";
         ASSERT(FALSE); 
     }
 }
 /// Returns true if file exists
-inline WINbool WINReadBinaryTest(const char *name, ifstream &in)
+inline WINbool WINReadBinaryTest(const char *name, std::ifstream &in)
 { 
     in.clear();
 #ifdef sgi
     in.open(name, ios::in); 
 #else
-    in.open(name, ios::in | ios::binary); 
+    in.open(name, std::ios::in | std::ios::binary);
 #endif
 
     if (!in.good()) {
-        cerr << "Bad file " << name << "\n";
+        std::cerr << "Bad file " << name << "\n";
         return FALSE; 
     }
     return TRUE;
