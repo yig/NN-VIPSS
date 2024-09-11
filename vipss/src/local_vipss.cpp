@@ -517,8 +517,8 @@ void LocalVipss::BuildMatrixH()
             AddClusterHMatrix(cluster_pt_ids, vipss_api_.rbf_core_.Minv, npt);
         }
         auto t6 = Clock::now();
-        double add_ele_to_vector_time = std::chrono::nanoseconds(t6 - t5).count()/1e9;
-        add_ele_to_vector_time += add_ele_to_vector_time;
+        double add_time = std::chrono::nanoseconds(t6 - t5).count()/1e9;
+        add_ele_to_vector_time += add_time;
     }
     auto t_h1 = Clock::now();
     final_h_eigen_.setFromTriplets(h_ele_triplets_.begin(), h_ele_triplets_.end());

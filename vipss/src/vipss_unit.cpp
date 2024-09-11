@@ -741,15 +741,14 @@ void VIPSSUnit::Run()
     rbf_api_.Set_RBF_PARA();
     InitPtNormalWithLocalVipss();
     auto tn0 = Clock::now();
-if(1)
-{
     if(user_lambda_ < 1e-10)
     {
          local_vipss_.final_h_eigen_ = local_vipss_.final_h_eigen_.block(npt_, npt_, 3 * npt_, 3 * npt_);
     } 
     auto tn1 = Clock::now();
-    double build_H_time = std::chrono::nanoseconds(tn1 - tn0).count() / 1e9;
-    printf("Build H matrix time : %f ! \n", build_H_time);
+    double get_h_sub_block_time = std::chrono::nanoseconds(tn1 - tn0).count() / 1e9;
+    printf("get H sub block time : %f ! \n", get_h_sub_block_time);
+    G_VP_stats.take_h_sub_block_time_ = get_h_sub_block_time;
 
     auto ts0 = Clock::now();
     if(user_lambda_ < 1e-12)
@@ -771,7 +770,7 @@ if(1)
 
     G_VP_stats.opt_solver_time_ += solve_time;
     G_VP_stats.opt_func_call_num_ += VIPSSUnit::opt_func_count;
-}
+
 
     auto t01 = Clock::now();
     double total_time = std::chrono::nanoseconds(t01 - t00).count()/1e9;

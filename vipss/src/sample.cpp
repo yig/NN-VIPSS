@@ -110,17 +110,17 @@ std::vector<double> CreateSpherePoints(double cx, double cy, double cz, double r
     double M_PI_ = 3.1415926535897932384626433832795028842;
     double a = 4 * M_PI_ * 1.0 * 1.0 / double(pt_num);
     double d = sqrt(a);
-    int Mv = int(M_PI / d);
-    double dv = M_PI / double(Mv);
+    int Mv = int(M_PI_ / d);
+    double dv = M_PI_ / double(Mv);
     double df = a / dv;
     std::vector<double> sphere_pts;
     for(int i = 0; i < Mv; ++i)
     {
-        double V = M_PI * (i + 0.5) / double(Mv);
-        double Mf = int(2 * M_PI * sin(V)/df);
+        double V = M_PI_ * (i + 0.5) / double(Mv);
+        double Mf = int(2 * M_PI_ * sin(V)/df);
         for(int j =0; j < Mf; ++j)
         {
-            double fi = 2 * M_PI * j / double(Mf);
+            double fi = 2 * M_PI_ * j / double(Mf);
             double x = cx + radius * sin(V) * cos(fi);
             double y = cy + radius * sin(V) * sin(fi);
             double z = cz + radius * cos(V);
