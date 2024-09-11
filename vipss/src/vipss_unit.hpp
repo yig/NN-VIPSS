@@ -15,7 +15,12 @@ enum HRBF_SURFACE_TYPE{
     LOCAL_HRBF_NN
 };
 
+
+// void WriteStatsLog(const std::string& path, const VP_STATS& vp_stats);
+
+
 class VIPSSUnit {
+
     public:
         VIPSSUnit(){};
         ~VIPSSUnit(){};

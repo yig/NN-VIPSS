@@ -1523,3 +1523,52 @@ void output_opt_pts_with_color(const std::vector<double>& pts, const std::vector
     }
     writePLYFile_CO(out_dir, pts, color);
 }
+
+
+
+void WriteStatsLog(const std::string& path, const VP_STATS& vp_stats)
+{
+    std::ofstream log_file;
+    log_file.open(path);
+    if(log_file)
+    {
+        double time_sum = vp_stats.init_normal_total_time_ +
+            vp_stats.opt_solver_time_ + vp_stats.build_H_total_time_ 
+            + vp_stats.surface_total_time_;
+
+        log_file << "time statistics for normal initializaiton : " << std::endl;
+        log_file << "total time : " << time_sum << std::endl;
+        log_file << "normal init time : " << vp_stats.init_normal_total_time_ << std::endl;
+        log_file << "optimization time : " << vp_stats.opt_solver_time_ + vp_stats.build_H_total_time_  << std::endl;
+        log_file << "surfacing time : " << vp_stats.surface_total_time_ << std::endl;
+
+        log_file << "     " << std::endl;
+        log_file << "time statistics for normal init : " << std::endl;
+        log_file << "cal cluster init normal with partial vipps time : " << vp_stats.init_cluster_normal_time_ << std::endl;
+        log_file << "cal cluster scores time : " << vp_stats.cal_cluster_neigbor_scores_time_ << std::endl;
+        log_file << "build normal MST tree time : " << vp_stats.build_normal_MST_time_ << std::endl;
+        log_file << "normal flip with MST tree time : " << vp_stats.normal_flip_time_ << std::endl;
+        log_file << "Normal init total time : " << vp_stats.init_normal_total_time_ << std::endl;
+
+
+        log_file << "     " << std::endl;
+        log_file << "time statistics for optimization : " << std::endl;
+        log_file << "cal cluster J total time : " << vp_stats.cal_cluster_J_total_time_ << std::endl;
+        log_file << "add J ele to tris vector time : " << vp_stats.add_J_ele_to_triplet_vector_time_ << std::endl;
+        log_file << "build H from tris vector time : " << vp_stats.build_eigen_final_h_from_tris_time_ << std::endl;
+        log_file << "get final H sub block time : " << vp_stats.take_h_sub_block_time_ << std::endl;
+        log_file << "build H total time : " << vp_stats.build_H_total_time_ << std::endl;
+        log_file << "opt solver total time : " << vp_stats.opt_solver_time_ << std::endl;
+        log_file << "opt func call total num : " << vp_stats.opt_func_call_num_ << std::endl;
+        log_file << "Optimzation total time : " <<  vp_stats.opt_solver_time_ + vp_stats.build_H_total_time_ << std::endl;
+
+        log_file << "     " << std::endl;
+        log_file << "time statistics for surface : " << std::endl;
+        log_file << "generate voroi data time : " << vp_stats.generate_voroi_data_time_ << std::endl;
+        log_file << "build cluster HRBF time : " << vp_stats.build_per_cluster_hrbf_total_time_ << std::endl;
+        log_file << "natural neighbor n search time : " << vp_stats.neighbor_search_time_ << std::endl;
+        log_file << "cal nn coords and HRBF time : " << vp_stats.cal_nn_coordinate_and_hbrf_time_ << std::endl;
+        log_file << "voxel dist func val evaluated count : " << vp_stats.voxel_cal_num << std::endl;
+        log_file << "natural neighbor surfacing total time : " << vp_stats.surface_total_time_ << std::endl;
+    } 
+}

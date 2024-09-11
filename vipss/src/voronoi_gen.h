@@ -103,27 +103,12 @@ class VoronoiGen{
 
         void BuildAdjecentMat();
         void GetVertexStar(tetgenmesh::point& p_st, std::set<tetgenmesh::point>& candid_pts, int level);
-        void CalcualteNormalWithVIPSS(std::vector<double>& vts, std::vector<double>& normal);
-        void SavePtVn(const std::string& path, bool orient_normal = false);
         void BuildPtIdMap();
-        
-        std::vector<double> ConvertPtAndNeighborsToVect(std::set<tetgenmesh::point>& candid_pts);
-        void BuildPtNCluster(P_Set& pset, const std::vector<double>& normals, PtNCluster& pt_cluster);
-        void CalculateScores();
-        void SavePtVnColor(const std::string& path, bool orient_normal);
-        void CalculatePtColors();
-        void UpdateVtAndVn();
-        void ScaleNormalByScore();
-        void MergeCluster();
         void GenerateVoroData();
-
-        void Run();
         void InsertPt(tetgenmesh::point pt);
 
         void GetVoroCellEdgeList(tetgenmesh::point nei_pt, std::vector<tetgenio::voroedge*>& edge_list);
-        void GetVoroCellPtIdList(tetgenmesh::point nei_pt, std::set<int>& vcell_pt_list);
         void GetVoroCellPtAndEdgeIdList(tetgenmesh::point nei_pt, std::set<int>& vcell_pt_list, std::set<int>& vcell_edge_list);
-
         void CalVoroCellPtSign(const VoroPlane &plane, const std::set<int>& vcell_pt_list, std::vector<int>& positive_pids);
         // void CalVoroEdgeIntersection(tetgenmesh::point nei_pt, const VoroPlane& plane, std::vector<double>& intersect_pts);
         void CalVoroEdgeIntersection(const std::set<int>& cell_eids, std::vector<double>& intersect_pts);
@@ -134,10 +119,8 @@ class VoronoiGen{
         double CalUnionCellVolume(tetgenmesh::point in_pt, tetgenmesh::point nei_pt);
         // double CalVoroFaceVolume(tetgenio::facet* facet,  )
         void CalVoroFaceNormal(tetgenmesh::point in_pt, tetgenmesh::point nei_pt);
-        void GetTruncatedCellPts(tetgenmesh::point in_pt, tetgenmesh::point nei_pt);
         void InitVoronoiDataForCellVolume();
         double CalTruncatedCellVolume(tetgenmesh::point in_pt, tetgenmesh::point nei_pt);
-
         void OutputVoronisMesh();
         void InsertBoundryPts();
         void InsertSphereBoundryPts();
@@ -145,11 +128,8 @@ class VoronoiGen{
         void BuildTetMeshTetCenterMap();
         void BuildPicoTree();
         tetgenmesh::tetrahedron* GetClosetTet(double x, double y, double z);
-        double CalTruncatedCellVolumePass(tetgenmesh::point in_pt, tetgenmesh::point nei_pt);
         double CalTruncatedCellVolumePassOMP(tetgenmesh::point in_pt, tetgenmesh::point nei_pt, int thread_id = 0);
-        double CalTruncatedCellVolumePass2(tetgenmesh::point in_pt, tetgenmesh::point nei_pt);
         void OutputTetMesh(const std::string& tetmesh_path);
-        void PrecomputeVoroData();
                 
     public:
         size_t pt_num_;

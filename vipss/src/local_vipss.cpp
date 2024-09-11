@@ -6,6 +6,7 @@
 #include <queue>
 #include <omp.h>
 #include <random>
+#include "stats.h"
 
 typedef std::chrono::high_resolution_clock Clock;
 
@@ -489,11 +490,9 @@ void LocalVipss::BuildMatrixH()
     size_t cluster_num = cluster_cores_mat_.n_cols;
     double time_sum = 0;
     final_h_eigen_.resize(4 * npt , 4 * npt);
-    // h_ele_triplets_.reserve(cluster_num * 300 * 300);
+    double add_ele_to_vector_time = 0;
     for(size_t i =0; i < cluster_num; ++i)
     {
-        // std::vector<double> vts;
-        // std::vector<size_t> p_ids;
         auto cluster_pt_ids = GetClusterPtIds(i);
         auto cluster_pt_vec = GetClusterVerticesFromIds(cluster_pt_ids);
         auto t3 = Clock::now();
@@ -503,8 +502,6 @@ void LocalVipss::BuildMatrixH()
         auto t4 = Clock::now();
         double build_j_time = std::chrono::nanoseconds(t4 - t3).count()/1e9;
         build_j_time_total_ += build_j_time;
-        // printf("build_j_time_total_ : %f \n", build_j_time_total_);
-        // cluster_J_mat_vec_.push_back(std::move(vipss_api_.rbf_core_.Minv));
         auto t5 = Clock::now();
         if(user_lambda_ > 1e-10)
         {
@@ -513,32 +510,32 @@ void LocalVipss::BuildMatrixH()
             arma::mat E(unit_npt, unit_npt);
             E.eye();
             F(0, 0, arma::size(unit_npt, unit_npt)) = E;
-            // double cur_lambda = user_lambda_ * double(unit_npt) / double(npt);
             double cur_lambda = user_lambda_;
             arma::mat K = (F + vipss_api_.rbf_core_.Minv * cur_lambda);
             AddClusterHMatrix(cluster_pt_ids, K, npt);
         } else {
             AddClusterHMatrix(cluster_pt_ids, vipss_api_.rbf_core_.Minv, npt);
         }
-
         auto t6 = Clock::now();
-        double build_h_time = std::chrono::nanoseconds(t6 - t5).count()/1e9;
-        build_h_time_total_ += build_h_time;
+        double add_ele_to_vector_time = std::chrono::nanoseconds(t6 - t5).count()/1e9;
+        add_ele_to_vector_time += add_ele_to_vector_time;
     }
     auto t_h1 = Clock::now();
     final_h_eigen_.setFromTriplets(h_ele_triplets_.begin(), h_ele_triplets_.end());
     auto t_h2 = Clock::now();
-    double build_h_time = std::chrono::nanoseconds(t_h2 - t_h1).count()/1e9;
+    double build_h_from_tris_time = std::chrono::nanoseconds(t_h2 - t_h1).count()/1e9;
     
-    // build_h_time_total_ += build_h_time;
     auto t11 = Clock::now();
     double build_H_time_total = std::chrono::nanoseconds(t11 - t00).count()/1e9;
-
     printf("--- build_j_time_total_  time : %f , include matrix inverse total time %f \n", build_j_time_total_, time_sum);
-    printf("--- add each local vipps J matrix to triplet vector time : %f \n", build_h_time_total_);
-    printf("--- build eigen sparse matrix final_h time from triplets vector : %f \n", build_h_time);
+    printf("--- add each local vipps J matrix to triplet vector time : %f \n", add_ele_to_vector_time);
+    printf("--- build eigen sparse matrix final_h time from triplets vector : %f \n", build_h_from_tris_time);
     printf("--- build_H_time_total sum  time : %f \n", build_H_time_total);
 
+    G_VP_stats.build_H_total_time_ += build_H_time_total;
+    G_VP_stats.cal_cluster_J_total_time_ += build_j_time_total_;
+    G_VP_stats.add_J_ele_to_triplet_vector_time_ += add_ele_to_vector_time;
+    G_VP_stats.build_eigen_final_h_from_tris_time_ += build_h_from_tris_time;
 
 }
 
@@ -706,10 +703,10 @@ void LocalVipss::testNNPtDist()
         {
             double nn_dist = NodeDistanceFunction(nn_pt, test_pt);
             // printf("nn dist %f \n", nn_dist);
-            double volume  = voro_gen_.CalTruncatedCellVolumePass(test_pt, nn_pt);
-            double volume2  = voro_gen_.CalTruncatedCellVolumePassOMP(test_pt, nn_pt);
+            // double volume  = voro_gen_.CalTruncatedCellVolumePass(test_pt, nn_pt);
+            double volume  = voro_gen_.CalTruncatedCellVolumePassOMP(test_pt, nn_pt);
             // double volume2  = voro_gen_.CalTruncatedCellVolume(test_pt, nn_pt);
-            printf("------------- nn dist %f, volume %f  volume2 %f  \n", nn_dist, volume, volume2);
+            printf("------------- nn dist %f, volume %f  \n", nn_dist, volume);
             // if(volume < 0.01) continue;
             // weight_sum += nn_dist * volume; 
             // volume_sum += volume;
@@ -2226,7 +2223,7 @@ void LocalVipss::InitNormals()
     BuidClusterCoresPtIds();
     auto t1 = Clock::now();
     double build_mat_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
-    printf("finish init core pt ids time : %f ! \n", build_mat_time);
+    printf("finish init adj mat and core pt ids time : %f ! \n", build_mat_time);
 
     InitNormalWithVipss();
     auto t12 = Clock::now();
@@ -2234,6 +2231,7 @@ void LocalVipss::InitNormals()
     printf("finish init cluster normals time : %f ! \n", normal_estimate_time);
 
     total_time += build_mat_time + normal_estimate_time;
+    G_VP_stats.init_cluster_normal_time_ += (build_mat_time + normal_estimate_time);
     double sum_score_time = 0;
 
     auto t2 = Clock::now();
@@ -2242,7 +2240,6 @@ void LocalVipss::InitNormals()
     double scores_time = std::chrono::nanoseconds(t3 - t2).count()/1e9;
     printf("finish init cluster neigh scores time : %f ! \n", scores_time);
     CalculateClusterScores();
-
     auto t34 = Clock::now();
     double cluster_scores_time = std::chrono::nanoseconds(t34 - t3).count()/1e9;
     printf("finish calculate cluster scores time : %f ! \n", cluster_scores_time);
@@ -2250,6 +2247,7 @@ void LocalVipss::InitNormals()
     total_time += cluster_scores_time;
     sum_score_time += scores_time;
     sum_score_time += cluster_scores_time;
+    G_VP_stats.cal_cluster_neigbor_scores_time_ += (scores_time + cluster_scores_time);
 
     size_t iter_num = 1;
     auto ti00 = Clock::now();
@@ -2257,6 +2255,7 @@ void LocalVipss::InitNormals()
     auto ti11 = Clock::now();
     double MST_time = std::chrono::nanoseconds(ti11 - ti00).count()/1e9;
     total_time += MST_time;
+    G_VP_stats.build_normal_MST_time_ += MST_time;
     printf("normal MST_time time used : %f \n", MST_time); 
     auto ti0 = Clock::now();
     FlipClusterNormalsByMST();
@@ -2267,19 +2266,11 @@ void LocalVipss::InitNormals()
 
     std::string init_ptn_path_iter = out_dir_ + filename_ + "_flipped" + std::to_string(iter_num);
     OuputPtN(init_ptn_path_iter);
-    // SaveCluster();
-    // WriteVipssTimeLog();
-    printf("total time used : %f \n", total_time);
-    printf("total score time used : %f \n", sum_score_time);
-    // if(use_hrbf_surface_)
-    // {
-    //     vipss_api_.is_surfacing_ = true;
-    //     vipss_api_.run_vipss(out_pts_, out_normals_);
-    // }
+    auto finat_t = Clock::now();
+    double init_total_time = std::chrono::nanoseconds(finat_t - t0).count()/1e9;
 
-    // GroupClustersWithDegree();
-    // std::string group_pt_path = out_dir_ + filename_ + "group_pts.obj";
-    // SaveGroupPtsWithColor(group_pt_path);
+    printf("total time used : %f \n", init_total_time);
+    G_VP_stats.init_normal_total_time_ += init_total_time;
 }
 
 void LocalVipss::InitNormalsWithMerge()

@@ -5,6 +5,7 @@
 #include<vector>
 #include<string>
 #include <stdint.h>
+#include "stats.h"
 
 // using namespace std;
 
@@ -99,5 +100,9 @@ bool SaveSphere(const std::string& filename,  const std::vector<std::array<doubl
 
 void output_opt_pts_with_color(const std::vector<double>& pts, const std::vector<double>& s_vals, 
                                const std::string& out_dir);
+
+
+void WriteStatsLog(const std::string& path, const VP_STATS& vp_stats);
+
 
 #endif // READERS_H

@@ -1,8 +1,10 @@
 #include <chrono>
 #include "vipss_unit.hpp"
+#include "stats.h"
 
 typedef std::chrono::high_resolution_clock Clock;
 
+VP_STATS G_VP_stats;
 
 void VIPSSUnit::InitPtNormalWithLocalVipss()
 {
@@ -244,6 +246,7 @@ double optfunc_unit_vipss_direct_simple_eigen(const std::vector<double>&x, std::
         re += alpha* cur_re * cur_re;
     }
     // printf("res val : %f \n", re);
+    VIPSSUnit::opt_func_count ++;
     return re;
 }
 
@@ -649,7 +652,13 @@ void VIPSSUnit::ReconSurface()
     printf(" start ReconSurface \n");
     // local_vipss_.TestVoronoiPts();
     // local_vipss_.voro_gen_.BuildTetMeshTetCenterMap();
+    auto t000 = Clock::now();
     local_vipss_.voro_gen_.GenerateVoroData();
+    auto t001 = Clock::now();
+    double generate_voroi_data_time = std::chrono::nanoseconds(t001 - t000).count() / 1e9;
+    printf("generate_voroi_data_time  : %f ! \n", generate_voroi_data_time);
+    G_VP_stats.generate_voroi_data_time_ += generate_voroi_data_time;
+
     // local_vipss_.PtPCA(local_vipss_.out_pts_);
     // local_vipss_.out_normals_ = newnormals_;
     // local_vipss_.OptimizeAdjacentMat();
@@ -657,6 +666,7 @@ void VIPSSUnit::ReconSurface()
     // local_vipss_.voro_gen_.BuildTetMeshTetCenterMap();
     // local_vipss_.voro_gen_.BuildPicoTree();
     // bool use_nn_interpolation = true;
+    auto t002 = Clock::now();
     bool is_group_cluster = false;
     local_vipss_.is_group_cluster_ = is_group_cluster;
     if(LOCAL_HRBF_NN == hrbf_type_)
@@ -673,42 +683,36 @@ void VIPSSUnit::ReconSurface()
             local_vipss_.SaveGroupPtsWithColor(group_pt_path);
             local_vipss_.BuildHRBFPerCluster();
         } else {
-            local_vipss_.BuildHRBFPerNode(); 
-        }        
+            local_vipss_.BuildHRBFPerNode();
+        }    
+        auto t003 = Clock::now();
+        double build_HRBF_time = std::chrono::nanoseconds(t003 - t002).count() / 1e9;
+        G_VP_stats.build_per_cluster_hrbf_total_time_ += build_HRBF_time;     
         // printf(" start set local vipss static ptr \n");
         local_vipss_.SetThis();
-
-        
-        
-
-        // printf(" finish set local vipss static ptr \n");
-        // local_vipss_.testNNPtDist();
-        // return;
-
-    // if(0)
-    // {
-    //     double p0[3] = {-0.142955, 0.147453, -0.273193};
-    //     double p1[3] = {-0.145742, 0.241941, -0.243457};
-    //     double p2[3] = {-0.146177, 0.201896, -0.202977};
-    //     VoroPlane visual_plane(&p0[0], &p1[0], &p2[0]);
-    //     std::string visual_func_path = data_dir_ + file_name_ + "/visual_func_vals.obj";
-    //     local_vipss_.VisualFuncValues(LocalVipss::NNDistFunction, visual_plane, visual_func_path);
-    // }
-    
         size_t n_voxels_1d = volume_dim_;
         Surfacer sf;
         auto surf_time = sf.Surfacing_Implicit(local_vipss_.out_pts_, n_voxels_1d, false, LocalVipss::NNDistFunction);
+        auto t004 = Clock::now();
         sf.WriteSurface(finalMesh_v_,finalMesh_fv_);
-
-        printf("------- nn search time sum: %f \n", local_vipss_.search_nn_time_sum_);
-        printf("------- nn coordinate cal time sum : %f \n", local_vipss_.pass_time_sum_);
-        printf("------- HRBF dist time sum : %f \n", local_vipss_.dist_time_sum_);
-        printf("------- HRBF dist call num : %ld \n", local_vipss_.dist_call_num_);
-        printf(" ------ in_cluster_surface_pt_count : % ld  \n", local_vipss_.in_cluster_surface_pt_count);
-        printf(" ------ DistCallNum : %d  \n", LocalVipss::DistCallNum);
-        printf(" ------ DistCallTime : %f \n", LocalVipss::DistCallTime);
         std::string out_path = data_dir_ + "/" + file_name_  + "/nn_surface";
         writePLYFile_VF(out_path, finalMesh_v_, finalMesh_fv_);
+        auto t005 = Clock::now();
+        double surface_file_save_time = std::chrono::nanoseconds(t005 - t004).count() / 1e9;
+
+        double total_surface_time = std::chrono::nanoseconds(t005 - t000).count() / 1e9;
+
+
+        printf("------- nn search time: %f \n", local_vipss_.search_nn_time_sum_);
+        printf("------- cal nn coordinate and hrbf time: %f \n", local_vipss_.pass_time_sum_);
+        printf(" ------ voxel dist func val evaluated count : %d  \n", LocalVipss::DistCallNum);
+        printf(" ------ voxel dist func val evaluated time : %f \n", LocalVipss::DistCallTime);
+        printf("------- total surface time: %f \n", total_surface_time);
+        G_VP_stats.neighbor_search_time_ += local_vipss_.search_nn_time_sum_;
+        G_VP_stats.cal_nn_coordinate_and_hbrf_time_ += local_vipss_.pass_time_sum_;
+        G_VP_stats.voxel_cal_num += LocalVipss::DistCallNum;
+        G_VP_stats.surface_total_time_ += total_surface_time;
+
     } else {
         rbf_api_.user_lambda_ = user_lambda_;
         // rbf_api_.user_lambda_ = 0.001;
@@ -741,11 +745,8 @@ if(1)
 {
     if(user_lambda_ < 1e-10)
     {
-        // Final_H_ = local_vipss_.final_H_(npt_, npt_, arma::size(3 * npt_, 3 * npt_));
          local_vipss_.final_h_eigen_ = local_vipss_.final_h_eigen_.block(npt_, npt_, 3 * npt_, 3 * npt_);
-    } else {
-        // Final_H_ = local_vipss_.final_H_;
-    }
+    } 
     auto tn1 = Clock::now();
     double build_H_time = std::chrono::nanoseconds(tn1 - tn0).count() / 1e9;
     printf("Build H matrix time : %f ! \n", build_H_time);
@@ -767,6 +768,9 @@ if(1)
     double solve_time = std::chrono::nanoseconds(ts1 - ts0).count() / 1e9;
     printf("opt solve time : %f ! \n", solve_time);
     printf("opt fun call count : %d \n", VIPSSUnit::opt_func_count);
+
+    G_VP_stats.opt_solver_time_ += solve_time;
+    G_VP_stats.opt_func_call_num_ += VIPSSUnit::opt_func_count;
 }
 
     auto t01 = Clock::now();
@@ -785,4 +789,7 @@ if(1)
     // writePLYFile_VN(init_path, local_vipss_.out_pts_, initnormals_);
     // printf("start to ReconSurface 0001 \n");
     ReconSurface();
+    std::string log_path = local_vipss_.out_dir_ + "stats.txt";
+    WriteStatsLog(log_path, G_VP_stats);
 }
+

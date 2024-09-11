@@ -107,8 +107,8 @@ void PTSampler::FurthestSamplePointCloud(size_t sample_num)
 // https://www.cmu.edu/biolphys/deserno/pdf/sphere_equi.pdf
 std::vector<double> CreateSpherePoints(double cx, double cy, double cz, double radius, int pt_num)
 {
-    double M_PI = 3.1415926535897932384626433832795028842;
-    double a = 4 * M_PI * 1.0 * 1.0 / double(pt_num);
+    double M_PI_ = 3.1415926535897932384626433832795028842;
+    double a = 4 * M_PI_ * 1.0 * 1.0 / double(pt_num);
     double d = sqrt(a);
     int Mv = int(M_PI / d);
     double dv = M_PI / double(Mv);
