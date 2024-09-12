@@ -173,10 +173,11 @@ class LocalVipss {
         arma::sp_mat final_H_; 
         arma::uvec cluster_valid_sign_vec_;
 
-        std::vector<tetgenmesh::point> points_; 
+        static std::vector<tetgenmesh::point> points_; 
         std::vector<double> normals_;
         std::vector<double> s_vals_;
         std::vector<std::vector<size_t>> cluster_core_pt_ids_;
+        static std::vector<std::vector<size_t>> cluster_all_pt_ids_;
         std::vector<tetgenmesh::point> cluster_centers_;
         size_t pt_num_;
         std::vector<std::pair<int, double>> cluster_id_scores_;

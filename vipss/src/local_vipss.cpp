@@ -14,6 +14,10 @@ typedef std::chrono::high_resolution_clock Clock;
 double LocalVipss::search_nn_time_sum_ = 0;
 double LocalVipss::pass_time_sum_ = 0;
 
+std::vector<tetgenmesh::point> LocalVipss::points_;
+std::vector<std::vector<size_t>> LocalVipss::cluster_all_pt_ids_;
+
+
 void LocalVipss::TestInsertPt()
 {
     // std::string in_pt_path = "/home/jjxia/Documents/projects/VIPSS_LOCAL/data/doghead_100/doghead_100.ply";
@@ -560,11 +564,10 @@ void LocalVipss::BuildMatrixH()
     std::vector<std::vector<Triplet>> ele_vector(cluster_num);
     arma::ivec ele_sizes(cluster_num);
     auto t5 = Clock::now();
-#pragma omp parallel for shared(points_) private(i)
-
+#pragma omp parallel for shared(points_,ele_vector, cluster_all_pt_ids_, ele_sizes) private(i)
     for(i =0; i < cluster_num; ++i)
     {
-        auto cluster_pt_ids = GetClusterPtIds(i);
+        const auto& cluster_pt_ids = cluster_all_pt_ids_[i];
         // auto cluster_pt_vec = GetClusterVerticesFromIds(cluster_pt_ids);
         // auto t3 = Clock::now();
         auto Minv =  VIPSSKernel::BuildHrbfMat(points_, cluster_pt_ids);
@@ -577,6 +580,7 @@ void LocalVipss::BuildMatrixH()
         size_t unit_npt = cluster_pt_ids.size();
         size_t j_ele_num = unit_npt * unit_npt * 16;
         ele_sizes[i] = j_ele_num;
+
         cur_eles.reserve(j_ele_num);
         if(user_lambda_ > 1e-10)
         {
@@ -590,7 +594,6 @@ void LocalVipss::BuildMatrixH()
         } else {
             AddClusterHMatrix(cluster_pt_ids, Minv, npt, cur_eles);
         }
-        
     }
     auto t6 = Clock::now();
     double add_time = std::chrono::nanoseconds(t6 - t5).count()/1e9;
@@ -599,14 +602,24 @@ void LocalVipss::BuildMatrixH()
 
     auto t_h1 = Clock::now();
     int all_ele_num = arma::accu(ele_sizes);
-    final_h_eigen_.reserve(all_ele_num);
+    h_ele_triplets_.reserve(all_ele_num);
+    //SparseMatrix<double> mat(rows, cols);         // default is column major
+    //final_h_eigen_.reserve(Eigen::VectorXi::Constant(cluster_num* 4, 60));
+   /* for each i, j such that v_ij != 0
+        mat.insert(i, j) = v_ij;*/
     for(const auto & ele_vec : ele_vector)
     {
         for(const auto& ele : ele_vec)
         {
             h_ele_triplets_.push_back(ele);
+            //final_h_eigen_.insert(ele.row(), ele.col()) = ele.value();
         }
     }
+
+    auto t_h111 = Clock::now();
+    double push_to_vec_time = std::chrono::nanoseconds(t_h111 - t_h1).count() / 1e9;
+    printf("--- push ele to vector  time : %f \n", push_to_vec_time);
+
     final_h_eigen_.setFromTriplets(h_ele_triplets_.begin(), h_ele_triplets_.end());
     auto t_h2 = Clock::now();
     double build_h_from_tris_time = std::chrono::nanoseconds(t_h2 - t_h1).count()/1e9;
@@ -992,11 +1005,13 @@ void LocalVipss::InitNormalWithVipss()
     size_t npt = this->points_.size();
 
     final_H_.resize(4 * npt , 4 * npt);
+    cluster_all_pt_ids_.resize(cluster_num);
     for(size_t i =0; i < cluster_num; ++i)
     {
         std::vector<double> vts;
         std::vector<size_t> p_ids;
         GetInitClusterPtIds(i, vts, p_ids);
+        cluster_all_pt_ids_[i] = p_ids;
         auto t1 = Clock::now();
         size_t unit_npt = p_ids.size(); 
         double cur_lambda = user_lambda_ / double(unit_npt);

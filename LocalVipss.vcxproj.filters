@@ -60,6 +60,9 @@
     <ClInclude Include="vipss\src\voronoi_gen.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="vipss\src\kernel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="vipss\src\voronoi_gen.cpp">
@@ -117,6 +120,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="vipss\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="vipss\src\kernel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
