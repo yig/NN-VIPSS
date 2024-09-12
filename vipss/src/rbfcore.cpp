@@ -9,6 +9,7 @@
 #include <chrono>
 #include<algorithm>
 #include "readers.h"
+#include "kernel.h"
 
 
 using namespace std;
@@ -18,15 +19,11 @@ double inv_sigma_squarex2 = 1/(2 * pow(sigma, 2));
 double Gaussian_Kernel(const double x_square){
 
     return exp(-x_square*inv_sigma_squarex2);
-
 }
 
 double Gaussian_Kernel_2p(const double *p1, const double *p2){
 
-
-
     return Gaussian_Kernel(MyUtility::vecSquareDist(p1,p2));
-
 
 }
 

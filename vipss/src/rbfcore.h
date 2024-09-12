@@ -103,6 +103,8 @@ public:
     double User_Lamnbda;
     bool open_debug_log = false;
     double user_beta = 1.0;
+    double sigma = 0.9;
+    double inv_sigma_squarex2 = 1;
 
     RBF_Kernal kernal;
     RBF_METHOD curMethod;

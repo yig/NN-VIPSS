@@ -106,14 +106,16 @@ class LocalVipss {
         inline double CalculateScores(const arma::mat& a_normals, const arma::mat& b_normals) const;
 
         inline void AddClusterHMatrix(const std::vector<size_t>& p_ids, const arma::mat& J_m,size_t npt);
+        inline void AddClusterHMatrix(const std::vector<size_t>& p_ids, const arma::mat& J_m, size_t npt, std::vector<Triplet>& ele_vect );
+
         void BuildMatrixH();
         void SampleClusterPts();
         void TestInsertPt();
         void TestVoronoiPts();
 
-        double NodeDistanceFunction(const tetgenmesh::point nn_pt, const tetgenmesh::point cur_pt);
+        double NodeDistanceFunction(const tetgenmesh::point nn_pt, const tetgenmesh::point cur_pt) const;
         double NatureNeighborDistanceFunction(const tetgenmesh::point cur_pt);
-        double NatureNeighborDistanceFunctionOMP(const tetgenmesh::point cur_pt);
+        double NatureNeighborDistanceFunctionOMP(const tetgenmesh::point cur_pt) const;
         static double NNDistFunction(const R3Pt &in_pt);  
         void SetThis();      
         void VisualFuncValues(double (*function)(const R3Pt &in_pt), const VoroPlane& plane,
@@ -219,8 +221,8 @@ class LocalVipss {
         double build_h_time_total2_ = 0;
         std::vector<tetgenmesh::point> insert_pts_;
 
-        double pass_time_sum_ = 0;
-        double search_nn_time_sum_ = 0;
+        static double pass_time_sum_;
+        static double search_nn_time_sum_;
         double dist_time_sum_ = 0;
         size_t dist_call_num_ = 0;
         size_t in_cluster_surface_pt_count = 0;

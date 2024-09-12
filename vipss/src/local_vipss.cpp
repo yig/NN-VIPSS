@@ -7,8 +7,12 @@
 #include <omp.h>
 #include <random>
 #include "stats.h"
+#include "kernel.h"
 
 typedef std::chrono::high_resolution_clock Clock;
+
+double LocalVipss::search_nn_time_sum_ = 0;
+double LocalVipss::pass_time_sum_ = 0;
 
 void LocalVipss::TestInsertPt()
 {
@@ -338,12 +342,6 @@ inline std::vector<size_t> LocalVipss::GetClusterPtIds(size_t cluster_id) const
         pt_ids.push_back(i.row());
         // temp_ids.push_back(i.row());
     }
-    // auto rng = std::default_random_engine {};
-    // std::shuffle(std::begin(temp_ids), std::end(temp_ids), rng);
-    // for(auto id : temp_ids)
-    // {
-    //     pt_ids.push_back(id);
-    // }
     return pt_ids;
 }
 
@@ -483,53 +481,141 @@ void LocalVipss::AddClusterHMatrix(const std::vector<size_t>& p_ids, const arma:
     }
 }
 
+
+void LocalVipss::AddClusterHMatrix(const std::vector<size_t>& p_ids, const arma::mat& J_m, size_t npt, std::vector<Triplet>& ele_vect )
+{
+    size_t unit_npt = p_ids.size();
+    size_t unit_key_npt = unit_npt;
+    std::vector<Triplet> coefficients;
+    for(size_t i = 0; i < unit_npt; ++i)
+    {
+        size_t pi = p_ids[i];
+        if(user_lambda_ > 1e-12)
+        {
+            for(size_t j = 0; j < unit_npt; ++j)
+            {
+                ele_vect.push_back(std::move(Triplet(pi, p_ids[j], J_m(i, j))));
+            }
+            for(size_t j = 0; j < unit_key_npt; ++j)
+            {
+                ele_vect.push_back(std::move(Triplet(pi, p_ids[j] + npt, J_m(i, j + unit_npt))));
+                ele_vect.push_back(std::move(Triplet(pi, p_ids[j] + npt*2, J_m(i, j + unit_npt + unit_key_npt)))); 
+                ele_vect.push_back(std::move(Triplet(pi, p_ids[j] + npt*3, J_m(i, j + unit_npt + unit_key_npt* 2))));   
+            }
+            for(size_t j = 0; j < unit_key_npt; ++j)
+            {
+                ele_vect.push_back(std::move(Triplet(p_ids[j] + npt,   pi, J_m(i, j + unit_npt))));
+                ele_vect.push_back(std::move(Triplet(p_ids[j] + npt*2, pi, J_m(i, j + unit_npt + unit_key_npt)))); 
+                ele_vect.push_back(std::move(Triplet(p_ids[j] + npt*3, pi, J_m(i, j + unit_npt + unit_key_npt* 2))));   
+            }
+        }
+        
+        if(i < unit_key_npt)
+        {
+            for(size_t step = 0; step < 3; ++step)
+            {
+                size_t row_i = npt + npt * step + pi;
+                size_t rowv_i = i + unit_npt + unit_key_npt * step;
+                for(size_t j = 0; j < unit_key_npt; ++j)
+                {
+                    ele_vect.push_back(std::move(Triplet(row_i, p_ids[j] + npt,     J_m( rowv_i, j + unit_npt))));
+                    ele_vect.push_back(std::move(Triplet(row_i, p_ids[j] + npt * 2, J_m( rowv_i, j + unit_npt + unit_key_npt))));
+                    ele_vect.push_back(std::move(Triplet(row_i, p_ids[j] + npt * 3, J_m( rowv_i, j + unit_npt + unit_key_npt * 2))));
+                }
+            }
+        }
+
+        // for(size_t step = 0; step < 4; ++step)
+        // {
+        //     size_t row = pi + npt * step;
+        //     size_t j_row = i + unit_npt* step;
+        //     for(size_t j = 0; j < unit_npt; ++j)
+        //     {
+        //         size_t pj = p_ids[j];
+        //         // h_row_map[pj]           += J_m(j_row, j);
+        //         // h_row_map[npt + pj]     += J_m(j_row, j + unit_npt);
+        //         // h_row_map[npt * 2 + pj] += J_m(j_row, j + unit_npt * 2);
+        //         // h_row_map[npt * 3 + pj] += J_m(j_row, j + unit_npt * 3);
+
+                    
+        //         for(size_t k = 0; k < 4; ++k)
+        //         {
+        //             h_ele_triplets_.push_back(std::move(Triplet(row, pj + npt * k, J_m(j_row, j + unit_npt * k))));
+        //         }    
+        //     }
+        // }
+    }
+}
+
+
 void LocalVipss::BuildMatrixH()
 {
     auto t00 = Clock::now(); 
     size_t npt = this->points_.size();
     size_t cluster_num = cluster_cores_mat_.n_cols;
-    double time_sum = 0;
     final_h_eigen_.resize(4 * npt , 4 * npt);
     double add_ele_to_vector_time = 0;
-    for(size_t i =0; i < cluster_num; ++i)
+
+    int i = 0;
+    std::vector<std::vector<Triplet>> ele_vector(cluster_num);
+    arma::ivec ele_sizes(cluster_num);
+    auto t5 = Clock::now();
+#pragma omp parallel for shared(points_) private(i)
+
+    for(i =0; i < cluster_num; ++i)
     {
         auto cluster_pt_ids = GetClusterPtIds(i);
-        auto cluster_pt_vec = GetClusterVerticesFromIds(cluster_pt_ids);
-        auto t3 = Clock::now();
-        size_t key_npt = cluster_pt_ids.size();
-        vipss_api_.build_unit_vipss(cluster_pt_vec, key_npt);
-        time_sum += vipss_api_.rbf_core_.bigM_inv_time;
-        auto t4 = Clock::now();
-        double build_j_time = std::chrono::nanoseconds(t4 - t3).count()/1e9;
-        build_j_time_total_ += build_j_time;
-        auto t5 = Clock::now();
+        // auto cluster_pt_vec = GetClusterVerticesFromIds(cluster_pt_ids);
+        // auto t3 = Clock::now();
+        auto Minv =  VIPSSKernel::BuildHrbfMat(points_, cluster_pt_ids);
+        // auto Minv = VIPSSKernel::BuildHrbfMat(cluster_pt_vec);
+        // auto t4 = Clock::now();
+        // double build_j_time = std::chrono::nanoseconds(t4 - t3).count()/1e9;
+        // build_j_time_total_ += build_j_time;
+        // auto t5 = Clock::now();
+        auto& cur_eles = ele_vector[i];
+        size_t unit_npt = cluster_pt_ids.size();
+        size_t j_ele_num = unit_npt * unit_npt * 16;
+        ele_sizes[i] = j_ele_num;
+        cur_eles.reserve(j_ele_num);
         if(user_lambda_ > 1e-10)
         {
-            size_t unit_npt = cluster_pt_ids.size(); 
             arma::mat F(4 * unit_npt, 4 * unit_npt);
             arma::mat E(unit_npt, unit_npt);
             E.eye();
             F(0, 0, arma::size(unit_npt, unit_npt)) = E;
             double cur_lambda = user_lambda_;
-            arma::mat K = (F + vipss_api_.rbf_core_.Minv * cur_lambda);
-            AddClusterHMatrix(cluster_pt_ids, K, npt);
+            arma::mat K = (F + Minv * cur_lambda);
+            AddClusterHMatrix(cluster_pt_ids, K, npt, cur_eles);
         } else {
-            AddClusterHMatrix(cluster_pt_ids, vipss_api_.rbf_core_.Minv, npt);
+            AddClusterHMatrix(cluster_pt_ids, Minv, npt, cur_eles);
         }
-        auto t6 = Clock::now();
-        double add_time = std::chrono::nanoseconds(t6 - t5).count()/1e9;
-        add_ele_to_vector_time += add_time;
+        
     }
+    auto t6 = Clock::now();
+    double add_time = std::chrono::nanoseconds(t6 - t5).count()/1e9;
+    add_ele_to_vector_time += add_time;
+    
+
     auto t_h1 = Clock::now();
+    int all_ele_num = arma::accu(ele_sizes);
+    final_h_eigen_.reserve(all_ele_num);
+    for(const auto & ele_vec : ele_vector)
+    {
+        for(const auto& ele : ele_vec)
+        {
+            h_ele_triplets_.push_back(ele);
+        }
+    }
     final_h_eigen_.setFromTriplets(h_ele_triplets_.begin(), h_ele_triplets_.end());
     auto t_h2 = Clock::now();
     double build_h_from_tris_time = std::chrono::nanoseconds(t_h2 - t_h1).count()/1e9;
     
     auto t11 = Clock::now();
     double build_H_time_total = std::chrono::nanoseconds(t11 - t00).count()/1e9;
-    printf("--- build_j_time_total_  time : %f , include matrix inverse total time %f \n", build_j_time_total_, time_sum);
-    printf("--- add each local vipps J matrix to triplet vector time : %f \n", add_ele_to_vector_time);
-    printf("--- build eigen sparse matrix final_h time from triplets vector : %f \n", build_h_from_tris_time);
+    printf("--- build vipss j total  time : %f \n", build_j_time_total_);
+    printf("--- add  J matrix to triplet vector time : %f \n", add_ele_to_vector_time);
+    printf("--- build final_h  from triplets vector time : %f \n", build_h_from_tris_time);
     printf("--- build_H_time_total sum  time : %f \n", build_H_time_total);
 
     G_VP_stats.build_H_total_time_ += build_H_time_total;
@@ -663,7 +749,7 @@ void LocalVipss::BuildHRBFPerCluster()
     printf("average cluster core pt num : %d \n", valid_core_pt_count/int(valid_cluster_num));
 }
 
-double LocalVipss::NodeDistanceFunction(const tetgenmesh::point nn_pt, const tetgenmesh::point cur_pt)
+double LocalVipss::NodeDistanceFunction(const tetgenmesh::point nn_pt, const tetgenmesh::point cur_pt) const
 {
     if(voro_gen_.point_id_map_.find(nn_pt) != voro_gen_.point_id_map_.end())
     {
@@ -775,15 +861,15 @@ double LocalVipss::NatureNeighborDistanceFunction(const tetgenmesh::point cur_pt
         }
         if(cluster_ids.size() == 1)
         {
-            in_cluster_surface_pt_count++;
+            // in_cluster_surface_pt_count++;
             size_t c_id = *cluster_ids.begin();
             // printf("cur search pt is in cluster : %ld \n", c_id);
-            auto td0 = Clock::now();
+            // auto td0 = Clock::now();
             double dist = node_rbf_vec_[c_id]->Dist_Function(cur_pt);
-            auto td1 = Clock::now();
-            double dist_time = std::chrono::nanoseconds(td1 - td0).count()/1e9;
-            dist_time_sum_ += dist_time;
-            dist_call_num_ ++;
+            // auto td1 = Clock::now();
+            // double dist_time = std::chrono::nanoseconds(td1 - td0).count()/1e9;
+            // dist_time_sum_ += dist_time;
+            // dist_call_num_ ++;
 
             return dist;
         } else {
@@ -792,14 +878,14 @@ double LocalVipss::NatureNeighborDistanceFunction(const tetgenmesh::point cur_pt
             for(size_t i = 0; i < nn_num; ++i)
             {
                 auto nn_pt = nei_pts[i];
-                auto t0 = Clock::now();
+                // auto t0 = Clock::now();
                 size_t pid = voro_gen_.point_id_map_[nn_pt];
                 size_t cid = cluster_id_map_[pid];
                 double volume  = voro_gen_.CalTruncatedCellVolumePassOMP(cur_pt, nn_pt);
                 cluster_volume_vals_[cid] += volume;
-                auto t1 = Clock::now();
-                double pass_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
-                pass_time_sum_ += pass_time;
+                // auto t1 = Clock::now();
+                // double pass_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
+                // pass_time_sum_ += pass_time;
 
             }
             // printf("finish building volume map ! \n");
@@ -808,12 +894,12 @@ double LocalVipss::NatureNeighborDistanceFunction(const tetgenmesh::point cur_pt
                 // printf("cur cluster id : %ld \n", ele.first);
                 bool is_valid_cluster = cluster_valid_sign_vec_[cid];
                 // printf("is valid cluster : %d \n", int(is_valid_cluster));
-                auto td0 = Clock::now();
+                // auto td0 = Clock::now();
                 double nn_dist =  node_rbf_vec_[cid]->Dist_Function(cur_pt);
-                auto td1 = Clock::now();
-                double dist_time = std::chrono::nanoseconds(td1 - td0).count()/1e9;
-                dist_time_sum_ += dist_time;
-                dist_call_num_ ++;
+                // auto td1 = Clock::now();
+                // double dist_time = std::chrono::nanoseconds(td1 - td0).count()/1e9;
+                // dist_time_sum_ += dist_time;
+                // dist_call_num_ ++;
                 volume_sum += cluster_volume_vals_[cid];
                 weight_sum += cluster_volume_vals_[cid] * nn_dist;
             }
@@ -825,20 +911,20 @@ double LocalVipss::NatureNeighborDistanceFunction(const tetgenmesh::point cur_pt
             auto nn_pt = nei_pts[i];        
             // if(nn_pt != (tetgenmesh::point)NULL && voro_gen_.tetMesh_.pointtype(nn_pt) != tetgenmesh::UNUSEDVERTEX)
             {
-                auto td0 = Clock::now();
+                // auto td0 = Clock::now();
                 
                 // double nn_dist = NodeDistanceFunction(nn_pt, cur_pt);
                 size_t pid = voro_gen_.point_id_map_[nn_pt];
                 double nn_dist = node_rbf_vec_[pid]->Dist_Function(cur_pt);
-                auto td1 = Clock::now();
-                double dist_time = std::chrono::nanoseconds(td1 - td0).count()/1e9;
-                dist_time_sum_ += dist_time;
+                // auto td1 = Clock::now();
+                // double dist_time = std::chrono::nanoseconds(td1 - td0).count()/1e9;
+                // dist_time_sum_ += dist_time;
                 // printf("nn dist %f \n", nn_dist);
-                auto t0 = Clock::now();
+                // auto t0 = Clock::now();
                 double volume  = voro_gen_.CalTruncatedCellVolumePassOMP(cur_pt, nn_pt);
-                auto t1 = Clock::now();
-                double pass_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
-                pass_time_sum_ += pass_time;
+                // auto t1 = Clock::now();
+                // double pass_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
+                // pass_time_sum_ += pass_time;
                 // double volume  = voro_gen_.CalTruncatedCellVolume(cur_pt, nn_pt);
                 // double volume  = voro_gen_.CalUnionCellVolume(cur_pt, nn_pt);
                 // printf("nn dist %f, volume %f \n", nn_dist, volume);
@@ -856,7 +942,7 @@ double LocalVipss::NatureNeighborDistanceFunction(const tetgenmesh::point cur_pt
     return 0;
 }
 
-double LocalVipss::NatureNeighborDistanceFunctionOMP(const tetgenmesh::point cur_pt)
+double LocalVipss::NatureNeighborDistanceFunctionOMP(const tetgenmesh::point cur_pt) const
 {
     std::vector<tetgenmesh::point> nei_pts;
     auto tn0 = Clock::now();
@@ -2261,6 +2347,7 @@ void LocalVipss::InitNormals()
     FlipClusterNormalsByMST();
     auto ti1 = Clock::now();
     double flip_time = std::chrono::nanoseconds(ti1 - ti0).count()/1e9;
+    G_VP_stats.normal_flip_time_ += flip_time;
     total_time += flip_time;
     printf("normal flip time used : %f \n", flip_time);
 

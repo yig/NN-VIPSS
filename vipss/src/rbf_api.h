@@ -45,3 +45,4 @@ class RBF_API{
         std::vector<std::shared_ptr<RBF_Core>> local_rbf_vec;
 
 };
+
