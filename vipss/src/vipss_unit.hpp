@@ -68,7 +68,8 @@ class VIPSSUnit {
 
         bool init_with_cluster_merge_ = false;
         double merge_angle_ = 40;
-        static int opt_func_count;
+        static int opt_func_count_g;
+        static double opt_func_time_g;
         
 
         std::vector<std::shared_ptr<RBF_Core*>> node_rbf_vec;
@@ -76,5 +77,8 @@ class VIPSSUnit {
         std::vector<uint>finalMesh_fv_;
 
         HRBF_SURFACE_TYPE hrbf_type_;
+
+        double opt_tor_ = 1e-7;
+        int max_opt_iter_ = 3000;
 
 };

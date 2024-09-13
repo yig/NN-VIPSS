@@ -5,6 +5,10 @@
 typedef std::chrono::high_resolution_clock Clock;
 
 VP_STATS G_VP_stats;
+int VIPSSUnit::opt_func_count_g = 0;
+double VIPSSUnit::opt_func_time_g = 0;
+Eigen::VectorXd arma_x_opt_g;
+Eigen::VectorXd res_vec_g;
 
 void VIPSSUnit::InitPtNormalWithLocalVipss()
 {
@@ -43,66 +47,6 @@ void VIPSSUnit::InitPtNormalWithLocalVipss()
 // double acc_tim1;
 // static int countopt = 0;
 
-double optfunc_unit_vipss_simple(const std::vector<double>&x, std::vector<double>&grad, void *fdata){
-
-    auto t1 = Clock::now();
-    VIPSSUnit *drbf = reinterpret_cast<VIPSSUnit*>(fdata);
-    // size_t n = drbf->npt;
-    size_t n = drbf->npt_;
-    // printf("input point number : %llu \n", n);
-    arma::vec arma_x(n*3);
-
-    //(  sin(a)cos(b), sin(a)sin(b), cos(a)  )  a =>[0, pi], b => [-pi, pi];
-    std::vector<double>sina_cosa_sinb_cosb(n * 4);
-    for(size_t i=0;i<n;++i){
-        size_t ind = i*4;
-        sina_cosa_sinb_cosb[ind] = sin(x[i*2]);
-        sina_cosa_sinb_cosb[ind+1] = cos(x[i*2]);
-        sina_cosa_sinb_cosb[ind+2] = sin(x[i*2+1]);
-        sina_cosa_sinb_cosb[ind+3] = cos(x[i*2+1]);
-    }
-    for(int i=0;i<n;++i){
-        auto p_scsc = sina_cosa_sinb_cosb.data()+i*4;
-
-        if(drbf->axi_plane_ == AXI_PlANE::XYZ)
-        {
-            arma_x(i) = p_scsc[0] * p_scsc[3];
-            arma_x(i+n) = p_scsc[0] * p_scsc[2];
-            arma_x(i+n*2) = p_scsc[1];
-        } else {
-            arma_x(i) = p_scsc[0] * p_scsc[3];
-            arma_x(i+n) = p_scsc[1];
-            arma_x(i+n*2) = p_scsc[0] * p_scsc[2];
-        }
-        
-
-        
-    }
-    arma::vec a2;
-    a2 = drbf->Final_H_ * arma_x;
-    if (!grad.empty()) {
-        grad.resize(n*2);
-        for(size_t i=0;i<n;++i){
-            auto p_scsc = sina_cosa_sinb_cosb.data()+i*4;
-
-            if(drbf->axi_plane_ == AXI_PlANE::XYZ)
-            {
-                grad[i*2] = a2(i) * p_scsc[1] * p_scsc[3] + a2(i+n) * p_scsc[1] * p_scsc[2] - a2(i+n*2) * p_scsc[0];
-                grad[i*2+1] = -a2(i) * p_scsc[0] * p_scsc[2] + a2(i+n) * p_scsc[0] * p_scsc[3];
-            } else {
-                grad[i*2] = a2(i) * p_scsc[1] * p_scsc[3] + a2(i+n*2) * p_scsc[1] * p_scsc[2] - a2(i+n) * p_scsc[0];
-                grad[i*2+1] = -a2(i) * p_scsc[0] * p_scsc[2] + a2(i+n*2) * p_scsc[0] * p_scsc[3];
-            }
-        }
-    }
-    double re = arma::dot( arma_x, a2 );
-    // printf("residual val : %f \n", re);
-    // printf("Final_H_ non zero  : %d \n", drbf->Final_H_.n_nonzero);
-    // countopt++;
-    // acc_time+=(std::chrono::nanoseconds(Clock::now() - t1).count()/1e9);
-    return re;
-}
-
 
 double optfunc_unit_vipss_simple_eigen(const std::vector<double>&x, std::vector<double>&grad, void *fdata){
 
@@ -137,7 +81,7 @@ double optfunc_unit_vipss_simple_eigen(const std::vector<double>&x, std::vector<
         }
     }
 
-    Eigen::VectorXd a2 = drbf->local_vipss_.final_h_eigen_ * arma_x;
+    Eigen::VectorXd a2 = (arma_x.transpose() * drbf->local_vipss_.final_h_eigen_).transpose();
     if (!grad.empty()) {
         grad.resize(n*2);
         for(size_t i=0;i<n;++i){
@@ -164,48 +108,6 @@ double optfunc_unit_vipss_simple_eigen(const std::vector<double>&x, std::vector<
     return re;
 }
 
-double optfunc_unit_vipss_direct_simple(const std::vector<double>&x, std::vector<double>&grad, void *fdata){
-
-    auto t1 = Clock::now();
-    VIPSSUnit *drbf = reinterpret_cast<VIPSSUnit*>(fdata);
-    // size_t n = drbf->npt;
-    size_t n = drbf->npt_;
-    arma::vec arma_x(n*3);
-    for(int i=0;i<n;++i){
-        // auto p_scsc = sina_cosa_sinb_cosb.data()+i*4;
-        arma_x(i)     = x[3*i];
-        arma_x(i+n)   = x[3*i + 1];
-        arma_x(i+n*2) = x[3*i + 2];
-    }
-    arma::vec a2;
-    a2 = drbf->Final_H_ * arma_x;
-    if (!grad.empty()) {
-        // std::cout << " grad size " <<grad.size() << std::endl;
-        grad.resize(n*3);
-        for(size_t i=0;i<n;++i){
-            grad[i*3]   = a2(i);
-            grad[i*3+1] = a2(n+i);
-            grad[i*3+2] = a2(2*n+i);
-        }
-    }
-    double re = arma::dot(arma_x, a2);
-    double alpha = 100.0;
-
-    for(size_t id =0; id < n; ++id)
-    {
-        double cur_re = x[3*id] * x[3*id] + x[3*id + 1] * x[3*id + 1] + x[3*id + 2] * x[3*id + 2] - 1;
-        if(!grad.empty()) 
-        {
-            grad[3* id]     += alpha * 2 * x[3*id] * cur_re; 
-            grad[3* id + 1] += alpha * 2 * x[3*id + 1] * cur_re; 
-            grad[3* id + 2] += alpha * 2 * x[3*id + 2] * cur_re; 
-        }
-        re += alpha* cur_re * cur_re;
-    }
-    // printf("res val : %f \n", re);
-    return re;
-}
-
 double optfunc_unit_vipss_direct_simple_eigen(const std::vector<double>&x, std::vector<double>&grad, void *fdata){
 
     auto t1 = Clock::now();
@@ -219,16 +121,15 @@ double optfunc_unit_vipss_direct_simple_eigen(const std::vector<double>&x, std::
         arma_x(i+n)   = x[3*i + 1];
         arma_x(i+n*2) = x[3*i + 2];
     }
-    // arma::vec a2;
-    // Eigen::VectorXd a2 = drbf->local_vipss_.final_h_eigen_ * arma_x;
+
     Eigen::VectorXd a2 = (arma_x.transpose() * drbf->local_vipss_.final_h_eigen_).transpose();
     if (!grad.empty()) {
         // std::cout << " grad size " <<grad.size() << std::endl;
         grad.resize(n*3);
         for(size_t i=0;i<n;++i){
-            grad[i*3]   = a2(i);
-            grad[i*3+1] = a2(n+i);
-            grad[i*3+2] = a2(2*n+i);
+            grad[i*3]   = a2(i) * 2;
+            grad[i*3+1] = a2(n+i) * 2;
+            grad[i*3+2] = a2(2*n+i) * 2;
         }
     }
     double re = arma_x.dot(a2);
@@ -246,111 +147,94 @@ double optfunc_unit_vipss_direct_simple_eigen(const std::vector<double>&x, std::
         re += alpha* cur_re * cur_re;
     }
     // printf("res val : %f \n", re);
-    VIPSSUnit::opt_func_count ++;
+    VIPSSUnit::opt_func_count_g ++;
     return re;
 }
 
-
-double optfunc_unit_vipss_direct(const std::vector<double>&x, std::vector<double>&grad, void *fdata){
+double optfunc_unit_vipss_direct_eigen(const std::vector<double>& x, std::vector<double>& grad, void* fdata) {
 
     auto t1 = Clock::now();
-    VIPSSUnit *drbf = reinterpret_cast<VIPSSUnit*>(fdata);
+    VIPSSUnit::opt_func_count_g++;
+    VIPSSUnit* drbf = reinterpret_cast<VIPSSUnit*>(fdata);
     // size_t n = drbf->npt;
     size_t n = drbf->npt_;
     size_t u_size = 4;
-    arma::vec arma_x(n * u_size);
-    for(int i=0;i<n;++i){
+    // Eigen::VectorXd arma_x(n * u_size);
+    for (int i = 0; i < n; ++i) {
         // auto p_scsc = sina_cosa_sinb_cosb.data()+i*4;
-        arma_x(i)     = x[u_size*i ];
-        arma_x(i+n)   = x[u_size*i + 1];
-        arma_x(i+n*2) = x[u_size*i + 2];
-        arma_x(i+n*3) = x[u_size*i + 3];
+        arma_x_opt_g(i) = x[u_size * i];
+        arma_x_opt_g(i + n) = x[u_size * i + 1];
+        arma_x_opt_g(i + n * 2) = x[u_size * i + 2];
+        arma_x_opt_g(i + n * 3) = x[u_size * i + 3];
     }
-    arma::vec a2;
-    a2 = drbf->Final_H_ * arma_x;
-    if (!grad.empty()) {
-        // std::cout << " grad size " <<grad.size() << std::endl;
-        grad.resize(n*u_size);
-        for(size_t i=0;i<n;++i){
-            grad[i*u_size]   = a2(i);
-            grad[i*u_size+1] = a2(i + n);
-            grad[i*u_size+2] = a2(i + 2*n);
-            grad[i*u_size+3] = a2(i + 3*n);
-        }
-    }
-    double re = arma::dot(arma_x, a2);
-    double alpha = 100.0;
+    //Eigen::VectorXd a2 = (arma_x_opt_g.transpose() * drbf->local_vipss_.final_h_eigen_).transpose();
 
-    for(size_t id =0; id < n; ++id)
-    {
-        double cur_re = x[u_size*id + 1] * x[u_size*id + 1] + x[u_size*id + 2] * x[u_size*id + 2] 
-                        + x[u_size*id + 3] * x[u_size*id + 3] - 1;
-        if(!grad.empty()) 
-        {
-            grad[u_size* id + 1] += alpha * 2 * x[u_size*id + 1] * cur_re; 
-            grad[u_size* id + 2] += alpha * 2 * x[u_size*id + 2] * cur_re; 
-            grad[u_size* id + 3] += alpha * 2 * x[u_size*id + 3] * cur_re; 
-        }
-        re += alpha* cur_re * cur_re;
-    }
-    // printf("res val : %f \n", re);
-    return re;
-}
-
-int VIPSSUnit::opt_func_count = 0;
-
-
-double optfunc_unit_vipss_direct_eigen(const std::vector<double>&x, std::vector<double>&grad, void *fdata){
-
-    auto t1 = Clock::now();
-    VIPSSUnit *drbf = reinterpret_cast<VIPSSUnit*>(fdata);
-    // size_t n = drbf->npt;
-    size_t n = drbf->npt_;
-    size_t u_size = 4;
-    Eigen::VectorXd arma_x(n * u_size);
-    for(int i=0;i<n;++i){
-        // auto p_scsc = sina_cosa_sinb_cosb.data()+i*4;
-        arma_x(i)     = x[u_size*i ];
-        arma_x(i+n)   = x[u_size*i + 1];
-        arma_x(i+n*2) = x[u_size*i + 2];
-        arma_x(i+n*3) = x[u_size*i + 3];
-    }
    
-    // Eigen::VectorXd a2 = drbf->local_vipss_.final_h_eigen_ * arma_x;
-    Eigen::VectorXd a2 = (arma_x.transpose() * drbf->local_vipss_.final_h_eigen_).transpose();
-    if (!grad.empty()) {
-        // std::cout << " grad size " <<grad.size() << std::endl;
-        grad.resize(n*u_size);
-        for(size_t i=0;i<n;++i){
-            grad[i*u_size]   = a2(i);
-            grad[i*u_size+1] = a2(i + n);
-            grad[i*u_size+2] = a2(i + 2*n);
-            grad[i*u_size+3] = a2(i + 3*n);
-        }
-    }
-    double re = arma_x.dot(a2);
-    double alpha = 10.0;
-    arma::vec re_vec(n);
-    size_t id;
-// #pragma omp parallel for shared(x, alpha, grad, re_vec) private(id)
-    for(id =0; id < n; ++id)
+    int id;
+    //auto x_t = arma_x_opt_g.transpose();
+    double alpha = 1.0;
+    const auto& final_h = drbf->local_vipss_.final_h_eigen_;
+    if (grad.empty()) grad.resize(4 * n);
+    #pragma omp parallel for shared(x, alpha, grad, final_h, arma_x_opt_g, res_vec_g) private(id)
+    for (id = 0; id < n; ++id)
     {
-        double cur_re = x[u_size*id + 1] * x[u_size*id + 1] + x[u_size*id + 2] * x[u_size*id + 2] 
-                        + x[u_size*id + 3] * x[u_size*id + 3] - 1;
-        if(!grad.empty()) 
+        res_vec_g[id] = 0;
+        for (int j = 0; j < 4; ++j)
         {
-            grad[u_size* id + 1] += alpha * 2 * x[u_size*id + 1] * cur_re; 
-            grad[u_size* id + 2] += alpha * 2 * x[u_size*id + 2] * cur_re; 
-            grad[u_size* id + 3] += alpha * 2 * x[u_size*id + 3] * cur_re; 
+            double val = arma_x_opt_g .transpose() * final_h.col(id + j *n);
+            res_vec_g[id] += arma_x_opt_g[id + j *n] * val;
+            grad[id * 4 + j] = val * 2;
         }
-        // re += alpha* cur_re * cur_re;
-        re_vec[id] = alpha* cur_re * cur_re;
+        double cur_re = x[4 * id + 1] * x[4 * id + 1] + x[4 * id + 2] * x[4 * id + 2]
+            + x[4 * id + 3] * x[4 * id + 3] - 1;
+        grad[4 * id + 1] += alpha * 2 * x[4 * id + 1] * cur_re;
+        grad[4 * id + 2] += alpha * 2 * x[4 * id + 2] * cur_re;
+        grad[4 * id + 3] += alpha * 2 * x[4 * id + 3] * cur_re;
+        res_vec_g[id] += alpha * cur_re * cur_re;
     }
-    re += arma::accu(re_vec);
-    VIPSSUnit::opt_func_count ++;
+    double re = res_vec_g.sum();
 
-    // printf("res val : %f \n", re);
+    auto t2 = Clock::now();
+    double opt_time = std::chrono::nanoseconds(t2 - t1).count()/ 1e9;
+    VIPSSUnit::opt_func_time_g += opt_time;
+
+    // printf("opt fun call time accu: %f \n", VIPSSUnit::opt_func_time_g);
+
     return re;
+
+ //   if (grad.empty())
+ //   {
+ //       grad.resize(n * u_size);
+ //   }
+ //   for(size_t i=0;i<n;++i){
+ //       grad[i*u_size]   = a2(i);
+ //       grad[i*u_size+1] = a2(i + n);
+ //       grad[i*u_size+2] = a2(i + 2*n);
+ //       grad[i*u_size+3] = a2(i + 3*n);
+ //   }
+ //    
+ //    double re = arma_x_opt_g.dot(a2);
+ //    double alpha = 100.0;
+ //    int id;
+ ////#pragma omp parallel for shared(x, alpha, grad, re_vec) private(id)
+ //    for(id =0; id < n; ++id)
+ //    {
+ //        double cur_re = x[u_size*id + 1] * x[u_size*id + 1] + x[u_size*id + 2] * x[u_size*id + 2] 
+ //                        + x[u_size*id + 3] * x[u_size*id + 3] - 1;
+ //        if(!grad.empty()) 
+ //        {
+ //            grad[u_size* id + 1] += alpha * 2 * x[u_size*id + 1] * cur_re; 
+ //            grad[u_size* id + 2] += alpha * 2 * x[u_size*id + 2] * cur_re; 
+ //            grad[u_size* id + 3] += alpha * 2 * x[u_size*id + 3] * cur_re; 
+ //        }
+ //        // re += alpha* cur_re * cur_re;
+ //        res_vec_g[id] = alpha* cur_re * cur_re;
+ //    }
+ //    re += res_vec_g.sum();
+ //   
+
+ //   // printf("res val : %f \n", re);
+ //   return re;
 }
 // double myconstraint(unsigned n, const double *x, double *grad, void *data)
 
@@ -384,12 +268,8 @@ double optfunc_unit_vipss(const std::vector<double>&x, std::vector<double>&grad,
 
     auto t1 = Clock::now();
     VIPSSUnit *drbf = reinterpret_cast<VIPSSUnit*>(fdata);
-    // size_t n = drbf->npt;
     size_t n = drbf->npt_;
-    // printf("input point number : %llu \n", n);
-    arma::vec arma_x(n*4);
-
-    //(  sin(a)cos(b), sin(a)sin(b), cos(a)  )  a =>[0, pi], b => [-pi, pi];
+    Eigen::VectorXd arma_x(n*4);
     std::vector<double>sina_cosa_sinb_cosb(n * 4);
     for(size_t i=0;i<n;++i){
         size_t ind = i*4;
@@ -405,8 +285,8 @@ double optfunc_unit_vipss(const std::vector<double>&x, std::vector<double>&grad,
         arma_x(i + n * 2) = p_scsc[0] * p_scsc[2];
         arma_x(i + n * 3) = p_scsc[1];
     }
-    arma::vec a2;
-    a2 = drbf->Final_H_ * arma_x;
+
+    Eigen::VectorXd a2 =  (arma_x.transpose() * drbf ->local_vipss_.final_h_eigen_).transpose();
     if (!grad.empty()) {
         grad.resize(n*3);
         for(size_t i=0;i<n;++i){
@@ -416,12 +296,14 @@ double optfunc_unit_vipss(const std::vector<double>&x, std::vector<double>&grad,
             grad[i*3 + 2] = 2* (-a2(i + n) * p_scsc[0] * p_scsc[2] + a2(i+n* 2) * p_scsc[0] * p_scsc[3]);
         }
     }
-    double re = arma::dot( arma_x, a2 );
+    double re =  arma_x.dot( a2 );
     // printf("residual val : %f \n", re);
     // printf("Final_H_ non zero  : %d \n", drbf->Final_H_.n_nonzero);
     // countopt++;
     // acc_time+=(std::chrono::nanoseconds(Clock::now() - t1).count()/1e9);
     drbf->countopt_ ++;
+    VIPSSUnit::opt_func_count_g ++;
+    
     return re;
 }
 
@@ -460,7 +342,7 @@ void VIPSSUnit::OptUnitVipssNormalSimple(){
         // acc_time = 0;
         //LocalIterativeSolver(sol,kk==0?normals:newnormals,300,1e-7);
         printf("start the solver ! \n");
-        Solver::nloptwrapper(lower,upper,optfunc_unit_vipss_simple,this,1e-7,3000,solver_);
+        Solver::nloptwrapper(lower,upper,optfunc_unit_vipss_simple_eigen,this,opt_tor_, max_opt_iter_,solver_);
         // callfunc_time = acc_time;
         // solve_time = sol.time;
         //for(int i=0;i<npt;++i)cout<< sol.solveval[i]<<' ';cout<<endl;
@@ -518,7 +400,7 @@ void VIPSSUnit::OptUnitVipssNormalDirectSimple(){
     }
 
     Solver::nloptwrapperDirect(lower,upper,optfunc_unit_vipss_direct_simple_eigen,
-                this,1e-7,3000,solver_);
+                this,opt_tor_, max_opt_iter_,solver_);
     // Solver::nloptwrapper(lower,upper,optfunc_unit_vipss_simple,this,1e-7,3000,solver_);
     
     newnormals_.resize(npt_*3);
@@ -560,9 +442,11 @@ void VIPSSUnit::OptUnitVipssNormalDirect(){
             lower[i*u_size + j] = -1.0;
         }
     }
-
+    arma_x_opt_g.resize(npt_ * 4);
+    res_vec_g.resize(npt_);
     Solver::nloptwrapperDirect(lower,upper,optfunc_unit_vipss_direct_eigen,
-                this, 1e-6, 1600, solver_);
+                this, opt_tor_, max_opt_iter_, solver_);
+    
     // Solver::nloptwrapper(lower,upper,optfunc_unit_vipss_simple,this,1e-7,3000,solver_);
     newnormals_.resize(npt_*3);
     s_func_vals_.resize(npt_);
@@ -606,11 +490,11 @@ void VIPSSUnit::OptUnitVipssNormal(){
             lower[i*3 + 2] = -1 * M_PI_;
         }
         printf("start the solver ! \n");
-        Solver::nloptwrapper(lower,upper,optfunc_unit_vipss,this,1e-7,3000,solver_);
+        Solver::nloptwrapper(lower,upper,optfunc_unit_vipss,this,opt_tor_, max_opt_iter_,solver_);
     }
     newnormals_.resize(npt_*3);
-    arma::vec y(npt_ + 3 * npt_);
-    for(size_t i=0;i<npt_;++i)y(i) = 0;
+    s_func_vals_.resize(npt_);
+    for(size_t i=0;i<npt_;++i) s_func_vals_[i] = solver_.solveval[i*3];;
     for(size_t i=0;i<npt_;++i){
         double a = solver_.solveval[i*3 + 1], b = solver_.solveval[i*3+2];
         newnormals_[i*3]   = sin(a) * cos(b);
@@ -624,28 +508,6 @@ void VIPSSUnit::OptUnitVipssNormal(){
     // cout<<"Opt_Hermite_PredictNormal_UnitNormal"<<endl;
     return;
 }
-
-void VIPSSUnit::BuildLocalHRBFPerNode()
-{
-    // std::vector<double> cluster_pts;
-    // for(auto pt : local_vipss_.points_)
-    // {
-    //     size_t id = 
-    // }
-
-    // for(size_t i =0; i < cluster_num; ++i)
-    // {
-    //     // std::vector<double> vts;
-    //     // std::vector<size_t> p_ids;
-    //     auto cluster_pt_ids = GetClusterPtIds(i);
-    //     auto cluster_pt_vec = GetClusterVerticesFromIds(cluster_pt_ids);
-    //     auto t3 = Clock::now();
-    //     vipss_api_.build_unit_vipss(cluster_pt_vec);
-    //     time_sum += vipss_api_.rbf_core_.bigM_inv_time;
-    // }
-}
-
-
 
 void VIPSSUnit::ReconSurface()
 {
@@ -759,10 +621,11 @@ void VIPSSUnit::Run()
     auto ts1 = Clock::now();
     double solve_time = std::chrono::nanoseconds(ts1 - ts0).count() / 1e9;
     printf("opt solve time : %f ! \n", solve_time);
-    printf("opt fun call count : %d \n", VIPSSUnit::opt_func_count);
+    printf("opt fun call count : %d \n", VIPSSUnit::opt_func_count_g);
+    printf("opt fun call time : %f \n", VIPSSUnit::opt_func_time_g);
 
     G_VP_stats.opt_solver_time_ += solve_time;
-    G_VP_stats.opt_func_call_num_ += VIPSSUnit::opt_func_count;
+    G_VP_stats.opt_func_call_num_ += VIPSSUnit::opt_func_count_g;
 
 
     auto t01 = Clock::now();
@@ -770,11 +633,10 @@ void VIPSSUnit::Run()
     printf("total local vipss running time : %f ! \n", total_time);
 
     std::string out_path  = local_vipss_.out_dir_ + local_vipss_.filename_  + "_opt";
-    printf("out size : %lu, %lu \n", local_vipss_.out_pts_.size(), newnormals_.size());
     writePLYFile_VN(out_path, local_vipss_.out_pts_, newnormals_);
 
-    std::string color_out_path  = local_vipss_.out_dir_ + local_vipss_.filename_  + "_opt_color";
-    output_opt_pts_with_color(local_vipss_.out_pts_, s_func_vals_,color_out_path);
+    // std::string color_out_path  = local_vipss_.out_dir_ + local_vipss_.filename_  + "_opt_color";
+    // output_opt_pts_with_color(local_vipss_.out_pts_, s_func_vals_,color_out_path);
 
     // printf("start to ReconSurface 000 \n");
     // std::string init_path  = local_vipss_.out_dir_ + local_vipss_.filename_  + "_init";

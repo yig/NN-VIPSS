@@ -18,41 +18,6 @@ typedef std::chrono::high_resolution_clock Clock;
 REAL cps = (REAL) CLOCKS_PER_SEC;
 // double M_PI  = 2*acos(0.0);
 
-double CalVolumeQhull(std::vector<double>& pts)
-{
-    // orgQhull::Coordinates newPts(pts);
-    // orgQhull::RboxPoints inpts;
-    // inpts.setDimension(3);
-    // inpts.append(pts); 
-
-    // const char* cmd = "Fx";
-    // orgQhull::Qhull q_convex(inpts, cmd);
-    double volume = 0;
-    // double volume = q_convex.volume();
-
-    // printf("qhull volume : %Lf \n", volume);
-    // std::cout << " qhull volume " << volume << std::endl;
-    return volume;
-}
-
-
-// void PtCluster::UpdateAdjacentClusters()
-// {
-//     std::set<PtCluster*> new_clusters;
-//     for(auto &cluster : adjacent_clusters)
-//     {
-//         if(cluster->merged)
-//         {
-//             if(cluster->merged_cluster != this)
-//             {
-//                 new_clusters.insert(cluster->merged_cluster);
-//             }
-//         } else {
-//             new_clusters.insert(cluster);
-//         }
-//     }
-// }
-
 void VoronoiGen::loadData(const std::string& path )
 {
 
@@ -135,16 +100,7 @@ void VoronoiGen::InsertSphereBoundryPts()
             // printf(" %ld insertion succeeded ! \n", i);
         }
         insert_boundary_pts_.insert(newpt);
-        // boundary_pts.push_back(newpt);
-        // temp_mesh.setpointtype(newpt, tetgenmesh::UNUSEDVERTEX);
-        // printf(" insertion pt type : %d! \n", temp_mesh.pointtype(newpt));
-        // printf("insert pt id : %ld \n", i);
     }
-    
-    // for(auto pt : boundary_pts)
-    // {
-    //     tetMesh_.setpointtype(pt, tetgenmesh::UNUSEDVERTEX);
-    // }
 
 }
 
@@ -249,11 +205,9 @@ if(1)
         // temp_mesh.setpointtype(newpt, tetgenmesh::UNUSEDVERTEX);
         if(temp_mesh.insertpoint(newpt, &searchtet, splitsh, splitseg,  &ivf))
         {
-            // printf(" %ld insertion succeeded ! \n", i);
+            
         }
         insert_boundary_pts_.insert(newpt);
-        // temp_mesh.setpointtype(newpt, tetgenmesh::UNUSEDVERTEX);
-        // printf(" insertion pt type : %d! \n", temp_mesh.pointtype(newpt));
     }
 }
 
@@ -315,7 +269,7 @@ void VoronoiGen::GenerateVoroData()
     // InsertBoundryPts();
 // 
     auto t0 = Clock::now();
-    // InsertSphereBoundryPts();
+    InsertSphereBoundryPts();
     InsertBoundryPts();
     
 
@@ -1084,29 +1038,6 @@ void VoronoiGen::GetVoronoiNeiPts(tetgenmesh::point pt, std::vector<tetgenmesh::
     // tetgenmesh::arraypool *out_cavetetvertlist ;
     // std::vector<tetgenmesh::point> out_cavetetvertlist;
     tetMesh_.GetCaveBoundryPoint(pt, &searchtet, splitsh, splitseg, &ivf, candid_pts);
-    // tetMesh_.GetCaveBoundryPointMP(pt, &searchtet, splitsh, splitseg, &ivf, candid_pts);
-    // printf(" id out_cavetetvertlist size : %ld \n",  out_cavetetvertlist.size());
-    // tetMesh_.GetCaveBoundryPoint(pt, &search_tet, ptlist_);
-    // for (int i = 0; i < out_cavetetvertlist->objects; i++) {
-    //     // tetgenmesh::point* parypt = (tetgenmesh::point *) tetgenmesh::fastlookup(cavetetvertlist, i);
-    //     auto pt = * (tetgenmesh::point *) out_cavetetvertlist-> lookup(i);
-    //     if(tetMesh_.pointtype(pt) == tetgenmesh::verttype::UNUSEDVERTEX) continue;
-    //     // if ((tetMesh_.pointtype(pt) == tetgenmesh::verttype::UNUSEDVERTEX) ||
-    //     // (tetMesh_.pointtype(pt) == tetgenmesh::verttype::DUPLICATEDVERTEX) ||
-    //     // (tetMesh_.pointtype(pt) == tetgenmesh::verttype::NREGULARVERTEX) ||
-    //     // (tetMesh_.pointtype(pt) == tetgenmesh::verttype::DEADVERTEX) ) 
-    //     // {
-    //     //     continue;
-    //     // }
-    //     // if(point_id_map_.find(pt) == point_id_map_.end()) continue;
-    //     // if(abs(pt[0]) <= 1e-3 && abs(pt[1]) < 1e-3 && abs(pt[2]) < 1e-3)
-    //     // {
-    //     //     // printf("zero pt : %f %f %f \n", pt[0], pt[1], pt[2]);
-    //     //     continue;
-    //     // }
-    //     if(pt != (tetgenmesh::point)(NULL)) candid_pts.insert(pt);
-    // }
-    // delete out_cavetetvertlist;
 }
 
 void VoronoiGen::InsertPt(tetgenmesh::point pt)
