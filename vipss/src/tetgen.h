@@ -580,7 +580,7 @@ public:
     }
     if (vfacetlist != (vorofacet *) NULL) {
       for (i = 0; i < numberofvfacets; i++) {
-        delete [] vfacetlist[i].elist;
+        delete [] vfacetlist[i].elist; 
       }
       delete [] vfacetlist;
     }

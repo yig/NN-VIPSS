@@ -110,13 +110,13 @@ void VoronoiGen::InsertSphereBoundryPts()
     }
     
     // printf(out_sphere_path);
-    std::vector<tetgenmesh::point> boundary_pts;
+    // std::vector<tetgenmesh::point> boundary_pts;
 
     for(size_t i = 0; i < pt_num; ++i)
     {
         tetgenmesh::point newpt;
         auto& temp_mesh = tetMesh_;
-        temp_mesh.makepoint(&newpt, tetgenmesh::UNUSEDVERTEX);
+        temp_mesh.makepoint(&newpt, tetgenmesh::VOLVERTEX);
         newpt[0] = sphere_pts[i * 3];
         newpt[1] = sphere_pts[i * 3 + 1];
         newpt[2] = sphere_pts[i * 3 + 2];
@@ -134,16 +134,17 @@ void VoronoiGen::InsertSphereBoundryPts()
         {
             // printf(" %ld insertion succeeded ! \n", i);
         }
-        boundary_pts.push_back(newpt);
+        insert_boundary_pts_.insert(newpt);
+        // boundary_pts.push_back(newpt);
         // temp_mesh.setpointtype(newpt, tetgenmesh::UNUSEDVERTEX);
         // printf(" insertion pt type : %d! \n", temp_mesh.pointtype(newpt));
         // printf("insert pt id : %ld \n", i);
     }
-
-    for(auto pt : boundary_pts)
-    {
-        tetMesh_.setpointtype(pt, tetgenmesh::UNUSEDVERTEX);
-    }
+    
+    // for(auto pt : boundary_pts)
+    // {
+    //     tetMesh_.setpointtype(pt, tetgenmesh::UNUSEDVERTEX);
+    // }
 
 }
 
@@ -232,7 +233,7 @@ if(1)
     {
         tetgenmesh::point newpt;
         auto& temp_mesh = tetMesh_;
-        temp_mesh.makepoint(&newpt, tetgenmesh::UNUSEDVERTEX);
+        temp_mesh.makepoint(&newpt, tetgenmesh::VOLVERTEX);
         newpt[0] = box_pts[i][0];
         newpt[1] = box_pts[i][1];
         newpt[2] = box_pts[i][2];
@@ -250,8 +251,17 @@ if(1)
         {
             // printf(" %ld insertion succeeded ! \n", i);
         }
-        temp_mesh.setpointtype(newpt, tetgenmesh::UNUSEDVERTEX);
+        insert_boundary_pts_.insert(newpt);
+        // temp_mesh.setpointtype(newpt, tetgenmesh::UNUSEDVERTEX);
         // printf(" insertion pt type : %d! \n", temp_mesh.pointtype(newpt));
+    }
+}
+
+void VoronoiGen::SetInsertBoundaryPtsToUnused()
+{
+    for(auto pt : insert_boundary_pts_)
+    {
+        tetMesh_.setpointtype(pt, tetgenmesh::UNUSEDVERTEX);
     }
 }
 
@@ -294,7 +304,6 @@ void VoronoiGen::Tetrahedralize()
 
     // printf("finsh generate_voronoi_cell \n");
 
-    // InitVoronoiDataForCellVolume();
     
     // OutputVoronisMesh();
     
@@ -306,27 +315,13 @@ void VoronoiGen::GenerateVoroData()
     // InsertBoundryPts();
 // 
     auto t0 = Clock::now();
-    InsertSphereBoundryPts();
+    // InsertSphereBoundryPts();
     InsertBoundryPts();
     
 
     // printf("finsh InsertBoundryPts \n");
     tetMesh_.generate_voronoi_cell(&voronoi_data_);
     
-
-    // printf("voronoi pt num : %d \n", voronoi_data_.numberofvpoints);
-    // printf("voronoi edge num : %d \n", voronoi_data_.numberofvedges);
-    // printf("voronoi facet num : %d \n", voronoi_data_.numberofvfacets);
-    // printf("voronoi cell num : %d \n", voronoi_data_.numberofvcells);
-    // printf("finsh generate_voronoi_cell \n");
-    // InitVoronoiDataForCellVolume();
-    // return;
-    // printf("finsh InitVoronoiDataForCellVolume \n");
-
-
-    // double prevo_time = std::chrono::nanoseconds(t2 - t1).count()/1e9;
-    // printf("-----------pre iter voronoi data time : %f \n", prevo_time);
-
     if(0)
     {
         OutputVoronisMesh();
@@ -447,87 +442,6 @@ void VoronoiGen::CalVoroEdgeIntersection(const std::set<int>& cell_eids, std::ve
             intersect_pts.push_back(iz);
         }
     }
-}
-
-void VoronoiGen::CalVoroFaceNormal(tetgenmesh::point in_pt, tetgenmesh::point nei_pt)
-{
-    auto vc_id   = point_id_map_[nei_pt];
-    auto v_cell  = voronoi_data_.vcelllist[vc_id];
-    auto vf_list = voronoi_data_.vfacetlist;
-    auto ve_list = voronoi_data_.vedgelist;
-    auto vp_list = voronoi_data_.vpointlist;
-
-    if(v_cell == NULL) return;
-
-    int f_num = v_cell[0];
-    std::set<int> p_ids;
-    for(size_t i = 0; i < f_num; ++i)
-    {
-        size_t f_id = v_cell[i + 1];
-        auto facet = vf_list[f_id];
-        size_t e_num = facet.elist[0];
-        if(e_num >= 2)
-        {
-            arma::vec3 e_n1;
-            arma::vec3 e_n2;
-            int v1 = ve_list[facet.elist[1 + 0]].v1;
-            int v2 = ve_list[facet.elist[1 + 0]].v2;
-            e_n1[0] = vp_list[3 * v1]     - vp_list[3 * v2];
-            e_n1[1] = vp_list[3 * v1 + 1] - vp_list[3 * v2 + 1];
-            e_n1[2] = vp_list[3 * v1 + 2] - vp_list[3 * v2 + 2];
-            v1 = ve_list[facet.elist[1 + 1]].v1;
-            v2 = ve_list[facet.elist[1 + 1]].v2;
-            e_n2[0] = vp_list[3 * v1]     - vp_list[3 * v2];
-            e_n2[1] = vp_list[3 * v1 + 1] - vp_list[3 * v2 + 1];
-            e_n2[2] = vp_list[3 * v1 + 2] - vp_list[3 * v2 + 2];
-
-            arma::vec3 normal = arma::cross(e_n1, e_n2);
-            normal = arma::normalise(normal);
-        }
-        
-    }
-}
-
-void VoronoiGen::InitVoronoiDataForCellVolume()
-{
-    // size_t vp_num = voronoi_data_.numberofvpoints;
-    // size_t ve_num = voronoi_data_.numberofvedges;
-    // size_t vf_num = voronoi_data_.numberofvfacets;
-
-    // vpt_sign_vals_.resize(vp_num);
-    // edge_insect_symbols_.resize(ve_num, -1);
-    // edge_insect_pts_.resize(ve_num * 3);
-    // vcell_face_normals_.resize(vf_num);
-    // vcell_face_centers_.resize(vf_num);
-    // auto vp_list = voronoi_data_.vpointlist;
-    // auto ve_list = voronoi_data_.vedgelist;
-    // auto vf_list = voronoi_data_.vfacetlist;
-
-    // int f_num = voronoi_data_.numberofvfacets;
-    // for(size_t i = 0; i < f_num; ++i)
-    // {
-    //     auto facet = vf_list[i];
-    //     size_t e_num = facet.elist[0];
-    //     arma::vec3 f_center;
-    //     std::set<int> facet_p_ids;
-    //     for(size_t j = 0; j < e_num; ++j)
-    //     {
-    //         auto& ve = ve_list[facet.elist[1 + j]];
-    //         facet_p_ids.insert(ve.v1);
-    //         facet_p_ids.insert(ve.v2);
-    //     }
-    //     for(auto id : facet_p_ids)
-    //     {
-    //         f_center[0] += vp_list[3 *id];
-    //         f_center[1] += vp_list[3 *id + 1];
-    //         f_center[2] += vp_list[3 *id + 2];
-    //     }
-    //     if(!facet_p_ids.empty())
-    //     {
-    //         f_center /= double(facet_p_ids.size());
-    //     }
-    //     vcell_face_centers_[i] = f_center;
-    // }
 }
 
 void VoronoiGen::CalVoroCellPtSign(const VoroPlane &plane, 
@@ -752,9 +666,10 @@ double VoronoiGen::CalTruncatedCellVolumePassOMP(tetgenmesh::point in_pt, tetgen
     }
     // VoroPlane v_plane(plane_mid_x, plane_mid_y, plane_mid_z, p_nx, p_ny, p_nz);
     // SavePlane(v_plane);
-    // if(point_id_map_.find(nei_pt) == point_id_map_.end())
-    // return 0;
+    if(point_id_map_.find(nei_pt) == point_id_map_.end())
+    return 0;
     const auto vc_id   = point_id_map_[nei_pt];
+    if(vc_id >= voronoi_data_.numberofvcells) return 0;
     const auto v_cell  = voronoi_data_.vcelllist[vc_id];
     const auto vf_list = voronoi_data_.vfacetlist;
     const auto ve_list = voronoi_data_.vedgelist;

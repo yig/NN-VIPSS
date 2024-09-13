@@ -329,7 +329,7 @@ double optfunc_unit_vipss_direct_eigen(const std::vector<double>&x, std::vector<
         }
     }
     double re = arma_x.dot(a2);
-    double alpha = 1000.0;
+    double alpha = 10.0;
     arma::vec re_vec(n);
     size_t id;
 // #pragma omp parallel for shared(x, alpha, grad, re_vec) private(id)
@@ -562,7 +562,7 @@ void VIPSSUnit::OptUnitVipssNormalDirect(){
     }
 
     Solver::nloptwrapperDirect(lower,upper,optfunc_unit_vipss_direct_eigen,
-                this, 1e-7, 3000, solver_);
+                this, 1e-6, 1600, solver_);
     // Solver::nloptwrapper(lower,upper,optfunc_unit_vipss_simple,this,1e-7,3000,solver_);
     newnormals_.resize(npt_*3);
     s_func_vals_.resize(npt_);
@@ -658,7 +658,8 @@ void VIPSSUnit::ReconSurface()
     double generate_voroi_data_time = std::chrono::nanoseconds(t001 - t000).count() / 1e9;
     printf("generate_voroi_data_time  : %f ! \n", generate_voroi_data_time);
     G_VP_stats.generate_voroi_data_time_ += generate_voroi_data_time;
-
+    local_vipss_.voro_gen_.SetInsertBoundaryPtsToUnused();
+    // return;
     // local_vipss_.PtPCA(local_vipss_.out_pts_);
     // local_vipss_.out_normals_ = newnormals_;
     // local_vipss_.OptimizeAdjacentMat();
@@ -675,16 +676,8 @@ void VIPSSUnit::ReconSurface()
         local_vipss_.normals_ = newnormals_;
         local_vipss_.s_vals_ = s_func_vals_;
         local_vipss_.user_lambda_ = user_lambda_;
-        if(is_group_cluster)
-        {
-            local_vipss_.GroupClustersWithDegree();
-            std::string group_pt_path = data_dir_  + file_name_ + "/" + "group_pts.obj";
-            std::cout << " save group pts to file : " << group_pt_path << std::endl;
-            local_vipss_.SaveGroupPtsWithColor(group_pt_path);
-            local_vipss_.BuildHRBFPerCluster();
-        } else {
-            local_vipss_.BuildHRBFPerNode();
-        }    
+        local_vipss_.BuildHRBFPerNode();
+            
         auto t003 = Clock::now();
         double build_HRBF_time = std::chrono::nanoseconds(t003 - t002).count() / 1e9;
         G_VP_stats.build_per_cluster_hrbf_total_time_ += build_HRBF_time;     

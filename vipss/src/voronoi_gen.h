@@ -4,6 +4,7 @@
 #include <vector>
 #include "rbf_api.h"
 #include <unordered_map>
+#include <unordered_set>
 #include <set>
 #include "pico_tree.h"
 // #include <eigen3/Eigen/Dense>
@@ -115,12 +116,6 @@ class VoronoiGen{
         void GetVoroCellPtList(std::vector<tetgenio::voroedge*>& edge_list, std::vector<double>& pt_list);
         std::vector<double> GetPolygonSplitPts(tetgenmesh::point cur_pt, tetgenmesh::point nei_pt);
         bool CalPlaneEdgeIntersection(tetgenio::voroedge* edge, VoroPlane &plane);
-        double CalSplitPolyhedronVolume(std::vector<double>& split_pts);
-        double CalUnionCellVolume(tetgenmesh::point in_pt, tetgenmesh::point nei_pt);
-        // double CalVoroFaceVolume(tetgenio::facet* facet,  )
-        void CalVoroFaceNormal(tetgenmesh::point in_pt, tetgenmesh::point nei_pt);
-        void InitVoronoiDataForCellVolume();
-        double CalTruncatedCellVolume(tetgenmesh::point in_pt, tetgenmesh::point nei_pt);
         void OutputVoronisMesh();
         void InsertBoundryPts();
         void InsertSphereBoundryPts();
@@ -130,6 +125,7 @@ class VoronoiGen{
         tetgenmesh::tetrahedron* GetClosetTet(double x, double y, double z);
         double CalTruncatedCellVolumePassOMP(tetgenmesh::point in_pt, tetgenmesh::point nei_pt, int thread_id = 0);
         void OutputTetMesh(const std::string& tetmesh_path);
+        void SetInsertBoundaryPtsToUnused();
                 
     public:
         size_t pt_num_;
@@ -143,6 +139,8 @@ class VoronoiGen{
         std::vector<double> tet_center_pts_;
         std::unordered_map<int, tetgenmesh::tetrahedron*> tc_pt_tet_map_;
         std::vector<tetgenmesh::point> points_;
+        std::unordered_set<tetgenmesh::point> insert_boundary_pts_;
+
         // std::unordered_map<int, double> vcell_pt_sign_values_;
         std::vector<double> vpt_sign_vals_;
         std::vector<int> edge_insect_symbols_;
