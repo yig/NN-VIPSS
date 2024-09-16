@@ -211,7 +211,7 @@ inline double RBF_Core::Dist_Function(const double *p){
     // static arma::vec kern(npt), kb;
     // arma::vec kern, kb;
     //if(isHermite){
-        kern_.set_size(npt + 3 * key_npt);
+        // kern_.set_size(npt + 3 * key_npt);
         double G[3];
         for(int i=0;i<npt;++i) kern_(i) = Kernal_Function_2p(p_pts+i*3, p);
         for(int i=0;i<key_npt;++i){
@@ -227,11 +227,11 @@ inline double RBF_Core::Dist_Function(const double *p){
     double loc_part = dot(kern_,a);
 
     //if(polyDeg==1){
-        kb_.set_size(4);
+        // kb_.set_size(4);
         for(int i=0;i<3;++i) {
             kb_(i+1) = p[i];
         }
-        kb_(0) = 1;
+        // kb_(0) = 1;
    /* }else if(polyDeg==2){
         std::vector<double>buf(4,1);
         int ind = 0;
