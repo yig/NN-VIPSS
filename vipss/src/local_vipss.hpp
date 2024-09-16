@@ -48,6 +48,7 @@ class LocalVipss {
         inline std::vector<size_t> GetClusterPtIds(size_t cluster_id) const;
         void GetInitClusterPtIds(size_t cluster_id, 
         std::vector<double>& pts, std::vector<size_t>& pt_ids);
+
         void BuildHRBFPerNode();
         inline std::vector<double> GetClusterNormalsFromIds
                             (const std::vector<size_t>& pt_ids, const std::vector<double>& all_normals) const;
@@ -61,9 +62,7 @@ class LocalVipss {
         std::vector<double> GetClusterVertices(size_t cluster_id) const;
 
         size_t GetClusterIdFromCorePtId(const size_t pid);
-        void CalculateClusterNormals(size_t cluster_id);
         void InitNormalWithVipss();
-        void UpdateClusterNormals();
 
         inline double CalculateClusterPairScore(size_t c_a, size_t c_b, bool& flip) const;
         void BuildClusterAdjacentMat();
@@ -71,11 +70,8 @@ class LocalVipss {
 
         void CalculateClusterNeiScores(bool is_init = false);
         void CalculateClusterScores();
-        void MergeClusters();
 
-        void UpdateClusterScoreMat();
         void OuputPtN(const std::string& out_path, bool orient_normal = false);
-        void GetClusterCenters();
 
         inline bool IsFlipNormal(const arma::mat& a_normals, const arma::mat& b_normals) const;
         inline bool FlipClusterNormal(size_t c_a, size_t c_b) const;
@@ -86,13 +82,7 @@ class LocalVipss {
         void SaveClusterPts(const std::string& path,
                             const std::vector<P3tr>& key_pts, 
                             const std::vector<P3tr>& nei_pts);
-        
-        void SaveClusterCorePts(const std::string& path,
-                            const std::vector<std::vector<P3tr>>& key_pts);
-        void Run();
         void InitNormals();
-        void InitNormalsWithMerge();
-
         void GroupPtsWithVolume();
 
     public:
@@ -107,7 +97,8 @@ class LocalVipss {
 
         inline void AddClusterHMatrix(const std::vector<size_t>& p_ids, const arma::mat& J_m,size_t npt);
         inline void AddClusterHMatrix(const std::vector<size_t>& p_ids, const arma::mat& J_m, size_t npt, std::vector<Triplet>& ele_vect );
-
+        inline void AddClusterHMatrix(const std::vector<size_t>& p_ids, const arma::mat& J_m, size_t npt, 
+                                    std::vector<Triplet>::iterator& ele_iter );
         void BuildMatrixH();
         void SampleClusterPts();
         void TestInsertPt();
@@ -165,11 +156,17 @@ class LocalVipss {
         
         arma::sp_umat cluster_adjacent_mat_opt_;
         arma::sp_umat cluster_MST_mat_;
-        arma::sp_mat cluster_scores_mat_;
+        // arma::sp_mat cluster_scores_mat_;
         arma::sp_umat cluster_adjacent_pt_mat_;
-        arma::sp_mat cluster_normal_x_;
-        arma::sp_mat cluster_normal_y_;
-        arma::sp_mat cluster_normal_z_;
+        // arma::sp_mat cluster_normal_x_;
+        // arma::sp_mat cluster_normal_y_;
+        // arma::sp_mat cluster_normal_z_;
+        SpMat cluster_scores_mat_;
+
+        SpMat cluster_normal_x_;
+        SpMat cluster_normal_y_;
+        SpMat cluster_normal_z_;
+         
         arma::sp_mat final_H_; 
         arma::uvec cluster_valid_sign_vec_;
 
@@ -177,11 +174,10 @@ class LocalVipss {
         std::vector<double> normals_;
         std::vector<double> s_vals_;
         std::vector<std::vector<size_t>> cluster_core_pt_ids_;
-        static std::vector<std::vector<size_t>> cluster_all_pt_ids_;
+        // static std::vector<std::vector<size_t>> cluster_all_pt_ids_;
         std::vector<tetgenmesh::point> cluster_centers_;
         size_t pt_num_;
         std::vector<std::pair<int, double>> cluster_id_scores_;
-        arma::sp_colvec cluster_scores_vec_;
         std::set<size_t> update_score_cluster_ids_;
         std::vector<double> out_pts_;
         std::vector<double> out_normals_;

@@ -1128,9 +1128,7 @@ void VoronoiGen::BuildPtIdMap()
         ploop = tetMesh_.pointtraverse();
         pt_num_ ++;
     }
-    pt_score_mat_.resize(pt_num_, pt_num_);
     pt_adjecent_mat_.resize(pt_num_, pt_num_);
-    pt_dist_mat_.resize(pt_num_, pt_num_);
     printf("pt num : %zu \n", pt_num_);
     printf("point_id_map_ size : %zu \n", point_id_map_.size());
 
@@ -1138,38 +1136,50 @@ void VoronoiGen::BuildPtIdMap()
 
 void VoronoiGen::BuildAdjecentMat()
 {
-    tetMesh_.points->traversalinit();
     tetgenmesh::point ploop = tetMesh_.pointtraverse();
     // points_.clear()
-    while(ploop != (tetgenmesh::point)NULL)
+    cluster_init_pids_.resize(point_id_map_.size());
+    cluster_init_pts_.resize(point_id_map_.size());
+    cluster_size_vec_.resize(point_id_map_.size() + 1);
+    cluster_size_vec_.zeros();
+    for(auto ploop : points_)
     {
-        // printf("new cur pt id 0000001\n");
-        if(tetMesh_.pointtype(ploop) == tetgenmesh::UNUSEDVERTEX )
-        {
-            ploop = tetMesh_.pointtraverse();
-            continue;
-        }
-        // printf("new cur pt id 0000002\n");
-        // while(point_id_map_.find(ploop) == point_id_map_.end() && ploop != (tetgenmesh::point)NULL)
-        // {
-        //     ploop = tetMesh_.pointtraverse();
-        // }
-        // printf("new cur pt id 0000003\n");
-        // points_.push_back(ploop);
         size_t cur_p_id = point_id_map_[ploop]; 
-        // printf("cur pt id : %d \n", cur_p_id);
         std::set<tetgenmesh::point> candidate_pts;
         GetVertexStar(ploop, candidate_pts, 1);
         point_cluster_pts_map_[ploop] = candidate_pts;
+        std::vector<size_t> cur_cluster_pids;
+        cur_cluster_pids.push_back(cur_p_id);
+        std::vector<double> cur_cluster_pts;
+
+        cur_cluster_pts.push_back(ploop[0]);
+        cur_cluster_pts.push_back(ploop[1]);
+        cur_cluster_pts.push_back(ploop[2]);
+
         for(auto &pt : candidate_pts)
         {
             if(pt == ploop) continue;
             if(point_id_map_.find(pt) == point_id_map_.end()) continue;
             size_t p_id = point_id_map_[pt];
             pt_adjecent_mat_(cur_p_id, p_id) = 1;
+            cur_cluster_pids.push_back(p_id);
+
+            cur_cluster_pts.push_back(pt[0]);
+            cur_cluster_pts.push_back(pt[1]);
+            cur_cluster_pts.push_back(pt[2]);
         }
         ploop = tetMesh_.pointtraverse();
+        cluster_init_pids_[cur_p_id] = cur_cluster_pids;
+        cluster_init_pts_[cur_p_id]  = cur_cluster_pts;
+        cluster_size_vec_[cur_p_id + 1] = cur_cluster_pids.size();
         // printf("cur pt id 000 : %d \n", cur_p_id);
+    }
+
+    cluster_accum_size_vec_.resize(points_.size() + 1);
+    cluster_accum_size_vec_[0] = 0;
+    for(int i = 1; i < int(points_.size()); ++i)
+    {
+        cluster_accum_size_vec_[i] = cluster_accum_size_vec_[i-1] + cluster_size_vec_[i];
     }
     // printf("finish loop pt id 000\n");
 }
@@ -1194,42 +1204,8 @@ void VoronoiGen::InitMesh()
 }
 
 
-
-typedef std::pair<tetgenmesh::point, double> PtScore;
-
-
-
-// void VoronoiGen::Run()
-// {
-//     InitMesh();
-//     CalculateScores();
-//     UpdateVtAndVn();
-//     CalculatePtColors();
-//     std::string out_normal_path = out_dir_ + filename_ + "_origin_ns";
-//     SavePtVn(out_normal_path, false);
- 
-//     std::string pt_color_path =  out_dir_ +  filename_ + "_color";
-//     SavePtVnColor(pt_color_path,  false);
-//     ScaleNormalByScore();
-//     std::string pt_line_path = out_dir_ +  filename_ + "_line";
-//     writeObjPtn_line(pt_line_path, vertices_, colors_, normals_);
-
-//     MergeCluster();
-//     CalculateScores();
-//     UpdateVtAndVn();
-//     CalculatePtColors();
-//     std::string out_normal_path1 = out_dir_ + filename_ + "_origin_ns1";
-//     SavePtVn(out_normal_path1, false);
-
-//     std::string pt_color_path1 =  out_dir_ +  filename_ + "_color1";
-//     SavePtVnColor(pt_color_path1,  false);
-//     ScaleNormalByScore();
-//     std::string pt_line_path1 = out_dir_ +  filename_ + "_line1";
-//     writeObjPtn_line(pt_line_path1, vertices_, colors_, normals_);
-
-
-// }
-
-
-
 std::unordered_map<tetgenmesh::point, size_t> VoronoiGen::point_id_map_;
+std::vector<std::vector<size_t>> VoronoiGen::cluster_init_pids_;
+std::vector<std::vector<double>> VoronoiGen::cluster_init_pts_;
+arma::ivec VoronoiGen::cluster_size_vec_; 
+arma::ivec VoronoiGen::cluster_accum_size_vec_;

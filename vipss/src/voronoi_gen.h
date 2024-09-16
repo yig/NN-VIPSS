@@ -101,7 +101,6 @@ class VoronoiGen{
         void loadData(const std::vector<double>& in_pts);
         void InitMesh();
         void Tetrahedralize();
-
         void BuildAdjecentMat();
         void GetVertexStar(tetgenmesh::point& p_st, std::set<tetgenmesh::point>& candid_pts, int level);
         void BuildPtIdMap();
@@ -121,7 +120,6 @@ class VoronoiGen{
         void InsertSphereBoundryPts();
         void GetVoronoiNeiPts(tetgenmesh::point pt, std::vector<tetgenmesh::point>& candid_pts);
         void BuildTetMeshTetCenterMap();
-        void BuildPicoTree();
         tetgenmesh::tetrahedron* GetClosetTet(double x, double y, double z);
         double CalTruncatedCellVolumePassOMP(tetgenmesh::point in_pt, tetgenmesh::point nei_pt, int thread_id = 0);
         void OutputTetMesh(const std::string& tetmesh_path);
@@ -151,17 +149,17 @@ class VoronoiGen{
         double truncated_face_center_[3];
 
         static const int MAX_ELEMENT_ = 1000;
-        double pt_sign_vals_[MAX_ELEMENT_];
-        int edge_sign_vals_[MAX_ELEMENT_];
-        int face_sign_vals_[MAX_ELEMENT_];
-        int edge_intersect_pt_ids_[MAX_ELEMENT_];
-        int edge_positive_pt_ids_[MAX_ELEMENT_];
-        int face_insersect_pt_ids_[MAX_ELEMENT_];
-        double face_centers_[MAX_ELEMENT_];
-        double intersect_pts_[MAX_ELEMENT_];
-        double tet_list_pts_[MAX_ELEMENT_ *3];
+        // double pt_sign_vals_[MAX_ELEMENT_];
+        // int edge_sign_vals_[MAX_ELEMENT_];
+        // int face_sign_vals_[MAX_ELEMENT_];
+        // int edge_intersect_pt_ids_[MAX_ELEMENT_];
+        // int edge_positive_pt_ids_[MAX_ELEMENT_];
+        // int face_insersect_pt_ids_[MAX_ELEMENT_];
+        // double face_centers_[MAX_ELEMENT_];
+        // double intersect_pts_[MAX_ELEMENT_];
+        // double tet_list_pts_[MAX_ELEMENT_ *3];
 
-        static const int MAX_THREAD_NUM_ = 32;
+        static const int MAX_THREAD_NUM_ = 24;
         double* truncated_tets_omp_[MAX_THREAD_NUM_][MAX_ELEMENT_*2];
         double truncated_centers_omp_[MAX_THREAD_NUM_][3];
         double intersect_pts_omp_[MAX_THREAD_NUM_][MAX_ELEMENT_];
@@ -169,36 +167,27 @@ class VoronoiGen{
         // double* truncated_tets_[MAX_THREAD_NUM_][MAX_ELEMENT_*4];
 
         RBF_API vipss_api_;
-        tetgenmesh::point dummypoint_;
         tetgenio voronoi_data_;
-        PtNCluster pt_normal_map_;
         std::string filename_;
         std::string out_dir_;
         std::set<tetgenmesh::point> candidate_pts_;
-             
-        arma::sp_mat pt_score_mat_;
-        arma::sp_mat pt_dist_mat_;
         arma::sp_umat pt_adjecent_mat_;
 
         static std::unordered_map<tetgenmesh::point, size_t> point_id_map_;
         std::unordered_map<tetgenmesh::point, P_Set> point_cluster_pts_map_;
-        std::unordered_map<tetgenmesh::point, PtNCluster> point_cluster_normal_map_;
-        std::unordered_map<tetgenmesh::point, double> pt_score_map_;
+        static std::vector<std::vector<size_t>> cluster_init_pids_;
+        static std::vector<std::vector<double>> cluster_init_pts_;
+        static arma::ivec cluster_size_vec_;
+        static arma::ivec cluster_accum_size_vec_;
 
-        std::vector<double> vertices_;
-        std::vector<double> normals_;
-        std::vector<uint8_t> colors_;
-        double min_angle_ = 30.0;
+        // std::vector<double> vertices_;
+        // std::vector<double> normals_;
+        // std::vector<uint8_t> colors_;
+        // double min_angle_ = 30.0;
         PicoTree pTree_;
 
         std::vector<std::vector<int>> vorocell_pids_;
         std::vector<std::vector<int>> vorocell_eids_;
-
-        std::vector<bool> vids_status_;
-        std::vector<bool> eids_status_;  
-        std::vector<double> v_sign_vals_;
-        std::vector<int> e_sign_vals_;
-        std::vector<double> ve_intersect_pts_;
         
     private:
         clock_t ts_[6];

@@ -29,12 +29,12 @@ void VIPSSUnit::InitPtNormalWithLocalVipss()
     local_vipss_.Init(path);
 
     // return;
-    if(init_with_cluster_merge_)
-    {
-        local_vipss_.InitNormalsWithMerge();
-    } else {
+    // if(init_with_cluster_merge_)
+    // {
+    //     local_vipss_.InitNormalsWithMerge();
+    // } else {
         local_vipss_.InitNormals();
-    }
+    // }
     local_vipss_.ClearPartialMemory();
     
     local_vipss_.BuildMatrixH();

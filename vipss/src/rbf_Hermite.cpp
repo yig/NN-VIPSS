@@ -126,46 +126,30 @@ void RBF_Core::Set_HermiteRBF(std::vector<double>&pts){
     cout<<"Set_HermiteRBF"<<endl;
     //for(auto a:pts)cout<<a<<' ';cout<<endl;
     isHermite = true;
-
+    npt = pts.size() / 3;
     size_t m_dim = npt + 3 * key_npt;
     a.set_size(m_dim);
     M.set_size(m_dim,m_dim);
     double *p_pts = pts.data();
+    
     for(int i=0;i<npt;++i){
         for(int j=i;j<npt;++j){
             M(i,j) = M(j,i) = Kernal_Function_2p(p_pts+i*3, p_pts+j*3);
         }
     }
-
-
-    //if(User_Lamnbda!=0)for(int i=0;i<npt;++i)M(i,i) += User_Lamnbda;
-
-
     double G[3];
     for(int i=0;i<npt;++i){
         for(int j=0;j<key_npt;++j){
-
             Kernal_Gradient_Function_2p(p_pts+i*3, p_pts+j*3, G);
-            //            int jind = j*3+npt;
-            //            for(int k=0;k<3;++k)M(i,jind+k) = -G[k];
-            //            for(int k=0;k<3;++k)M(jind+k,i) = G[k];
             for(int k=0;k<3;++k)M(i,npt+j+k*key_npt) = G[k];
             for(int k=0;k<3;++k)M(npt+j+k*key_npt,i) = G[k];
 
         }
     }
-
     double H[9];
     for(int i=0;i<key_npt;++i){
         for(int j=i;j<key_npt;++j){
-
             Kernal_Hessian_Function_2p(p_pts+i*3, p_pts+j*3, H);
-            //            int iind = i*3+npt;
-            //            int jind = j*3+npt;
-            //            for(int k=0;k<3;++k)
-            //                for(int l=0;l<3;++l)
-            //                    M(jind+l,iind+k) = M(iind+k,jind+l) = -H[k*3+l];
-
             for(int k=0;k<3;++k)
                 for(int l=0;l<3;++l)
                     M(npt+j+l*key_npt,npt+i+k*key_npt) = M(npt+i+k*key_npt,npt+j+l*key_npt) = -H[k*3+l];
@@ -183,41 +167,59 @@ void RBF_Core::Set_HermiteRBF(std::vector<double>&pts){
         for(int j=0;j<3;++j)N(i,j+1) = pts[i*3+j];
     }
     for(int i=0;i<key_npt;++i){
-        //        int ind = i*3+npt;
-        //        for(int j=0;j<3;++j)N(ind+j,j+1) = 1;
+        for(int j=0;j<3;++j)N(npt+i+j*key_npt,j+1) = -1;
+    }
+}
 
+
+
+void RBF_Core::Set_HermiteRBF(const std::vector<double*>&in_pts){
+
+    if(open_debug_log)
+    cout<<"Set_HermiteRBF"<<endl;
+    //for(auto a:pts)cout<<a<<' ';cout<<endl;
+    isHermite = true;
+    npt = in_pts.size();
+    size_t m_dim = npt + 3 * key_npt;
+    a.set_size(m_dim);
+    M.set_size(m_dim,m_dim);
+    
+    for(int i=0;i<npt;++i){
+        for(int j=i;j<npt;++j){
+            M(i,j) = M(j,i) = Kernal_Function_2p(in_pts[i], in_pts[j]);
+        }
+    }
+    double G[3];
+    for(int i=0;i<npt;++i){
+        for(int j=0;j<key_npt;++j){
+            Kernal_Gradient_Function_2p(in_pts[i], in_pts[j], G);
+            for(int k=0;k<3;++k)M(i,npt+j+k*key_npt) = G[k];
+            for(int k=0;k<3;++k)M(npt+j+k*key_npt,i) = G[k];
+
+        }
+    }
+    double H[9];
+    for(int i=0;i<key_npt;++i){
+        for(int j=i;j<key_npt;++j){
+            Kernal_Hessian_Function_2p(in_pts[i], in_pts[j], H);
+            for(int k=0;k<3;++k)
+                for(int l=0;l<3;++l)
+                    M(npt+j+l*key_npt,npt+i+k*key_npt) = M(npt+i+k*key_npt,npt+j+l*key_npt) = -H[k*3+l];
+        }
+    }
+
+    bsize= 4;
+    N.zeros(m_dim, 4);
+    b.set_size(4);
+
+    for(int i=0;i<npt;++i){
+        N(i,0) = 1;
+        for(int j=0;j<3;++j)N(i,j+1) = in_pts[i][j];
+    }
+    for(int i=0;i<key_npt;++i){
         for(int j=0;j<3;++j)N(npt+i+j*key_npt,j+1) = -1;
     }
 
-    //cout<<N<<endl;
-    //arma::vec eigval = eig_sym( M ) ;
-    //cout<<eigval.t()<<endl;
-
-
-    if(!isnewformula){
-        cout<<"start solve M: "<<endl;
-        auto t1 = Clock::now();
-        if(isinv)Minv = inv(M);
-        else {
-            arma::mat Eye;
-            Eye.eye(npt*4,npt*4);
-            Minv = solve(M,Eye);
-        }
-        cout<<"solved M: "<<(invM_time = std::chrono::nanoseconds(Clock::now() - t1).count()/1e9)<<endl;
-
-        t1 = Clock::now();
-        if(isinv)bprey = inv_sympd(N.t() * Minv * N) * N.t() * Minv;
-        else {
-            arma::mat Eye2;
-            Eye2.eye(bsize,bsize);
-            bprey = solve(N.t() * Minv * N, Eye2) * N.t() * Minv;
-        }
-        cout<<"solved bprey "<<std::chrono::nanoseconds(Clock::now() - t1).count()/1e9<<endl;
-    }else{
-
-
-
-    }
 }
 
 
@@ -297,20 +299,14 @@ void RBF_Core::Set_HermiteApprox_Lamnda(double hermite_ls){
 
 void RBF_Core::Set_Hermite_PredictNormal(std::vector<double>&pts){
 
-
-
     Set_HermiteRBF(pts);
-
     auto t1 = Clock::now();
     // cout<<"setting K"<<endl;
-
-
     if(!isnewformula){
         arma::mat D = N.t()*Minv;
         K = Minv - D.t()*inv(D*N)*D;
         K = K.submat( npt, npt, npt*4-1, npt*4-1 );
         finalH = saveK_finalH = K;
-
     }else{
         // if(open_debug_log)
         // cout<<"using new formula"<<endl;
@@ -685,16 +681,16 @@ int RBF_Core::Opt_Hermite_PredictNormal_UnitNormal(){
     return 1;
 }
 
-void RBF_Core::Set_RBFCoefWithInitNormal(const std::vector<double>& Vn)
+void RBF_Core::Set_RBFCoefWithInitNormal()
 {
     
-    newnormals = Vn;
+    // newnormals = initnormals;
     arma::vec y(npt + 3 * key_npt);
     for(size_t i=0;i<npt;++i)y(i) = 0;
     for(size_t i=0;i<key_npt;++i){
-        y(npt+i) = newnormals[i*3];
-        y(npt+i+key_npt) = newnormals[i*3+1];
-        y(npt+i+key_npt*2) = newnormals[i*3+2];
+        y(npt+i) = initnormals[i*3];
+        y(npt+i+key_npt) = initnormals[i*3+1];
+        y(npt+i+key_npt*2) = initnormals[i*3+2];
     }
     Set_RBFCoef(y);
 }
@@ -724,6 +720,10 @@ void RBF_Core::Set_RBFCoefWithOptNormalAndSval(const std::vector<double>& Vn,
     y.subvec(0,npt-1);
     a = Minv*y;
     b = Ninv.t()*y;
+
+    kern_.resize(npt + 3*key_npt); 
+    kb_.resize(4);
+    kb_[0] = 1;
 }
 
 
@@ -771,6 +771,10 @@ void RBF_Core::Solve_RBFCoefWithOptNormalAndSval(const std::vector<double>& Vn,
     // X2 = X2 * y;
     a = X2(0, 0, arma::size(npt + 3 * key_npt, 1));
     b = X2(npt + 3 * key_npt, 0, arma::size(4, 1));
+
+    kern_.resize(npt + 3*key_npt); 
+    kb_.resize(4);
+    kb_[0] = 1;
 }
 
 
@@ -791,6 +795,9 @@ void RBF_Core::Set_RBFCoef(arma::vec &y){
         b = Ninv.t()*y;
         // a.save("a.txt", arma::arma_ascii);
     }
+    kern_.resize(npt + 3*key_npt); 
+    kb_.resize(4);
+    kb_[0] = 1;
 }
 
 

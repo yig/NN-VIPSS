@@ -14,16 +14,17 @@ class RBF_API{
         void run_vipss(std::vector<double> &Vs, std::vector<double> &Vn, const std::vector<double>& s_vals);
         void build_unit_vipss(std::vector<double> &Vs); 
         void build_unit_vipss(std::vector<double> &Vs, size_t key_npt); 
-        void BuildLocalVipssVec();
-
         void build_cluster_hrbf(std::vector<double> &Vs, std::vector<double> &Vn, 
                                  const std::vector<double>& s_vals, std::shared_ptr<RBF_Core> rbf_ptr);
 
         void build_cluster_hrbf_surface(std::shared_ptr<RBF_Core> rbf_ptr, const std::string& mesh_path);
 
+        
+
+
     public:
 
-        RBF_Paras para_;
+        static RBF_Paras para_;
         bool is_surfacing_ = false;
         bool is_outputtime_ = false;
         double user_lambda_ = 0.0; 
@@ -46,3 +47,4 @@ class RBF_API{
 
 };
 
+void InitNormalPartialVipss(std::vector<double> &Vs, size_t key_ptn, std::shared_ptr<RBF_Core> rfb_ptr, double lambda);

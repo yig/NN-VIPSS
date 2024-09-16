@@ -65,19 +65,18 @@ enum RBF_Kernal{
 
 class RBF_Paras{
 public:
-    RBF_METHOD Method;
-    RBF_Kernal Kernal;
-    RBF_InitMethod InitMethod;
-    bool isusesparse;
-    int polyDeg;
-    double sigma;
-    double user_lamnbda;
-    
-    double rangevalue;
+    RBF_METHOD Method = RBF_METHOD::Hermite_UnitNormal;
+    RBF_Kernal Kernal = XCube;
+    RBF_InitMethod InitMethod = Lamnbda_Search;
+    bool isusesparse = false;
+    int polyDeg = 1;
+    double sigma = 0.9;
+    double user_lamnbda = 0;
+    double rangevalue = 0.001;
     double sparse_para = 1e-3;
-    double Hermite_weight_smoothness;
-    double Hermite_ls_weight;
-    double Hermite_designcurve_weight;
+    double Hermite_weight_smoothness = 0;
+    double Hermite_ls_weight = 0;
+    double Hermite_designcurve_weight = 0;
     double ClusterCut_percentage;
     double ClusterCut_LocalMax_percentage;
     int ClusterVisualMethod;
@@ -95,22 +94,22 @@ public:
 
     size_t npt;
     size_t key_npt;
-    int polyDeg = 2;
+    int polyDeg = 1;
     int bsize;
 
     bool isinv = true;
     bool isnewformula = true;
-    double User_Lamnbda;
+    double User_Lamnbda = 0;
     bool open_debug_log = false;
     double user_beta = 1.0;
     double sigma = 0.9;
     double inv_sigma_squarex2 = 1;
 
-    RBF_Kernal kernal;
-    RBF_METHOD curMethod;
-    RBF_InitMethod curInitMethod;
+    RBF_Kernal kernal = XCube;
+    RBF_METHOD curMethod = RBF_METHOD::Hermite_UnitNormal;
+    RBF_InitMethod curInitMethod = Lamnbda_Search;
 
-    double rangevalue = 0.2;
+    double rangevalue =0.001;
     double maxvalue = 10000;
 
     std::vector<double>pts;
@@ -146,6 +145,9 @@ public:
 
     arma::vec a;
     arma::vec b;
+
+    arma::vec kern_;
+    arma::vec kb_;
 
     arma::mat Minv;
     arma::mat P;
@@ -185,13 +187,13 @@ public:
 public:
 
     bool isNewApprox;
-    bool isHermite;
+    bool isHermite = true;
     double Hermite_weight_smoothness;
     double Hermite_ls_weight_inject, User_Lamnbda_inject;
     double Hermite_designcurve_weight;
     
 
-    double ls_coef;
+    double ls_coef = 0;
     void (*Kernal_Gradient_Function_2p)(const double *p1, const double *p2, double *G);
     void (*Kernal_Hessian_Function_2p)(const double *p1, const double *p2, double *H);
 
@@ -237,6 +239,7 @@ public:
 
 public:
     void Set_HermiteRBF(std::vector<double>&pts);
+    void Set_HermiteRBF(const std::vector<double*>&pts);
     void BuildUnitVipssMat(std::vector<double>&pts);
     int Solve_HermiteRBF(std::vector<double>&vn);
 
@@ -264,7 +267,7 @@ public:
 
 
     void Set_RBFCoef(arma::vec &y);
-    void Set_RBFCoefWithInitNormal(const std::vector<double>& Vn);
+    void Set_RBFCoefWithInitNormal();
     void Set_RBFCoefWithOptNormalAndSval(const std::vector<double>& Vn, 
                                                 const std::vector<double>& s_vals );
     void Solve_RBFCoefWithOptNormalAndSval(const std::vector<double>& Vn, 
@@ -305,8 +308,10 @@ public:
     int InjectData(std::vector<double> &pts, RBF_Paras para);
 
     void BuildK(RBF_Paras para);
+    void BuildK(double lambda);
 
     void InitNormal(RBF_Paras para);
+    void InitNormal();
 
     void OptNormal(int method);
 

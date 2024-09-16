@@ -116,9 +116,18 @@ void XCube_HessianDot_Kernel_2p(const double *p1, const double *p2, const double
 
 RBF_Core::RBF_Core(){
 
-    Kernal_Function = Gaussian_Kernel;
+  /*  Kernal_Function = Gaussian_Kernel; X
     Kernal_Function_2p = Gaussian_Kernel_2p;
+    P_Function_2p = Gaussian_PKernel_Dirichlet_2p;*/
+
+    //Kernal_Function = XCube_Kernel; 
+    //Kernal_Function_2p = XCube_Kernel_2p;
     P_Function_2p = Gaussian_PKernel_Dirichlet_2p;
+
+    Kernal_Function = XCube_Kernel;
+    Kernal_Function_2p = XCube_Kernel_2p;
+    Kernal_Gradient_Function_2p = XCube_Gradient_Kernel_2p;
+    Kernal_Hessian_Function_2p = XCube_Hessian_Kernel_2p;
 
     isHermite = false;
 
@@ -198,36 +207,39 @@ inline double RBF_Core::Dist_Function(const double *p){
 
     // n_evacalls++;
     const double *p_pts = pts.data();
+    // std::cout << "kern_ size " << kern_.size() << std::endl; 
     // static arma::vec kern(npt), kb;
-    arma::vec kern(npt), kb;
-    if(isHermite){
-        kern.set_size(npt + 3 * key_npt);
+    // arma::vec kern, kb;
+    //if(isHermite){
+        kern_.set_size(npt + 3 * key_npt);
         double G[3];
-        for(int i=0;i<npt;++i)kern(i) = Kernal_Function_2p(p_pts+i*3, p);
+        for(int i=0;i<npt;++i) kern_(i) = Kernal_Function_2p(p_pts+i*3, p);
         for(int i=0;i<key_npt;++i){
             Kernal_Gradient_Function_2p(p,p_pts+i*3,G);
             //for(int j=0;j<3;++j)kern(npt+i*3+j) = -G[j];
-            for(int j=0;j<3;++j)kern(npt+i+j*key_npt) = G[j];
+            for(int j=0;j<3;++j)kern_(npt+i+j*key_npt) = G[j];
         }
-    }else{
+   /* }else{
         kern.set_size(npt);
         for(int i=0;i<npt;++i)kern(i) = Kernal_Function_2p(p_pts+i*3, p);
-    }
+    }*/
 
-    double loc_part = dot(kern,a);
+    double loc_part = dot(kern_,a);
 
-    if(polyDeg==1){
-        kb.set_size(4);
-        for(int i=0;i<3;++i)kb(i+1) = p[i];
-        kb(0) = 1;
-    }else if(polyDeg==2){
+    //if(polyDeg==1){
+        kb_.set_size(4);
+        for(int i=0;i<3;++i) {
+            kb_(i+1) = p[i];
+        }
+        kb_(0) = 1;
+   /* }else if(polyDeg==2){
         std::vector<double>buf(4,1);
         int ind = 0;
         kb.set_size(10);
         for(int j=0;j<3;++j)buf[j+1] = p[j];
-        for(int j=0;j<4;++j)for(int k=j;k<4;++k)kb(ind++) = buf[j] * buf[k];
-    }
-    double poly_part = dot(kb,b);
+        for(int j=0;j<4;++j)for(int k=j;k<4;++k)kb(ind++) = buf[j] * buf[k];}
+    */
+    double poly_part = arma::dot(kb_,b);
 
     double re = loc_part + poly_part;
     return re;
@@ -387,42 +399,28 @@ void RBF_Core::EstimateNormals()
 {
     double delt = 0.00000001;
     out_normals_.resize(npt*3);
-
-    // for(size_t i = 0; i < key_npt; ++i)
-    // {
-    //     out_normals_[3*i] = -1.0 * newnormals[3*i];
-    //     out_normals_[3*i + 1] = -1.0 * newnormals[3*i + 1];
-    //     out_normals_[3*i + 2] = -1.0 * newnormals[3*i + 2];
-    // }
-
     for(size_t i = 0; i < npt; ++i)
     {
         double x = pts[i * 3];
         double y = pts[i * 3 + 1];
         double z = pts[i * 3 + 2];
-        R3Pt curPxN(x - delt, y, z);
-        R3Pt curPxO(x + delt, y, z);
-        double dx = (Dist_Function(curPxO) - Dist_Function(curPxN))/ (2 * delt);
 
-        R3Pt curPyN(x, y - delt, z);
-        R3Pt curPyO(x, y + delt, z);
-        double dy = (Dist_Function(curPyO) - Dist_Function(curPyN))/ (2 * delt);
+        double curPxN[3] = {x - delt, y, z};
+        double curPxO[3] = {x + delt, y, z};
+        double dx = (this->Dist_Function(curPxO) - this->Dist_Function(curPxN))/ (2 * delt);
 
-        R3Pt curPzN(x, y, z - delt);
-        R3Pt curPzO(x, y, z + delt);
-        double dz = (Dist_Function(curPzO) - Dist_Function(curPzN))/ (2 * delt);
+        double curPyN[3] = {x, y - delt, z};
+        double curPyO[3] = {x, y + delt, z};
+        double dy = (this->Dist_Function(curPyO) -this->Dist_Function(curPyN))/ (2 * delt);
 
+        double curPzN[3] = {x, y, z - delt};
+        double curPzO[3] = {x, y, z + delt};
+        double dz = (this->Dist_Function(curPzO) -this->Dist_Function(curPzN))/ (2 * delt);
         double len = std::max(sqrt(dx * dx + dy * dy + dz * dz), 1e-8);
 
-        R3Pt curP(x, y, z);
-        double sign = 1.0;
-        // if(Dist_Function(curP) < 0)
-        // {
-        //     sign = -1.0;
-        // }
-        out_normals_[3*i] = dx / len * sign;
-        out_normals_[3*i + 1] = dy / len * sign;
-        out_normals_[3*i + 2] = dz / len * sign;
+        out_normals_[3*i] = dx / len;
+        out_normals_[3*i + 1] = dy / len ;
+        out_normals_[3*i + 2] = dz / len ;
     }
 }
 
@@ -430,32 +428,32 @@ std::vector<double> RBF_Core::EstimateNormals(const std::vector<double>& pts)
 {
     double delt = 0.00000001;
     // out_normals_.resize(npt*3);
-    std::vector<double> out_normals;
+    std::vector<double> out_normals(pts.size());
     for(size_t i = 0; i < pts.size()/3; ++i)
     {
         double x = pts[i * 3];
         double y = pts[i * 3 + 1];
         double z = pts[i * 3 + 2];
-        R3Pt curPxN(x - delt, y, z);
-        R3Pt curPxO(x + delt, y, z);
-        double dx = (Dist_Function(curPxO) - Dist_Function(curPxN))/ (2 * delt);
+        double curPxN[3] = {x - delt, y, z};
+        double curPxO[3] = {x + delt, y, z};
+        double dx = (this->Dist_Function(curPxO) - this->Dist_Function(curPxN))/ (2 * delt);
 
-        R3Pt curPyN(x, y - delt, z);
-        R3Pt curPyO(x, y + delt, z);
-        double dy = (Dist_Function(curPyO) - Dist_Function(curPyN))/ (2 * delt);
+        double curPyN[3] = {x, y - delt, z};
+        double curPyO[3] = {x, y + delt, z};
+        double dy = (this->Dist_Function(curPyO) -this->Dist_Function(curPyN))/ (2 * delt);
 
-        R3Pt curPzN(x, y, z - delt);
-        R3Pt curPzO(x, y, z + delt);
-        double dz = (Dist_Function(curPzO) - Dist_Function(curPzN))/ (2 * delt);
+        double curPzN[3] = {x, y, z - delt};
+        double curPzO[3] = {x, y, z + delt};
+        double dz = (this->Dist_Function(curPzO) -this->Dist_Function(curPzN))/ (2 * delt);
 
         double len = std::max(sqrt(dx * dx + dy * dy + dz * dz), 1e-8);
 
-        out_normals.push_back(dx / len);
-        out_normals.push_back(dy / len);
-        out_normals.push_back(dz / len);
-        // out_normals_[3*i] = dx / len;
-        // out_normals_[3*i + 1] = dy / len;
-        // out_normals_[3*i + 2] = dz / len;
+        // out_normals.push_back(dx / len);
+        // out_normals.push_back(dy / len);
+        // out_normals.push_back(dz / len);
+        out_normals[3*i] = dx / len;
+        out_normals[3*i + 1] = dy / len;
+        out_normals[3*i + 2] = dz / len;
     }
     return out_normals;
 }

@@ -3,12 +3,14 @@
 
 typedef std::chrono::high_resolution_clock Clock;
 
+
+RBF_Paras RBF_API::para_;
+
 void RBF_API::Set_RBF_PARA(){
 
     // std::cout << " Start to set rbf para ..... " << endl;
     RBF_Paras &para= para_;
     RBF_InitMethod initmethod = Lamnbda_Search;
-
     RBF_Kernal Kernal = XCube;
     int polyDeg = 1;
     double sigma = 0.9;
@@ -76,7 +78,7 @@ void RBF_API::run_vipss_for_incremental(std::vector<double> &Vs, size_t key_ptn)
     if(key_ptn == 1)
     {
         rbf_core_.Solve_Hermite_PredictNormal_UnitNorm();
-        rbf_core_.Set_RBFCoefWithInitNormal(rbf_core_.initnormals);
+        rbf_core_.Set_RBFCoefWithInitNormal();
     } else {
         if(!use_input_normal_)
         {
@@ -156,29 +158,18 @@ void RBF_API::run_vipss(std::vector<double> &Vs, size_t key_ptn)
     if(key_ptn == 1)
     {
         rbf_core_.Solve_Hermite_PredictNormal_UnitNorm();
-        rbf_core_.Set_RBFCoefWithInitNormal(rbf_core_.initnormals);
+        rbf_core_.Set_RBFCoefWithInitNormal();
     } else {
         rbf_core_.InitNormal(para_);
         rbf_core_.OptNormal(0);
     }
     rbf_core_.EstimateNormals();
     normals_ = rbf_core_.out_normals_;
-    // writeXYZnormal(all_opt_path, Vs, rbf_core_.out_normals_);
-
     auto t1 = Clock::now();
     double pre_time = (std::chrono::nanoseconds(t1 - t0).count()/1e9);
     // printf("vipss build and opt time %f \n", pre_time);
-    
-    if(is_surfacing_){
-        // rbf_core_.Write_Hermite_NormalPrediction(outpath_ + std::to_string(key_ptn) + "_normal", 1);
-        rbf_core_.Surfacing(0,n_voxel_line_);
-        rbf_core_.Write_Surface(outpath_ + std::to_string(key_ptn) + "_surface");
-    }
-    if(is_outputtime_){
-        rbf_core_.Print_TimerRecord_Single(outpath_ +"_time.txt");
-    }
-    // printf("finish partial vipss \n");
 }
+
 
 void RBF_API::run_vipss(std::vector<double> &Vs, std::vector<double> &Vn)
 {
@@ -198,7 +189,7 @@ void RBF_API::run_vipss(std::vector<double> &Vs, std::vector<double> &Vn)
     rbf_core_.initnormals = Vn;
     rbf_core_.newnormals = Vn;
     // rbf_core_.OptNormal(0);
-    rbf_core_.Set_RBFCoefWithInitNormal(Vn);
+    rbf_core_.Set_RBFCoefWithInitNormal();
 
 
 
@@ -259,8 +250,6 @@ void RBF_API::build_cluster_hrbf_surface(std::shared_ptr<RBF_Core> rbf_ptr, cons
 
 }
 
-
-
 void RBF_API::build_cluster_hrbf(std::vector<double> &Vs, std::vector<double> &Vn, 
                                  const std::vector<double>& s_vals, std::shared_ptr<RBF_Core> rbf_ptr)
 {
@@ -319,4 +308,28 @@ void RBF_API::build_unit_vipss(std::vector<double> &Vs, size_t key_npt)
 }
 
 
- 
+void InitNormalPartialVipss(std::vector<double> &Vs, size_t key_ptn, std::shared_ptr<RBF_Core> rfb_ptr, double lambda)
+{
+    auto t0 = Clock::now();
+    // para_.user_lamnbda = lambda;
+    // RBF_Core rbf_core_;
+    rfb_ptr->key_npt = key_ptn;
+    rfb_ptr->InjectData(Vs, RBF_API::para_);
+    // rfb_ptr->User_Lamnbda = lambda;
+    rfb_ptr->BuildK(lambda);
+    double build_time = (std::chrono::nanoseconds(Clock::now() - t0).count()/1e9);
+    if(key_ptn == 1)
+    {
+        rfb_ptr->Solve_Hermite_PredictNormal_UnitNorm();
+        rfb_ptr->Set_RBFCoefWithInitNormal();
+    } else {
+        rfb_ptr->InitNormal();
+        rfb_ptr->OptNormal(0);
+    }
+    // rfb_ptr->SetThis();
+    rfb_ptr->EstimateNormals();
+    // EstimateNormals(vs);
+    // normals_ = rbf_core_.out_normals_;
+    auto t1 = Clock::now();
+    double pre_time = (std::chrono::nanoseconds(t1 - t0).count()/1e9);
+}

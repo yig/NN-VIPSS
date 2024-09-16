@@ -14,7 +14,6 @@ typedef std::chrono::high_resolution_clock Clock;
 using namespace std;
 
 void RBF_Core::BuildK(RBF_Paras para){
-
     isuse_sparse = para.isusesparse;
     sparse_para = para.sparse_para;
     Hermite_weight_smoothness = para.Hermite_weight_smoothness;
@@ -43,13 +42,19 @@ void RBF_Core::BuildK(RBF_Paras para){
     auto t2 = Clock::now();
     if(open_debug_log)
     cout << "Build Time: " << (setup_time = std::chrono::nanoseconds(t2 - t1).count()/1e9) << endl<< endl;
+}
+
+void RBF_Core::BuildK(double lambda){
 
 
-    //if(0)BuildCoherentGraph();
+    // Set_Actual_Hermite_LSCoef( para.Hermite_ls_weight );
+    Set_Actual_User_LSCoef(  lambda  );
+    isNewApprox = true;
+    isnewformula = true;
+    Set_Hermite_PredictNormal(pts);
 }
 
 void RBF_Core::InitNormal(RBF_Paras para){
-
 
     auto t1 = Clock::now();
     curInitMethod = para.InitMethod;
@@ -61,15 +66,22 @@ void RBF_Core::InitNormal(RBF_Paras para){
         break;
 
     }
-
-
-
     auto t2 = Clock::now();
     if(open_debug_log)
     cout << "Init Time: " << (init_time = std::chrono::nanoseconds(t2 - t1).count()/1e9) << endl<< endl;
 
     mp_RBF_InitNormal[curMethod==HandCraft?0:1][curInitMethod] = initnormals;
+}
 
+void RBF_Core::InitNormal(){
+
+    auto t1 = Clock::now();
+    Lamnbda_Search_GlobalEigen();
+    auto t2 = Clock::now();
+    if(open_debug_log)
+    cout << "Init Time: " << (init_time = std::chrono::nanoseconds(t2 - t1).count()/1e9) << endl<< endl;
+
+    mp_RBF_InitNormal[curMethod==HandCraft?0:1][curInitMethod] = initnormals;
 }
 
 void RBF_Core::OptNormal(int method){
@@ -116,7 +128,6 @@ int RBF_Core::InjectData(std::vector<double> &pts, RBF_Paras para)
     InjectData(pts,labels,normals,tangents,edges,para);
     // cout << " finish InjectData " << endl;
     return 0;
-
 }
 
 int RBF_Core::InjectData(std::vector<double> &pts, std::vector<int> &labels, std::vector<double> &normals, std::vector<double> &tangents, std::vector<uint> &edges, RBF_Paras para){
