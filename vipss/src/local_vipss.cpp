@@ -13,6 +13,7 @@ typedef std::chrono::high_resolution_clock Clock;
 
 double LocalVipss::search_nn_time_sum_ = 0;
 double LocalVipss::pass_time_sum_ = 0;
+int LocalVipss::ave_voxel_nn_pt_num_ = 0;
 
 std::vector<tetgenmesh::point> LocalVipss::points_;
 // std::vector<std::vector<size_t>> LocalVipss::cluster_all_pt_ids_;
@@ -864,6 +865,7 @@ double LocalVipss::NatureNeighborDistanceFunctionOMP(const tetgenmesh::point cur
     auto t0 = Clock::now();
     arma::vec nn_dist_vec_(nn_num);
     arma::vec nn_volume_vec_(nn_num);
+    ave_voxel_nn_pt_num_ += nn_num;
 
 #pragma omp parallel for shared(node_rbf_vec_, voro_gen_, VoronoiGen::point_id_map_, nei_pts, cur_pt, nn_dist_vec_, nn_volume_vec_) private(i)
     for( i = 0; i < nn_num; ++i)

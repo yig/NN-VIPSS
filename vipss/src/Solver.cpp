@@ -145,13 +145,10 @@ int Solver::nloptwrapper(vector<double>&lowerbound,
                 myopt.add_inequality_constraint(a.constraintfunc,a.data,tor);
             }
         }
-
         auto t1 = Clock::now();
         result = myopt.optimize(sol.solveval, sol.energy);
         auto t2 = Clock::now();
-
         // cout << "nlopt time: " << (sol.time = std::chrono::nanoseconds(t2 - t1).count()/1e9) <<endl;
-
         sol.Statue = (result >= nlopt::SUCCESS);
         // cout<<"Statu: "<<result<<endl;
         // std::cout << "Obj: "<< std::setprecision(10) << sol.energy << std::endl;
@@ -159,16 +156,8 @@ int Solver::nloptwrapper(vector<double>&lowerbound,
     catch(std::exception &e) {
         // std::cout << "nlopt failed: " << e.what() << std::endl;
     }
-
-
-
     return result;
-
-
 }
-
-
-
 
 int Solver::nloptwrapper(vector<double>&lowerbound,
                vector<double>&upperbound,
@@ -178,8 +167,6 @@ int Solver::nloptwrapper(vector<double>&lowerbound,
                int maxIter,
                Solution_Struct &sol
                ){
-
-
     nlopt::result result;
     sol.Statue=0;
     vector<double>tmp_grad(0);

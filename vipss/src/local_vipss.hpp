@@ -209,4 +209,5 @@ class LocalVipss {
         double dist_time_sum_ = 0;
         size_t dist_call_num_ = 0;
         size_t in_cluster_surface_pt_count = 0;
+        static int ave_voxel_nn_pt_num_; 
 };

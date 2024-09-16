@@ -618,12 +618,10 @@ double VoronoiGen::CalTruncatedCellVolumePassOMP(tetgenmesh::point in_pt, tetgen
         p_ny /= pn_len;
         p_nz /= pn_len;
     }
-    // VoroPlane v_plane(plane_mid_x, plane_mid_y, plane_mid_z, p_nx, p_ny, p_nz);
-    // SavePlane(v_plane);
-    if(point_id_map_.find(nei_pt) == point_id_map_.end())
-    return 0;
+    // if(point_id_map_.find(nei_pt) == point_id_map_.end())
+    // return 0;
     const auto vc_id   = point_id_map_[nei_pt];
-    if(vc_id >= voronoi_data_.numberofvcells) return 0;
+    // if(vc_id >= voronoi_data_.numberofvcells) return 0;
     const auto v_cell  = voronoi_data_.vcelllist[vc_id];
     const auto vf_list = voronoi_data_.vfacetlist;
     const auto ve_list = voronoi_data_.vedgelist;

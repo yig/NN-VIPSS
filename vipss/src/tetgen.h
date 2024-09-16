@@ -887,7 +887,7 @@ REAL orient4dexact(REAL* pa, REAL* pb, REAL* pc, REAL* pd, REAL* pe,
 class tetgenmesh {
 
 public:
-
+static double tet_search_time_st;
 //============================================================================//
 //                                                                            //
 // Mesh data structure                                                        //
@@ -3623,6 +3623,8 @@ inline REAL tetgenmesh::norm2(REAL x, REAL y, REAL z)
 {
   return (x) * (x) + (y) * (y) + (z) * (z);
 }
+
+
 
 
 

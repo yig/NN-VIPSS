@@ -557,7 +557,8 @@ void VIPSSUnit::ReconSurface()
 
         double total_surface_time = std::chrono::nanoseconds(t005 - t000).count() / 1e9;
 
-
+        std::cout << "------- tet search time "<< tetgenmesh::tet_search_time_st << std::endl;
+        std::cout << "------- voxel pt ave nn num "<< LocalVipss::ave_voxel_nn_pt_num_ / LocalVipss::DistCallNum << std::endl;
         printf("------- nn search time: %f \n", local_vipss_.search_nn_time_sum_);
         printf("------- cal nn coordinate and hrbf time: %f \n", local_vipss_.pass_time_sum_);
         printf(" ------ voxel dist func val evaluated count : %d  \n", LocalVipss::DistCallNum);
@@ -567,6 +568,8 @@ void VIPSSUnit::ReconSurface()
         G_VP_stats.cal_nn_coordinate_and_hbrf_time_ += local_vipss_.pass_time_sum_;
         G_VP_stats.voxel_cal_num += LocalVipss::DistCallNum;
         G_VP_stats.surface_total_time_ += total_surface_time;
+
+
 
     } else {
         rbf_api_.user_lambda_ = user_lambda_;
