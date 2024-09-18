@@ -203,7 +203,7 @@ double RBF_Core::Dist_Function(const double x, const double y, const double z){
 
 
 
-inline double RBF_Core::Dist_Function(const double *p){
+double RBF_Core::Dist_Function(const double *p){
 
     // n_evacalls++;
     const double *p_pts = pts.data();

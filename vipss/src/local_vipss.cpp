@@ -866,6 +866,7 @@ double LocalVipss::NatureNeighborDistanceFunctionOMP(const tetgenmesh::point cur
     arma::vec nn_dist_vec_(nn_num);
     arma::vec nn_volume_vec_(nn_num);
     ave_voxel_nn_pt_num_ += nn_num;
+    const std::vector<double*>& all_pts = points_;
 
 #pragma omp parallel for shared(node_rbf_vec_, voro_gen_, VoronoiGen::point_id_map_, nei_pts, cur_pt, nn_dist_vec_, nn_volume_vec_) private(i)
     for( i = 0; i < nn_num; ++i)
@@ -874,8 +875,14 @@ double LocalVipss::NatureNeighborDistanceFunctionOMP(const tetgenmesh::point cur
         if(VoronoiGen::point_id_map_.find(nn_pt) != VoronoiGen::point_id_map_.end())
         {
             size_t pid = VoronoiGen::point_id_map_[nn_pt];
-            nn_dist_vec_[i] = node_rbf_vec_[pid]->Dist_Function(cur_pt);
+            const arma::vec& a = node_rbf_vec_[pid]->a;
+            const arma::vec& b = node_rbf_vec_[pid]->b;
+            const std::vector<size_t>& cluster_pids = VoronoiGen::cluster_init_pids_[pid];
+            nn_dist_vec_[i] = HRBF_Dist_Alone(cur_pt,  a, b, cluster_pids, all_pts);
+            // nn_dist_vec_[i] = 1;
+            // nn_dist_vec_[i] = node_rbf_vec_[pid]->Dist_Function(cur_pt);
             int thread_id = omp_get_thread_num();
+            // nn_volume_vec_[i] = 1.0;
             nn_volume_vec_[i] = voro_gen_.CalTruncatedCellVolumePassOMP(cur_pt, nn_pt, thread_id); 
         }
     }

@@ -1,5 +1,6 @@
 #include "rbf_api.h"
 #include <chrono>
+#include "kernel.h"
 
 typedef std::chrono::high_resolution_clock Clock;
 
@@ -332,4 +333,28 @@ void InitNormalPartialVipss(std::vector<double> &Vs, size_t key_ptn, std::shared
     // normals_ = rbf_core_.out_normals_;
     auto t1 = Clock::now();
     double pre_time = (std::chrono::nanoseconds(t1 - t0).count()/1e9);
+}
+
+double HRBF_Dist_Alone(const double* in_pt, const arma::vec& a, const arma::vec& b, 
+                const std::vector<size_t>& cluster_pids, 
+                const std::vector<double*>& all_pts)
+{
+    int npt = cluster_pids.size();
+    int key_npt = npt;
+    double G[3];
+    arma::vec kern(npt + 3 * key_npt);
+    for(int i=0;i<npt;++i) kern(i) = VIPSSKernel::XCube_Kernel_2p(all_pts[cluster_pids[i]], in_pt);
+    for(int i=0;i<key_npt;++i){
+        VIPSSKernel::XCube_Gradient_Kernel_2p(in_pt, all_pts[cluster_pids[i]],G);
+        for(int j=0;j<3;++j)kern(npt+i+j*key_npt) = G[j];
+    }
+    double loc_part = arma::dot(kern,a);
+    arma::vec kb(4);
+    for(int i=0;i<3;++i) {
+        kb(i+1) = in_pt[i];
+    }
+    kb(0) = 1;
+    double poly_part = arma::dot(kb,b);
+    double re = loc_part + poly_part;
+    return re;
 }

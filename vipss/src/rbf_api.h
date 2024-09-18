@@ -48,3 +48,10 @@ class RBF_API{
 };
 
 void InitNormalPartialVipss(std::vector<double> &Vs, size_t key_ptn, std::shared_ptr<RBF_Core> rfb_ptr, double lambda);
+
+// double HRBF_Dist(const double* in_pt, const arma::vec& a, const arma::vec& b, 
+//                 const std::vector<double>& cluster_pts);
+
+double HRBF_Dist_Alone(const double* in_pt, const arma::vec& a, const arma::vec& b, 
+                const std::vector<size_t>& cluster_pids, 
+                const std::vector<double*>& all_pts);

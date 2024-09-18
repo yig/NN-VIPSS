@@ -602,7 +602,6 @@ void VoroPlane::SavePlane(const std::string& outpath)
     out_file.close();
 }
 
-
 double VoronoiGen::CalTruncatedCellVolumePassOMP(tetgenmesh::point in_pt, tetgenmesh::point nei_pt, int thread_id)
 {
     double plane_mid_x = (in_pt[0] + nei_pt[0])/2.0;
@@ -674,7 +673,6 @@ double VoronoiGen::CalTruncatedCellVolumePassOMP(tetgenmesh::point in_pt, tetgen
                     int posi_id = proj1 > 0 ? ve.v1 : ve.v2;
                     trunc_tets[(tet_total_count + tet_count)*2] = &vp_list[3 * posi_id];
                     trunc_tets[(tet_count + tet_total_count)*2 + 1] = &intersect_pts[3 * (intersect_total_count + intersect_count)];
-
                     intersect_count++;
                     tet_count ++;
 
