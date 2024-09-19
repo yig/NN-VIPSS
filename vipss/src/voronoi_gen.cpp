@@ -1107,7 +1107,11 @@ void VoronoiGen::GetVoronoiNeiPts(tetgenmesh::point pt, std::vector<tetgenmesh::
     // tetlist_->restart();
     
     tetgenmesh::triface searchtet;
+    auto t001 = Clock::now();
     auto closet_tet = GetClosetTet(pt[0], pt[1], pt[2]);
+    auto t002 = Clock::now();
+    tetgenmesh::tet_search_time_st += std::chrono::nanoseconds(t002 - t001).count()/ (1e9);
+
     tetMesh_.decode(*closet_tet, searchtet);
     // searchtet.tet = NULL;
     // searchtet.tet = GetClosetTet(pt[0], pt[1], pt[2]);
