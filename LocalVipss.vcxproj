@@ -151,7 +151,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)\3rd\armadillo\include;$(SolutionDir)\3rd\eigen-3.4.0;$(SolutionDir)\3rd\nlopt\include;$(SolutionDir)\vipss\src;$(SolutionDir)\vipss\src\surfacer;$(SolutionDir)\vipss\src\surfacer\utils;$(SolutionDir)\3rd\OpenBLAS\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\3rd\armadillo\include;$(SolutionDir)\3rd\eigen-3.4.0;$(SolutionDir)\3rd\nlopt\include;$(SolutionDir)\vipss\src;$(SolutionDir)\vipss\src\surfacer;$(SolutionDir)\vipss\src\surfacer\utils;$(SolutionDir)\3rd\OpenBLAS\include;$(SolutionDir)\3rd;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DisableSpecificWarnings>4996;4267;4477;4244;4703;4101;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
@@ -170,7 +170,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)\3rd\armadillo\include;$(SolutionDir)\3rd\eigen-3.4.0;$(SolutionDir)\3rd\nlopt\include;$(SolutionDir)\vipss\src;$(SolutionDir)\vipss\src\surfacer;$(SolutionDir)\vipss\src\surfacer\utils;$(SolutionDir)\3rd\OpenBLAS\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\3rd\armadillo\include;$(SolutionDir)\3rd\eigen-3.4.0;$(SolutionDir)\3rd\nlopt\include;$(SolutionDir)\vipss\src;$(SolutionDir)\vipss\src\surfacer;$(SolutionDir)\vipss\src\surfacer\utils;$(SolutionDir)\3rd\OpenBLAS\include;$(SolutionDir)\3rd;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DisableSpecificWarnings>4996;4267;4477;4244;4703;4101;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <OpenMPSupport>true</OpenMPSupport>
