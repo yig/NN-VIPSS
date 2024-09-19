@@ -74,8 +74,6 @@ class LocalVipss {
         void GroupPtsWithVolume();
 
     public:
-        inline void AppendRow(arma::sp_umat& in_mat,  arma::sp_urowvec& append_row);
-        inline void AppendCol(arma::sp_umat& in_mat,  arma::sp_ucolvec& append_row);
         void BuidClusterCoresPtIds();
         void UpdateClusterCoresPtIds();
 

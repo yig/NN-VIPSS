@@ -526,8 +526,12 @@ void VIPSSUnit::ReconSurface()
     // local_vipss_.out_normals_ = newnormals_;
     // local_vipss_.OptimizeAdjacentMat();
     // TestSpectralClustering(local_vipss_.cluster_adjacent_mat_opt_);
-    // local_vipss_.voro_gen_.BuildTetMeshTetCenterMap();
-    // local_vipss_.voro_gen_.BuildPicoTree();
+    auto tt00 = Clock::now();
+    local_vipss_.voro_gen_.BuildTetMeshTetCenterMap();
+    local_vipss_.voro_gen_.BuildPicoTree();
+    auto tt01 = Clock::now();
+    double init_pico_tree_time = std::chrono::nanoseconds(tt01 - tt00).count() / 1e9;
+    printf("init pico tree time  : %f ! \n", init_pico_tree_time);
     // bool use_nn_interpolation = true;
     auto t002 = Clock::now();
     bool is_group_cluster = false;
@@ -568,8 +572,6 @@ void VIPSSUnit::ReconSurface()
         G_VP_stats.cal_nn_coordinate_and_hbrf_time_ += local_vipss_.pass_time_sum_;
         G_VP_stats.voxel_cal_num += LocalVipss::DistCallNum;
         G_VP_stats.surface_total_time_ += total_surface_time;
-
-
 
     } else {
         rbf_api_.user_lambda_ = user_lambda_;

@@ -10691,17 +10691,17 @@ int tetgenmesh::GetCaveBoundryPoint(point insertpt, triface *searchtet, face *sp
   bool enqflag;
   int t1ver;
   int i, j, k, s;
-
+ 
   // if (b->verbose > 2) {
   //   printf("      Insert point %d\n", pointmark(insertpt));
   // }
-
   // cavetetvertlist->restart();
   // Locate the point.
   // printf("start to find point loc \n");
   auto t1 = Clock::now();
   // printf("in pt %f, %f, %f \n", insertpt[0], insertpt[1], insertpt[2]);
   loc = locate(insertpt, searchtet); 
+  // loc = INTETRAHEDRON;
   ivf->iloc = (int) loc; // The return value.
   auto t2 = Clock::now();
   tet_search_time_st += std::chrono::nanoseconds(t2 - t1).count()/ (1e9);

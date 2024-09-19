@@ -573,6 +573,26 @@ inline double CalTetrahedronVolumeDet(const double* pa, const double* pb, const 
     return det;
 }
 
+inline double CalSignedTetrahedronVolumeDet(const double* pa, const double* pb, const double* pc, const double* pd)
+{
+    double a00 = pa[0] - pd[0];
+    double a10 = pb[0] - pd[0];
+    double a20 = pc[0] - pd[0];
+
+    double a01 = pa[1] - pd[1];
+    double a11 = pb[1] - pd[1];
+    double a21 = pc[1] - pd[1];
+
+    double a02 = pa[2] - pd[2];
+    double a12 = pb[2] - pd[2];
+    double a22 = pc[2] - pd[2];
+
+    double det1 = a00 * a11 * a22 + a01 * a12 * a20 + a02 * a10 * a21;
+    double det2 = a02 * a11 * a20 + a01 * a10 * a22 + a00 * a12 * a21;
+    double det = (det2 - det1) / 6.0;
+    return det;
+}
+
 
 void VoroPlane::SavePlane(const std::string& outpath)
 {
@@ -964,6 +984,38 @@ void VoronoiGen::GetVertexStar(tetgenmesh::point &p_st,
         if(pt != (tetgenmesh::point)(NULL)) candid_pts.insert(pt);
     }
 }
+std::vector<double> GenerateTetTriSamplePts( tetgenmesh::point cp,  tetgenmesh::point p0,  tetgenmesh::point p1,  tetgenmesh::point p2)
+{
+    std::vector<double> results;
+    double f0_cx = ((p0[0] + p1[0] + p2[0]) + cp[0])/4.0;
+    double f0_cy = ((p0[1] + p1[1] + p2[1]) + cp[1])/4.0;
+    double f0_cz = ((p0[2] + p1[2] + p2[2]) + cp[2])/4.0;
+    results.push_back(f0_cx);
+    results.push_back(f0_cy);
+    results.push_back(f0_cz);
+
+    double p0x = (f0_cx + 4.0 * p0[0]) / 5.0;
+    double p0y = (f0_cy + 4.0 * p0[1]) / 5.0;
+    double p0z = (f0_cz + 4.0 * p0[2]) / 5.0;
+    results.push_back(p0x);
+    results.push_back(p0y);
+    results.push_back(p0z);
+
+    double p1x = (f0_cx + 4.0 * p1[0]) / 5.0;
+    double p1y = (f0_cy + 4.0 * p1[1]) / 5.0;
+    double p1z = (f0_cz + 4.0 * p1[2]) / 5.0;
+    results.push_back(p1x);
+    results.push_back(p1y);
+    results.push_back(p1z);
+
+    double p2x = (f0_cx + 4.0 * p2[0]) / 5.0;
+    double p2y = (f0_cy + 4.0 * p2[1]) / 5.0;
+    double p2z = (f0_cz + 4.0 * p2[2]) / 5.0;
+    results.push_back(p2x);
+    results.push_back(p2y);
+    results.push_back(p2z);
+
+}
 
 void VoronoiGen::BuildTetMeshTetCenterMap()
 {
@@ -971,34 +1023,81 @@ void VoronoiGen::BuildTetMeshTetCenterMap()
     tetgenmesh::triface tetface;
     tetface.tet = tetMesh_.alltetrahedrontraverse();
     size_t tet_count = 0;
+    tetgenmesh::point torg, tdest, tapex, toppo;
     while(tetface.tet != (tetgenmesh::tetrahedron*)(NULL))
     {
+        torg = tetMesh_.org(tetface);
+        tdest = tetMesh_.dest(tetface);
+        tapex = tetMesh_.apex(tetface);
+        toppo = tetMesh_.oppo(tetface);
         // if(tetMesh_.ishulltet(tetface))
         {
-            double cx = 0; 
-            double cy = 0;
-            double cz = 0; 
-            for(size_t i = 0; i < 4; ++i)
-            {
-                auto cur_pt = (tetgenmesh::point) tetface.tet[4 + i];
-                cx += cur_pt[0];
-                cy += cur_pt[1];
-                cz += cur_pt[2];
-            }
-            cx /= 3.0;
-            cy /= 3.0;
-            cz /= 3.0;
+            double cx = (torg[0] + tdest[0] + tapex[0] + toppo[0])/ 4.0; 
+            double cy = (torg[1] + tdest[1] + tapex[1] + toppo[1])/ 4.0; 
+            double cz = (torg[2] + tdest[2] + tapex[2] + toppo[2])/ 4.0; 
+         
             tet_center_pts_.push_back(cx);
             tet_center_pts_.push_back(cy);
             tet_center_pts_.push_back(cz);
             tc_pt_tet_map_[tet_count] = tetface.tet;
             tet_count++;
+           
+            tet_center_pts_.push_back((cx + 9*torg[0])/10.0);
+            tet_center_pts_.push_back((cy + 9*torg[1])/10.0);
+            tet_center_pts_.push_back((cz + 9*torg[2])/10.0);
+            tc_pt_tet_map_[tet_count] = tetface.tet;
+            tet_count++;
+            tet_center_pts_.push_back((cx + 9*tdest[0])/10.0);
+            tet_center_pts_.push_back((cy + 9*tdest[1])/10.0);
+            tet_center_pts_.push_back((cz + 9*tdest[2])/10.0);
+            tc_pt_tet_map_[tet_count] = tetface.tet;
+            tet_count++;
+            tet_center_pts_.push_back((cx + 9*tapex[0])/10.0);
+            tet_center_pts_.push_back((cy + 9*tapex[1])/10.0);
+            tet_center_pts_.push_back((cz + 9*tapex[2])/10.0);
+            tc_pt_tet_map_[tet_count] = tetface.tet;
+            tet_count++;
+            tet_center_pts_.push_back((cx + 9*toppo[0])/10.0);
+            tet_center_pts_.push_back((cy + 9*toppo[1])/10.0);
+            tet_center_pts_.push_back((cz + 9*toppo[2])/10.0);
+            tc_pt_tet_map_[tet_count] = tetface.tet;
+            tet_count++;
+            
+            auto p0 = torg;
+            auto p1 = tdest;
+            auto p2 = tapex;
+            auto p3 = toppo;
+            double cp[3] = {cx, cy, cz};
+            std::vector<std::vector<double>> new_pts;
+            auto vts_0 = GenerateTetTriSamplePts(cp, p0, p1, p2);
+            new_pts.push_back(vts_0);
+            auto vts_1 = GenerateTetTriSamplePts(cp, p0, p1, p3);
+            new_pts.push_back(vts_1);
+            auto vts_2 = GenerateTetTriSamplePts(cp, p0, p2, p3);
+            new_pts.push_back(vts_2);
+            auto vts_3 = GenerateTetTriSamplePts(cp, p3, p1, p2);
+            new_pts.push_back(vts_3);
+            
+            for(const auto& pts : new_pts)
+            {
+                for(size_t i =0; i < pts.size()/3; ++i)
+                {
+                    tet_center_pts_.push_back(pts[3*i]);
+                    tet_center_pts_.push_back(pts[3*i + 1]);
+                    tet_center_pts_.push_back(pts[3*i + 2]);
+                    tc_pt_tet_map_[tet_count] = tetface.tet;
+                    tet_count++;
+                }
+            }     
         }
         tetface.tet = tetMesh_.alltetrahedrontraverse();
     }
-    std::string tet_center_path = out_dir_ + filename_ + "/" + "tet_centers";
-    writePLYFile(tet_center_path, tet_center_pts_);
+    // std::string tet_center_path = out_dir_ + filename_ + "/" + "tet_centers";
+    // writePLYFile(tet_center_path, tet_center_pts_);
 }
+
+
+
 
 tetgenmesh::tetrahedron* VoronoiGen::GetClosetTet(double x, double y, double z)
 {
@@ -1012,9 +1111,9 @@ void VoronoiGen::GetVoronoiNeiPts(tetgenmesh::point pt, std::vector<tetgenmesh::
     // tetlist_->restart();
     
     tetgenmesh::triface searchtet;
-    // auto closet_tet = GetClosetTet(pt[0], pt[1], pt[2]);
-    // tetMesh_.decode(*closet_tet, searchtet);
-    searchtet.tet = NULL;
+    auto closet_tet = GetClosetTet(pt[0], pt[1], pt[2]);
+    tetMesh_.decode(*closet_tet, searchtet);
+    // searchtet.tet = NULL;
     // searchtet.tet = GetClosetTet(pt[0], pt[1], pt[2]);
     // printf(" GetInsertPointBoundry .......... \n");
     // ptlist_->restart();
@@ -1197,6 +1296,11 @@ void VoronoiGen::InitMesh()
 
     tetlist3_ = new tetgenmesh::arraypool(sizeof(tetgenmesh::triface), 10);
     ptlist3_ = new tetgenmesh::arraypool(sizeof(tetgenmesh::point), 10);
+}
+
+void VoronoiGen::BuildPicoTree()
+{
+    pTree_.Init(tet_center_pts_);
 }
 
 

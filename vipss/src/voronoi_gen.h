@@ -120,10 +120,13 @@ class VoronoiGen{
         void InsertSphereBoundryPts();
         void GetVoronoiNeiPts(tetgenmesh::point pt, std::vector<tetgenmesh::point>& candid_pts);
         void BuildTetMeshTetCenterMap();
+        void BuildPicoTree();
         tetgenmesh::tetrahedron* GetClosetTet(double x, double y, double z);
         double CalTruncatedCellVolumePassOMP(tetgenmesh::point in_pt, tetgenmesh::point nei_pt, int thread_id = 0);
         void OutputTetMesh(const std::string& tetmesh_path);
         void SetInsertBoundaryPtsToUnused();
+
+        bool InsideTet(tetgenmesh::point search_pt, tetgenmesh::point p0, tetgenmesh::point p1, tetgenmesh::point p2, tetgenmesh::point p3);
                 
     public:
         size_t pt_num_;
@@ -149,16 +152,6 @@ class VoronoiGen{
         double truncated_face_center_[3];
 
         static const int MAX_ELEMENT_ = 1000;
-        // double pt_sign_vals_[MAX_ELEMENT_];
-        // int edge_sign_vals_[MAX_ELEMENT_];
-        // int face_sign_vals_[MAX_ELEMENT_];
-        // int edge_intersect_pt_ids_[MAX_ELEMENT_];
-        // int edge_positive_pt_ids_[MAX_ELEMENT_];
-        // int face_insersect_pt_ids_[MAX_ELEMENT_];
-        // double face_centers_[MAX_ELEMENT_];
-        // double intersect_pts_[MAX_ELEMENT_];
-        // double tet_list_pts_[MAX_ELEMENT_ *3];
-
         static const int MAX_THREAD_NUM_ = 24;
         double* truncated_tets_omp_[MAX_THREAD_NUM_][MAX_ELEMENT_*2];
         double truncated_centers_omp_[MAX_THREAD_NUM_][3];
@@ -181,11 +174,10 @@ class VoronoiGen{
         static arma::ivec cluster_accum_size_vec_;
 
         // std::vector<double> vertices_;
-        // std::vector<double> normals_;
+        // std::vector<double> normals_;6532
         // std::vector<uint8_t> colors_;
         // double min_angle_ = 30.0;
         PicoTree pTree_;
-
         std::vector<std::vector<int>> vorocell_pids_;
         std::vector<std::vector<int>> vorocell_eids_;
         
