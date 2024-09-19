@@ -328,7 +328,7 @@ void VIPSSUnit::OptUnitVipssNormalSimple(){
         }
     }
     printf("finish init solver ! \n");
-    if(1){
+    if(1){ 
         std::vector<double>upper(npt_*2);
         std::vector<double>lower(npt_*2);
         for(int i=0;i<npt_;++i){

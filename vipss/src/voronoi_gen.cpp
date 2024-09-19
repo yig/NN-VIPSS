@@ -984,36 +984,38 @@ void VoronoiGen::GetVertexStar(tetgenmesh::point &p_st,
         if(pt != (tetgenmesh::point)(NULL)) candid_pts.insert(pt);
     }
 }
-std::vector<double> GenerateTetTriSamplePts( tetgenmesh::point cp,  tetgenmesh::point p0,  tetgenmesh::point p1,  tetgenmesh::point p2)
+void GenerateTetTriSamplePts( tetgenmesh::point cp,  tetgenmesh::point p0,  
+                              tetgenmesh::point p1,  tetgenmesh::point p2, 
+                              std::vector<double>& pts)
 {
-    std::vector<double> results;
+
     double f0_cx = ((p0[0] + p1[0] + p2[0]) + cp[0])/4.0;
     double f0_cy = ((p0[1] + p1[1] + p2[1]) + cp[1])/4.0;
     double f0_cz = ((p0[2] + p1[2] + p2[2]) + cp[2])/4.0;
-    results.push_back(f0_cx);
-    results.push_back(f0_cy);
-    results.push_back(f0_cz);
+    pts.push_back(f0_cx);
+    pts.push_back(f0_cy);
+    pts.push_back(f0_cz);
 
-    double p0x = (f0_cx + 4.0 * p0[0]) / 5.0;
-    double p0y = (f0_cy + 4.0 * p0[1]) / 5.0;
-    double p0z = (f0_cz + 4.0 * p0[2]) / 5.0;
-    results.push_back(p0x);
-    results.push_back(p0y);
-    results.push_back(p0z);
+    // double p0x = (f0_cx + 4.0 * p0[0]) / 5.0;
+    // double p0y = (f0_cy + 4.0 * p0[1]) / 5.0;
+    // double p0z = (f0_cz + 4.0 * p0[2]) / 5.0;
+    // results.push_back(p0x);
+    // results.push_back(p0y);
+    // results.push_back(p0z);
 
-    double p1x = (f0_cx + 4.0 * p1[0]) / 5.0;
-    double p1y = (f0_cy + 4.0 * p1[1]) / 5.0;
-    double p1z = (f0_cz + 4.0 * p1[2]) / 5.0;
-    results.push_back(p1x);
-    results.push_back(p1y);
-    results.push_back(p1z);
+    // double p1x = (f0_cx + 4.0 * p1[0]) / 5.0;
+    // double p1y = (f0_cy + 4.0 * p1[1]) / 5.0;
+    // double p1z = (f0_cz + 4.0 * p1[2]) / 5.0;
+    // results.push_back(p1x);
+    // results.push_back(p1y);
+    // results.push_back(p1z);
 
-    double p2x = (f0_cx + 4.0 * p2[0]) / 5.0;
-    double p2y = (f0_cy + 4.0 * p2[1]) / 5.0;
-    double p2z = (f0_cz + 4.0 * p2[2]) / 5.0;
-    results.push_back(p2x);
-    results.push_back(p2y);
-    results.push_back(p2z);
+    // double p2x = (f0_cx + 4.0 * p2[0]) / 5.0;
+    // double p2y = (f0_cy + 4.0 * p2[1]) / 5.0;
+    // double p2z = (f0_cz + 4.0 * p2[2]) / 5.0;
+    // results.push_back(p2x);
+    // results.push_back(p2y);
+    // results.push_back(p2z);
 
 }
 
@@ -1042,53 +1044,47 @@ void VoronoiGen::BuildTetMeshTetCenterMap()
             tc_pt_tet_map_[tet_count] = tetface.tet;
             tet_count++;
            
-            tet_center_pts_.push_back((cx + 9*torg[0])/10.0);
-            tet_center_pts_.push_back((cy + 9*torg[1])/10.0);
-            tet_center_pts_.push_back((cz + 9*torg[2])/10.0);
-            tc_pt_tet_map_[tet_count] = tetface.tet;
-            tet_count++;
-            tet_center_pts_.push_back((cx + 9*tdest[0])/10.0);
-            tet_center_pts_.push_back((cy + 9*tdest[1])/10.0);
-            tet_center_pts_.push_back((cz + 9*tdest[2])/10.0);
-            tc_pt_tet_map_[tet_count] = tetface.tet;
-            tet_count++;
-            tet_center_pts_.push_back((cx + 9*tapex[0])/10.0);
-            tet_center_pts_.push_back((cy + 9*tapex[1])/10.0);
-            tet_center_pts_.push_back((cz + 9*tapex[2])/10.0);
-            tc_pt_tet_map_[tet_count] = tetface.tet;
-            tet_count++;
-            tet_center_pts_.push_back((cx + 9*toppo[0])/10.0);
-            tet_center_pts_.push_back((cy + 9*toppo[1])/10.0);
-            tet_center_pts_.push_back((cz + 9*toppo[2])/10.0);
-            tc_pt_tet_map_[tet_count] = tetface.tet;
-            tet_count++;
+            // tet_center_pts_.push_back((cx + 9*torg[0])/10.0);
+            // tet_center_pts_.push_back((cy + 9*torg[1])/10.0);
+            // tet_center_pts_.push_back((cz + 9*torg[2])/10.0);
+            // tc_pt_tet_map_[tet_count] = tetface.tet;
+            // tet_count++;
+            // tet_center_pts_.push_back((cx + 9*tdest[0])/10.0);
+            // tet_center_pts_.push_back((cy + 9*tdest[1])/10.0);
+            // tet_center_pts_.push_back((cz + 9*tdest[2])/10.0);
+            // tc_pt_tet_map_[tet_count] = tetface.tet;
+            // tet_count++;
+            // tet_center_pts_.push_back((cx + 9*tapex[0])/10.0);
+            // tet_center_pts_.push_back((cy + 9*tapex[1])/10.0);
+            // tet_center_pts_.push_back((cz + 9*tapex[2])/10.0);
+            // tc_pt_tet_map_[tet_count] = tetface.tet;
+            // tet_count++;
+            // tet_center_pts_.push_back((cx + 9*toppo[0])/10.0);
+            // tet_center_pts_.push_back((cy + 9*toppo[1])/10.0);
+            // tet_center_pts_.push_back((cz + 9*toppo[2])/10.0);
+            // tc_pt_tet_map_[tet_count] = tetface.tet;
+            // tet_count++;
             
-            auto p0 = torg;
-            auto p1 = tdest;
-            auto p2 = tapex;
-            auto p3 = toppo;
-            double cp[3] = {cx, cy, cz};
-            std::vector<std::vector<double>> new_pts;
-            auto vts_0 = GenerateTetTriSamplePts(cp, p0, p1, p2);
-            new_pts.push_back(vts_0);
-            auto vts_1 = GenerateTetTriSamplePts(cp, p0, p1, p3);
-            new_pts.push_back(vts_1);
-            auto vts_2 = GenerateTetTriSamplePts(cp, p0, p2, p3);
-            new_pts.push_back(vts_2);
-            auto vts_3 = GenerateTetTriSamplePts(cp, p3, p1, p2);
-            new_pts.push_back(vts_3);
+            // auto p0 = torg;
+            // auto p1 = tdest;
+            // auto p2 = tapex;
+            // auto p3 = toppo;
+            // double cp[3] = {cx, cy, cz};
+            // std::vector<double> new_pts;
+            // GenerateTetTriSamplePts(cp, p0, p1, p2, new_pts);
+            // GenerateTetTriSamplePts(cp, p0, p1, p3, new_pts);
+            // GenerateTetTriSamplePts(cp, p0, p2, p3, new_pts);
+            // GenerateTetTriSamplePts(cp, p3, p1, p2, new_pts);
             
-            for(const auto& pts : new_pts)
-            {
-                for(size_t i =0; i < pts.size()/3; ++i)
-                {
-                    tet_center_pts_.push_back(pts[3*i]);
-                    tet_center_pts_.push_back(pts[3*i + 1]);
-                    tet_center_pts_.push_back(pts[3*i + 2]);
-                    tc_pt_tet_map_[tet_count] = tetface.tet;
-                    tet_count++;
-                }
-            }     
+            // for(size_t i =0; i < new_pts.size()/3; ++i)
+            // {
+            //     tet_center_pts_.push_back(new_pts[3*i]);
+            //     tet_center_pts_.push_back(new_pts[3*i + 1]);
+            //     tet_center_pts_.push_back(new_pts[3*i + 2]);
+            //     tc_pt_tet_map_[tet_count] = tetface.tet;
+            //     tet_count++;
+            // }
+               
         }
         tetface.tet = tetMesh_.alltetrahedrontraverse();
     }
@@ -1101,8 +1097,8 @@ void VoronoiGen::BuildTetMeshTetCenterMap()
 
 tetgenmesh::tetrahedron* VoronoiGen::GetClosetTet(double x, double y, double z)
 {
-    // size_t tet_id = pTree_.SearchNearestPt(x, y, z);
-    size_t tet_id = 0;
+    size_t tet_id = pTree_.SearchNearestPt(x, y, z);
+    // size_t tet_id = 0;
     return tc_pt_tet_map_[tet_id];
 }
 
