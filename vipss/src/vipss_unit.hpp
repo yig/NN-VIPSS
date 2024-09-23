@@ -39,8 +39,18 @@ class VIPSSUnit {
         void BuildLocalHRBFPerNode();
 
     public:
+
         std::string file_name_;
         std::string data_dir_; 
+        std::string out_normal_path_;
+        std::string out_surface_path_;
+        std::string out_debug_path_;
+        std::string input_data_path_;
+        std::string input_data_ext_;
+
+        bool open_debug_ = false;
+        bool is_surfacing_ = true;
+ 
         //VoronoiGen voro_gen_;
         LocalVipss local_vipss_;
         RBF_API rbf_api_;
@@ -80,5 +90,8 @@ class VIPSSUnit {
 
         double opt_tor_ = 1e-7;
         int max_opt_iter_ = 3000;
+
+
+    
 
 };

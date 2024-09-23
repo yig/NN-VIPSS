@@ -205,11 +205,16 @@ void LocalVipss::VisualFuncValues(double (*function)(const R3Pt &in_pt), const V
     writePLYFile_CO(dist_fuc_color_path, pts, pts_co);
 }
 
-void LocalVipss::Init(const std::string & path)
+void LocalVipss::Init(const std::string & path, const std::string& ext)
 {   
     std::vector<double> in_pts;
     std::vector<double> in_normals;
-    readPLYFile(path, in_pts, in_normals);
+    if(ext == ".ply") 
+    {
+        readPLYFile(path, in_pts, in_normals);
+    } else {
+        readXYZ(path, in_pts);
+    }
     printf("load data file : %s \n", path.c_str());
     printf("read point size : %lu \n", in_pts.size()/3);
     auto t0 = Clock::now();

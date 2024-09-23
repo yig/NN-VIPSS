@@ -26,7 +26,7 @@ void VIPSSUnit::InitPtNormalWithLocalVipss()
     local_vipss_.use_hrbf_surface_ = false;
     local_vipss_.angle_threshold_ = merge_angle_;
     // local_vipss_.volume_dim_ = 100;
-    local_vipss_.Init(path);
+    local_vipss_.Init(input_data_path_, input_data_ext_);
 
     // return;
     // if(init_with_cluster_merge_)
@@ -348,6 +348,7 @@ void VIPSSUnit::OptUnitVipssNormalSimple(){
         //for(int i=0;i<npt;++i)cout<< sol.solveval[i]<<' ';cout<<endl;
     }
     newnormals_.resize(npt_*3);
+    s_func_vals_.resize(npt_, 0); 
     printf("-----------newnormal size : %lu \n", newnormals_.size());
     arma::vec y(npt_ + 3 * npt_);
     for(size_t i=0;i<npt_;++i)y(i) = 0;
@@ -554,8 +555,8 @@ void VIPSSUnit::ReconSurface()
         auto surf_time = sf.Surfacing_Implicit(local_vipss_.out_pts_, n_voxels_1d, false, LocalVipss::NNDistFunction);
         auto t004 = Clock::now();
         sf.WriteSurface(finalMesh_v_,finalMesh_fv_);
-        std::string out_path = data_dir_ + "/" + file_name_  + "/nn_surface";
-        writePLYFile_VF(out_path, finalMesh_v_, finalMesh_fv_);
+        // std::string out_path = data_dir_ + "/" + file_name_  + "/nn_surface";
+        writePLYFile_VF(out_surface_path_, finalMesh_v_, finalMesh_fv_);
         auto t005 = Clock::now();
         double surface_file_save_time = std::chrono::nanoseconds(t005 - t004).count() / 1e9;
 
@@ -613,11 +614,11 @@ void VIPSSUnit::Run()
     auto ts0 = Clock::now();
     if(user_lambda_ < 1e-12)
     {
-        // OptUnitVipssNormalSimple();
-        OptUnitVipssNormalDirectSimple();
+         OptUnitVipssNormalSimple();
+        //OptUnitVipssNormalDirectSimple();
     } else {
-        // OptUnitVipssNormal();
-        OptUnitVipssNormalDirect();
+         OptUnitVipssNormal();
+        //OptUnitVipssNormalDirect();
     }
 
     Final_H_.clear();
@@ -637,8 +638,8 @@ void VIPSSUnit::Run()
     double total_time = std::chrono::nanoseconds(t01 - t00).count()/1e9;
     printf("total local vipss running time : %f ! \n", total_time);
 
-    std::string out_path  = local_vipss_.out_dir_ + local_vipss_.filename_  + "_opt";
-    writePLYFile_VN(out_path, local_vipss_.out_pts_, newnormals_);
+    // std::string out_path  = local_vipss_.out_dir_ + local_vipss_.filename_  + "_opt";
+    writePLYFile_VN(out_normal_path_, local_vipss_.out_pts_, newnormals_);
 
     // std::string color_out_path  = local_vipss_.out_dir_ + local_vipss_.filename_  + "_opt_color";
     // output_opt_pts_with_color(local_vipss_.out_pts_, s_func_vals_,color_out_path);

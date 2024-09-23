@@ -44,7 +44,7 @@ class LocalVipss {
         LocalVipss() {};
         ~ LocalVipss() {};
 
-        void Init(const std::string & path);
+        void Init(const std::string & path, const std::string& ext);
 
         void BuildHRBFPerNode();
         inline std::vector<double> GetClusterNormalsFromIds
