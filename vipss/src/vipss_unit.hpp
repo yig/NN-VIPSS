@@ -89,7 +89,7 @@ class VIPSSUnit {
         HRBF_SURFACE_TYPE hrbf_type_;
 
         double opt_tor_ = 1e-7;
-        int max_opt_iter_ = 3000;
+        int max_opt_iter_ = 2000;
 
 
     

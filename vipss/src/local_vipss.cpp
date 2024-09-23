@@ -484,13 +484,14 @@ void LocalVipss::BuildMatrixH()
     arma::ivec cluster_j_size_vec = VoronoiGen::cluster_size_vec_  % VoronoiGen::cluster_size_vec_ * 16; 
     int all_ele_num = arma::accu(cluster_j_size_vec);
     h_ele_triplets_.resize(all_ele_num);
+    printf("average cluster J ele num : %d \n", int(arma::mean(cluster_j_size_vec)));
 
     arma::ivec acc_j_size_vec = arma::cumsum(cluster_j_size_vec);
     auto iter = h_ele_triplets_.begin();
 
-    std::vector<std::vector<Triplet>> ele_vector(cluster_num);
+    //std::vector<std::vector<Triplet>> ele_vector(cluster_num);
     auto t5 = Clock::now();
-#pragma omp parallel for shared(points_,ele_vector, VoronoiGen::cluster_init_pids_) 
+//#pragma omp parallel for shared(points_, VoronoiGen::cluster_init_pids_) 
     for(int i =0; i < cluster_num; ++i)
     {
         const auto& cluster_pt_ids = VoronoiGen::cluster_init_pids_[i];
@@ -499,7 +500,7 @@ void LocalVipss::BuildMatrixH()
         size_t j_ele_num = unit_npt * unit_npt * 16;
 
         // cur_eles.reserve(j_ele_num);
-        auto cur_iter = h_ele_triplets_.begin() + acc_j_size_vec[i];
+        auto cur_iter = iter + acc_j_size_vec[i];
         if(user_lambda_ > 1e-10)
         {
             arma::mat F(4 * unit_npt, 4 * unit_npt);
@@ -757,8 +758,9 @@ void LocalVipss::InitNormalWithVipss()
         double cur_lambda = user_lambda_ / double(unit_npt);
         // if(!node_rbf_vec_[i])  
         
-        node_rbf_vec_[i] = std::make_shared<RBF_Core>();
-        InitNormalPartialVipss(vts, 1, node_rbf_vec_[i], cur_lambda);
+        // node_rbf_vec_[i] = std::make_shared<RBF_Core>();
+        std::shared_ptr rbf_temp_ptr = std::make_shared<RBF_Core>();
+        InitNormalPartialVipss(vts, 1,rbf_temp_ptr, cur_lambda);
         // auto t2 = Clock::now();
         // double vipss_time = std::chrono::nanoseconds(t2 - t1).count()/1e9;
    
@@ -773,9 +775,9 @@ void LocalVipss::InitNormalWithVipss()
             // cluster_normals_yele.push_back(Triplet(v_id, i, node_rbf_vec_[i]->out_normals_[3* p_id + 1]));
             // cluster_normals_zele.push_back(Triplet(v_id, i, node_rbf_vec_[i]->out_normals_[3* p_id + 2]));
 
-            *(iterx + p_id) = Triplet(v_id, i, node_rbf_vec_[i]->out_normals_[3* p_id]);
-            *(itery + p_id) = Triplet(v_id, i, node_rbf_vec_[i]->out_normals_[3* p_id + 1]);
-            *(iterz + p_id) = Triplet(v_id, i, node_rbf_vec_[i]->out_normals_[3* p_id + 2]);
+            *(iterx + p_id) = Triplet(v_id, i, rbf_temp_ptr->out_normals_[3* p_id]);
+            *(itery + p_id) = Triplet(v_id, i, rbf_temp_ptr->out_normals_[3* p_id + 1]);
+            *(iterz + p_id) = Triplet(v_id, i, rbf_temp_ptr->out_normals_[3* p_id + 2]);
         }
         // printf("Init vipss cluster id  : %d, cluster pt num : %d \n", i, int(p_ids.size()));
     }
