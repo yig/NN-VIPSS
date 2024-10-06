@@ -88,16 +88,13 @@ class LocalVipss {
 
 
         double NodeDistanceFunction(const tetgenmesh::point nn_pt, const tetgenmesh::point cur_pt) const;
-        double NatureNeighborDistanceFunction(const tetgenmesh::point cur_pt);
         double NatureNeighborDistanceFunctionOMP(const tetgenmesh::point cur_pt) const;
         static double NNDistFunction(const R3Pt &in_pt);  
         void SetThis();      
         void VisualFuncValues(double (*function)(const R3Pt &in_pt), const VoroPlane& plane,
                               const std::string& dist_fuc_color_path);
         
-        void testNNPtDist();
-        static int DistCallNum;
-        static double DistCallTime;
+        
 
         void GroupClustersWithDegree();
         void SaveGroupPtsWithColor(const std::string& path);
@@ -111,13 +108,10 @@ class LocalVipss {
         void ClearPartialMemory();
         void TestInsertPt();
         void TestVoronoiPts();
-
-    private:
-
-        inline void ShedCols(arma::sp_umat& in_mat, const std::vector<arma::uword>& delete_ids);
-        inline void ShedCols(arma::sp_mat& in_mat, const std::vector<arma::uword>& delete_ids);
     
     public:
+        static int DistCallNum;
+        static double DistCallTime;
         bool is_group_cluster_ = false;
         static VoronoiGen voro_gen_;
         RBF_API vipss_api_;

@@ -491,7 +491,8 @@ void LocalVipss::BuildMatrixH()
 
     //std::vector<std::vector<Triplet>> ele_vector(cluster_num);
     auto t5 = Clock::now();
-//#pragma omp parallel for shared(points_, VoronoiGen::cluster_init_pids_) 
+// #pragma omp parallel for shared(points_, VoronoiGen::cluster_init_pids_) 
+#pragma omp parallel for
     for(int i =0; i < cluster_num; ++i)
     {
         const auto& cluster_pt_ids = VoronoiGen::cluster_init_pids_[i];
