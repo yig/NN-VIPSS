@@ -66,7 +66,7 @@ void VoronoiGen::InsertSphereBoundryPts()
     auto sphere_pts = CreateSpherePoints(cx, cy, cz, radius, pt_num);
     pt_num = sphere_pts.size()/3;
     
-    printf("sphere pt size : %ld \n",sphere_pts.size()/3 );
+    // printf("sphere pt size : %ld \n",sphere_pts.size()/3 );
     if(0)
     {
         std::string out_sphere_path = out_dir_ + "sphere_boundry.xyz";
@@ -226,7 +226,7 @@ void VoronoiGen::Tetrahedralize()
     tetgenio *in = &tetIO_;
 
     clock_t tv[13], ts[6]; // Timing informations (defined in time.h)
-    printf("start to Tetrahedralize \n");
+    // printf("start to Tetrahedralize \n");
     tv[0] = clock();
     b->voroout = 0;
     // b->refine = 1;
@@ -241,7 +241,7 @@ void VoronoiGen::Tetrahedralize()
     m.incrementaldelaunay(ts[0]);
 
     BuildPtIdMap();
-    printf("finsh BuildPtIdMap \n");
+    // printf("finsh BuildPtIdMap \n");
     // InsertBoundryPts();
     // GenerateVoroData();
     // m.facetverticeslist
@@ -1224,8 +1224,8 @@ void VoronoiGen::BuildPtIdMap()
         pt_num_ ++;
     }
     pt_adjecent_mat_.resize(pt_num_, pt_num_);
-    printf("pt num : %zu \n", pt_num_);
-    printf("point_id_map_ size : %zu \n", point_id_map_.size());
+    // printf("pt num : %zu \n", pt_num_);
+    // printf("point_id_map_ size : %zu \n", point_id_map_.size());
 
 }
 

@@ -105,6 +105,8 @@ double optfunc_unit_vipss_simple_eigen(const std::vector<double>&x, std::vector<
     // printf("Final_H_ non zero  : %d \n", drbf->Final_H_.n_nonzero);
     // countopt++;
     // acc_time+=(std::chrono::nanoseconds(Clock::now() - t1).count()/1e9);
+    drbf->countopt_ ++;
+    VIPSSUnit::opt_func_count_g ++;
     return re;
 }
 
@@ -201,68 +203,7 @@ double optfunc_unit_vipss_direct_eigen(const std::vector<double>& x, std::vector
     // printf("opt fun call time accu: %f \n", VIPSSUnit::opt_func_time_g);
 
     return re;
-
- //   if (grad.empty())
- //   {
- //       grad.resize(n * u_size);
- //   }
- //   for(size_t i=0;i<n;++i){
- //       grad[i*u_size]   = a2(i);
- //       grad[i*u_size+1] = a2(i + n);
- //       grad[i*u_size+2] = a2(i + 2*n);
- //       grad[i*u_size+3] = a2(i + 3*n);
- //   }
- //    
- //    double re = arma_x_opt_g.dot(a2);
- //    double alpha = 100.0;
- //    int id;
- ////#pragma omp parallel for shared(x, alpha, grad, re_vec) private(id)
- //    for(id =0; id < n; ++id)
- //    {
- //        double cur_re = x[u_size*id + 1] * x[u_size*id + 1] + x[u_size*id + 2] * x[u_size*id + 2] 
- //                        + x[u_size*id + 3] * x[u_size*id + 3] - 1;
- //        if(!grad.empty()) 
- //        {
- //            grad[u_size* id + 1] += alpha * 2 * x[u_size*id + 1] * cur_re; 
- //            grad[u_size* id + 2] += alpha * 2 * x[u_size*id + 2] * cur_re; 
- //            grad[u_size* id + 3] += alpha * 2 * x[u_size*id + 3] * cur_re; 
- //        }
- //        // re += alpha* cur_re * cur_re;
- //        res_vec_g[id] = alpha* cur_re * cur_re;
- //    }
- //    re += res_vec_g.sum();
- //   
-
- //   // printf("res val : %f \n", re);
- //   return re;
 }
-// double myconstraint(unsigned n, const double *x, double *grad, void *data)
-
-double contraint_simple(const std::vector<double>&x, std::vector<double>&grad, void *fdata)
-{
-    VIPSSUnit *drbf = reinterpret_cast<VIPSSUnit*>(fdata);
-    // size_t id = drbf->constraint_count_ % (x.size()/3);
-    // std::cout << " grad size " <<grad.size() << std::endl;
-    // drbf->constraint_count_ ++;
-    size_t npt = x.size() /3;
-    // if(grad.empty())  grad.resize(x.size());
-    double re =0;
-    for(size_t id =0; id < npt; ++id)
-    {
-        double cur_re = x[3*id] * x[3*id] + x[3*id + 1] * x[3*id + 1] + x[3*id + 2] * x[3*id + 2] - 1;
-        if(!grad.empty()) 
-        {
-           
-            grad[3* id] = 2 * x[3*id] * cur_re; 
-            grad[3* id + 1] = 2 * x[3*id + 1] * cur_re; 
-            grad[3* id + 2] = 2 * x[3*id + 2] * cur_re; 
-        }
-        re +=  cur_re * cur_re;
-    }
-    // double re = x[0] * x[0] -1;
-    return re;
-}
-
 
 double optfunc_unit_vipss(const std::vector<double>&x, std::vector<double>&grad, void *fdata){
 
@@ -327,7 +268,7 @@ void VIPSSUnit::OptUnitVipssNormalSimple(){
             // solver_.solveval[i*2 + 1] = atan2( veccc[2], veccc[1]);
         }
     }
-    printf("finish init solver ! \n");
+    // printf("finish init solver ! \n");
     if(1){ 
         std::vector<double>upper(npt_*2);
         std::vector<double>lower(npt_*2);
@@ -341,7 +282,7 @@ void VIPSSUnit::OptUnitVipssNormalSimple(){
         // countopt = 0;
         // acc_time = 0;
         //LocalIterativeSolver(sol,kk==0?normals:newnormals,300,1e-7);
-        printf("start the solver ! \n");
+        // printf("start the solver ! \n");
         Solver::nloptwrapper(lower,upper,optfunc_unit_vipss_simple_eigen,this,opt_tor_, max_opt_iter_,solver_);
         // callfunc_time = acc_time;
         // solve_time = sol.time;
@@ -349,7 +290,7 @@ void VIPSSUnit::OptUnitVipssNormalSimple(){
     }
     newnormals_.resize(npt_*3);
     s_func_vals_.resize(npt_, 0); 
-    printf("-----------newnormal size : %lu \n", newnormals_.size());
+    // printf("-----------newnormal size : %lu \n", newnormals_.size());
     arma::vec y(npt_ + 3 * npt_);
     for(size_t i=0;i<npt_;++i)y(i) = 0;
     for(size_t i=0;i<npt_;++i){
@@ -477,7 +418,7 @@ void VIPSSUnit::OptUnitVipssNormal(){
             solver_.solveval[i*3 + 2] = atan2( veccc[1], veccc[0]   );
         }
     }
-    printf("finish init solver ! \n");
+    // printf("finish init solver ! \n");
     if(1){
         std::vector<double>upper(npt_*3);
         std::vector<double>lower(npt_*3);
@@ -490,7 +431,7 @@ void VIPSSUnit::OptUnitVipssNormal(){
             lower[i*3 + 1] = -1.0 * M_PI_;
             lower[i*3 + 2] = -1 * M_PI_;
         }
-        printf("start the solver ! \n");
+        // printf("start the solver ! \n");
         Solver::nloptwrapper(lower,upper,optfunc_unit_vipss,this,opt_tor_, max_opt_iter_,solver_);
     }
     newnormals_.resize(npt_*3);
@@ -532,7 +473,7 @@ void VIPSSUnit::ReconSurface()
     local_vipss_.voro_gen_.BuildPicoTree();
     auto tt01 = Clock::now();
     double init_pico_tree_time = std::chrono::nanoseconds(tt01 - tt00).count() / 1e9;
-    printf("init pico tree time  : %f ! \n", init_pico_tree_time);
+    // printf("init pico tree time  : %f ! \n", init_pico_tree_time);
     // bool use_nn_interpolation = true;
     auto t002 = Clock::now();
     bool is_group_cluster = false;
@@ -556,11 +497,11 @@ void VIPSSUnit::ReconSurface()
         auto t004 = Clock::now();
         sf.WriteSurface(finalMesh_v_,finalMesh_fv_);
         // std::string out_path = data_dir_ + "/" + file_name_  + "/nn_surface";
-        writePLYFile_VF(out_surface_path_, finalMesh_v_, finalMesh_fv_);
         auto t005 = Clock::now();
         double surface_file_save_time = std::chrono::nanoseconds(t005 - t004).count() / 1e9;
-
         double total_surface_time = std::chrono::nanoseconds(t005 - t000).count() / 1e9;
+
+        writePLYFile_VF(out_surface_path_, finalMesh_v_, finalMesh_fv_);
 
         std::cout << "------- tet search time "<< tetgenmesh::tet_search_time_st << std::endl;
         std::cout << "------- voxel pt ave nn num "<< LocalVipss::ave_voxel_nn_pt_num_ / LocalVipss::DistCallNum << std::endl;
@@ -573,6 +514,8 @@ void VIPSSUnit::ReconSurface()
         G_VP_stats.cal_nn_coordinate_and_hbrf_time_ += local_vipss_.pass_time_sum_;
         G_VP_stats.voxel_cal_num += LocalVipss::DistCallNum;
         G_VP_stats.surface_total_time_ += total_surface_time;
+
+
 
     } else {
         rbf_api_.user_lambda_ = user_lambda_;
@@ -608,7 +551,7 @@ void VIPSSUnit::Run()
     } 
     auto tn1 = Clock::now();
     double get_h_sub_block_time = std::chrono::nanoseconds(tn1 - tn0).count() / 1e9;
-    printf("get H sub block time : %f ! \n", get_h_sub_block_time);
+    // printf("get H sub block time : %f ! \n", get_h_sub_block_time);
     G_VP_stats.take_h_sub_block_time_ = get_h_sub_block_time;
 
     auto ts0 = Clock::now();
@@ -628,7 +571,7 @@ void VIPSSUnit::Run()
     double solve_time = std::chrono::nanoseconds(ts1 - ts0).count() / 1e9;
     printf("opt solve time : %f ! \n", solve_time);
     printf("opt fun call count : %d \n", VIPSSUnit::opt_func_count_g);
-    printf("opt fun call time : %f \n", VIPSSUnit::opt_func_time_g);
+    // printf("opt fun call time : %f \n", VIPSSUnit::opt_func_time_g);
 
     G_VP_stats.opt_solver_time_ += solve_time;
     G_VP_stats.opt_func_call_num_ += VIPSSUnit::opt_func_count_g;

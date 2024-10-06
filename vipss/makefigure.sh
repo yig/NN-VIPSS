@@ -39,3 +39,7 @@
 
 ./vipss -i ../data/noise_kitten/kitten_h0.04/input.xyz -o ../data/noise_kitten/kitten_h004/l0001_ -l 0.001 -s 100
 ./vipss -i ../data/noise_kitten/kitten_h0.04/input.xyz -o ../data/noise_kitten/kitten_h004/l001_ -l 0.01 -s 100
+
+
+ .\bin\LocalVipss.exe --input  ..\3D_pointcloud_dataset\contours\wire_frames\doghead.xyz
+ --output ..\sketches_results\doghead.ply --save_init_normal 1 --init_PV 1

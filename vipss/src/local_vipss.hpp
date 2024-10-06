@@ -111,6 +111,7 @@ class LocalVipss {
     
     public:
         static int DistCallNum;
+        static int InitWithPartialVipss;
         static double DistCallTime;
         bool is_group_cluster_ = false;
         static VoronoiGen voro_gen_;

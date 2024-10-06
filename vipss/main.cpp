@@ -13,7 +13,7 @@ DEFINE_string(output, "", "The output file name");
 DEFINE_double(lambda, 0.0, "The smooth term for vipss");
 DEFINE_int32(volumeDim, 100, "The volume dimension for surfacing marching cubes");
 DEFINE_int32(surfacing, 1, "Whether generate surface using Nature Neighbor HRBF");
-
+DEFINE_int32(initPV, 1, "Whether to use partial vipss to init point normals, this method runs faster");
 
 
 void SplitPath(const std::string& fullfilename,std::string &filepath);
@@ -34,6 +34,8 @@ int main(int argc, char** argv)
         std::cout << "input path : " << in_path << std::endl;
         std::cout << "in_filename : " << in_filename << std::endl;
         std::cout << "in_extname : " << in_extname << std::endl;
+
+        LocalVipss::InitWithPartialVipss = FLAGS_initPV;
 
         if(FLAGS_output.size() > 0)
         {

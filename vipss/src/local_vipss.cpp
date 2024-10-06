@@ -14,6 +14,7 @@ typedef std::chrono::high_resolution_clock Clock;
 double LocalVipss::search_nn_time_sum_ = 0;
 double LocalVipss::pass_time_sum_ = 0;
 int LocalVipss::ave_voxel_nn_pt_num_ = 0;
+int LocalVipss::InitWithPartialVipss = 1;
 
 std::vector<tetgenmesh::point> LocalVipss::points_;
 // std::vector<std::vector<size_t>> LocalVipss::cluster_all_pt_ids_;
@@ -215,7 +216,7 @@ void LocalVipss::Init(const std::string & path, const std::string& ext)
     } else {
         readXYZ(path, in_pts);
     }
-    printf("load data file : %s \n", path.c_str());
+    // printf("load data file : %s \n", path.c_str());
     printf("read point size : %lu \n", in_pts.size()/3);
     auto t0 = Clock::now();
     // printf("read point size : %d \n", in_pts.size());
@@ -223,24 +224,24 @@ void LocalVipss::Init(const std::string & path, const std::string& ext)
     voro_gen_.out_dir_ = out_dir_;
 
     voro_gen_.loadData(in_pts);
-    printf("start to init mesh \n");
+    // printf("start to init mesh \n");
     voro_gen_.InitMesh();
     // TestInsertPt();
     // TestVoronoiPts();
     // voro_gen_.BuildPtIdMap();
     voro_gen_.BuildAdjecentMat();
-    printf("finish build adjecent mat \n");
+    // printf("finish build adjecent mat \n");
 
     adjacent_mat_ = voro_gen_.pt_adjecent_mat_;
     points_ = voro_gen_.points_;
 
-    printf("adjacent mat rows : %lld, cols : %lld \n", adjacent_mat_.n_rows, adjacent_mat_.n_cols);
+    // printf("adjacent mat rows : %lld, cols : %lld \n", adjacent_mat_.n_rows, adjacent_mat_.n_cols);
     pt_num_ = points_.size();
 
     cluster_cores_mat_.resize(pt_num_, pt_num_);
     cluster_cores_mat_.eye();
     
-    printf("input point size : %zu \n", pt_num_);
+    // printf("input point size : %zu \n", pt_num_);
 
     vipss_api_.Set_RBF_PARA();
     vipss_api_.is_surfacing_ = false;
@@ -257,7 +258,7 @@ void LocalVipss::Init(const std::string & path, const std::string& ext)
     cluster_adjacent_mat_.resize(pt_num_, pt_num_);
     auto t1 = Clock::now(); 
     double init_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
-    printf("finish local vipss initilization : %f ! \n", init_time);
+    printf("build triangulation and initilization : %f s ! \n", init_time);
 }
 
 inline std::vector<size_t> LocalVipss::GetClusterCoreIds(size_t cluster_id) const
@@ -515,14 +516,14 @@ void LocalVipss::BuildMatrixH()
             AddClusterHMatrix(cluster_pt_ids, Minv, npt, cur_iter);
         }
     }
-    auto t6 = Clock::now();
-    double add_time = std::chrono::nanoseconds(t6 - t5).count()/1e9;
-    add_ele_to_vector_time += add_time;
+    // auto t6 = Clock::now();
+    // double add_time = std::chrono::nanoseconds(t6 - t5).count()/1e9;
+    // add_ele_to_vector_time += add_time;
     
     auto t_h1 = Clock::now();
-    auto t_h111 = Clock::now();
-    double push_to_vec_time = std::chrono::nanoseconds(t_h111 - t_h1).count() / 1e9;
-    printf("--- push ele to vector  time : %f \n", push_to_vec_time);
+    // auto t_h111 = Clock::now();
+    // double push_to_vec_time = std::chrono::nanoseconds(t_h111 - t_h1).count() / 1e9;
+    // printf("--- push ele to vector  time : %f \n", push_to_vec_time);
 
     final_h_eigen_.setFromTriplets(h_ele_triplets_.begin(), h_ele_triplets_.end());
     auto t_h2 = Clock::now();
@@ -530,9 +531,9 @@ void LocalVipss::BuildMatrixH()
     
     auto t11 = Clock::now();
     double build_H_time_total = std::chrono::nanoseconds(t11 - t00).count()/1e9;
-    printf("--- build vipss j total  time : %f \n", build_j_time_total_);
-    printf("--- add  J matrix to triplet vector time : %f \n", add_ele_to_vector_time);
-    printf("--- build final_h  from triplets vector time : %f \n", build_h_from_tris_time);
+    // printf("--- build vipss j total  time : %f \n", build_j_time_total_);
+    // printf("--- add  J matrix to triplet vector time : %f \n", add_ele_to_vector_time);
+    // printf("--- build final_h  from triplets vector time : %f \n", build_h_from_tris_time);
     printf("--- build_H_time_total sum  time : %f \n", build_H_time_total);
 
     G_VP_stats.build_H_total_time_ += build_H_time_total;
@@ -581,7 +582,7 @@ void LocalVipss::BuildHRBFPerNode()
     bool use_partial_vipss = false;
     vipss_api_.user_lambda_ = user_lambda_;
 
-    printf("cluster num : %lu \n", cluster_num);
+    // printf("cluster num : %lu \n", cluster_num);
 
     for(size_t i =0; i < cluster_num; ++i)
     {
@@ -760,8 +761,14 @@ void LocalVipss::InitNormalWithVipss()
         // if(!node_rbf_vec_[i])  
         
         // node_rbf_vec_[i] = std::make_shared<RBF_Core>();
+        size_t key_ptn = 1;
+        if(InitWithPartialVipss == 0)
+        {
+            key_ptn = unit_npt;
+        }
+
         std::shared_ptr rbf_temp_ptr = std::make_shared<RBF_Core>();
-        InitNormalPartialVipss(vts, 1,rbf_temp_ptr, cur_lambda);
+        InitNormalPartialVipss(vts, key_ptn,rbf_temp_ptr, cur_lambda);
         // auto t2 = Clock::now();
         // double vipss_time = std::chrono::nanoseconds(t2 - t1).count()/1e9;
    
@@ -787,10 +794,10 @@ void LocalVipss::InitNormalWithVipss()
     cluster_normal_y_.setFromTriplets(cluster_normals_yele.begin(), cluster_normals_yele.end());
     cluster_normal_z_.setFromTriplets(cluster_normals_zele.begin(), cluster_normals_zele.end());
 
-    auto t_init2 = Clock::now();
-    double all_init_time = std::chrono::nanoseconds(t_init2 - t_init).count()/1e9;
-    printf("all init time : %f \n", all_init_time);
-    printf("all init vipss time : %f \n", vipss_sum);
+    // auto t_init2 = Clock::now();
+    // double all_init_time = std::chrono::nanoseconds(t_init2 - t_init).count()/1e9;
+    // printf("all init time : %f \n", all_init_time);
+    // printf("all init vipss time : %f \n", vipss_sum);
     
 
     // cluster_ptn_vipss_time_stats_.push_back(vipss_time_stats_);
@@ -983,7 +990,7 @@ inline double LocalVipss::CalculateClusterPairScore(size_t c_a, size_t c_b, bool
 void LocalVipss::BuildClusterAdjacentMat()
 {
     // printf("00 adjacent mat rows : %d, cols : %d \n", adjacent_mat_.n_rows, adjacent_mat_.n_cols);
-    printf("adjacent no zero count : %llu \n", adjacent_mat_.n_nonzero);
+    // printf("adjacent no zero count : %llu \n", adjacent_mat_.n_nonzero);
     cluster_adjacent_mat_ = adjacent_mat_ * cluster_cores_mat_;
     // cluster_adjacent_pt_mat_ = adjacent_mat_ * cluster_cores_mat_ + cluster_cores_mat_;   
 }
@@ -1550,12 +1557,12 @@ void LocalVipss::InitNormals()
     BuidClusterCoresPtIds();
     auto t1 = Clock::now();
     double build_mat_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
-    printf("finish init adj mat and core pt ids time : %f ! \n", build_mat_time);
+    // printf("finish init adj mat and core pt ids time : %f ! \n", build_mat_time);
 
     InitNormalWithVipss();
     auto t12 = Clock::now();
     double normal_estimate_time = std::chrono::nanoseconds(t12 - t1).count()/1e9;
-    printf("finish init cluster normals time : %f ! \n", normal_estimate_time);
+    // printf("finish init cluster normals time : %f ! \n", normal_estimate_time);
 
     total_time += build_mat_time + normal_estimate_time;
     G_VP_stats.init_cluster_normal_time_ += (build_mat_time + normal_estimate_time);
@@ -1565,11 +1572,11 @@ void LocalVipss::InitNormals()
     CalculateClusterNeiScores(true);
     auto t3 = Clock::now();
     double scores_time = std::chrono::nanoseconds(t3 - t2).count()/1e9;
-    printf("finish init cluster neigh scores time : %f ! \n", scores_time);
+    // printf("finish init cluster neigh scores time : %f ! \n", scores_time);
     // CalculateClusterScores();
     auto t34 = Clock::now();
     double cluster_scores_time = std::chrono::nanoseconds(t34 - t3).count()/1e9;
-    printf("finish calculate cluster scores time : %f ! \n", cluster_scores_time);
+    // printf("finish calculate cluster scores time : %f ! \n", cluster_scores_time);
     total_time += scores_time;
     total_time += cluster_scores_time;
     sum_score_time += scores_time;
@@ -1583,21 +1590,21 @@ void LocalVipss::InitNormals()
     double MST_time = std::chrono::nanoseconds(ti11 - ti00).count()/1e9;
     total_time += MST_time;
     G_VP_stats.build_normal_MST_time_ += MST_time;
-    printf("normal MST_time time used : %f \n", MST_time); 
+    // printf("normal MST_time time used : %f \n", MST_time); 
     auto ti0 = Clock::now();
     FlipClusterNormalsByMST();
     auto ti1 = Clock::now();
     double flip_time = std::chrono::nanoseconds(ti1 - ti0).count()/1e9;
     G_VP_stats.normal_flip_time_ += flip_time;
     total_time += flip_time;
-    printf("normal flip time used : %f \n", flip_time);
+    // printf("normal flip time used : %f \n", flip_time);
 
     std::string init_ptn_path_iter = out_dir_ + filename_ + "_flipped" + std::to_string(iter_num);
     OuputPtN(init_ptn_path_iter);
     auto finat_t = Clock::now();
     double init_total_time = std::chrono::nanoseconds(finat_t - t0).count()/1e9;
 
-    printf("total time used : %f \n", init_total_time);
+    printf("Normal initializtion with local vipss total time used : %f \n", init_total_time);
     G_VP_stats.init_normal_total_time_ += init_total_time;
 }
 
