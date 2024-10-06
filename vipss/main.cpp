@@ -14,21 +14,7 @@ DEFINE_double(lambda, 0.0, "The smooth term for vipss");
 DEFINE_int32(volumeDim, 100, "The volume dimension for surfacing marching cubes");
 DEFINE_int32(surfacing, 1, "Whether generate surface using Nature Neighbor HRBF");
 
-void test_vipss_unit()
-{
-    VIPSSUnit vu;
-    vu.data_dir_ = "data/";
-    // vu.file_name_ = "arma_100k";
-    vu.file_name_ = "doghead_wire";
-    vu.user_lambda_ = 0.0;
-    vu.init_with_cluster_merge_ = false;
-    vu.volume_dim_ = 80; 
-    vu.axi_plane_ = AXI_PlANE::XYZ;
-    vu.hrbf_type_ = HRBF_SURFACE_TYPE::LOCAL_HRBF_NN;
-    // vu.hrbf_type_ = HRBF_SURFACE_TYPE::GLOBAL_HRBF;
-    vu.Run(); 
-    return;
-}
+
 
 void SplitPath(const std::string& fullfilename,std::string &filepath);
 void SplitFileName (const std::string& fullfilename,std::string &filepath,std::string &filename,std::string &extname);

@@ -1,0 +1,19 @@
+import trimesh
+
+# Load the point cloud from an .obj file
+point_cloud = trimesh.load(r"c:\Users\xiaji\Documents\projects\3D_pointcloud_dataset\contours\torus\circle_torus_points.xyz", file_type='xyz')
+
+# Get the axis-aligned bounding box (AABB)
+bounding_box = point_cloud.bounds
+
+# The bounding_box will return two corners of the AABB: [min(x, y, z), max(x, y, z)]
+min_corner = bounding_box[0]
+max_corner = bounding_box[1]
+
+# Print the bounding box
+print(f"Min corner: {min_corner}")
+print(f"Max corner: {max_corner}")
+
+# You can also compute the dimensions of the bounding box
+bbox_dimensions = max_corner - min_corner
+print(f"Bounding box dimensions: {bbox_dimensions}")
