@@ -63,6 +63,7 @@ class LocalVipss {
 
         inline bool IsFlipNormal(const arma::mat& a_normals, const arma::mat& b_normals) const;
         inline bool FlipClusterNormal(size_t c_a, size_t c_b) const;
+        inline bool FlipClusterNormalSimple(size_t c_a, size_t c_b) const;
         void BuildClusterMST();
         void FlipClusterNormalsByMST();
         void WriteVipssTimeLog();

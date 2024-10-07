@@ -25,6 +25,14 @@ def save_obj(file_path, vertices, faces):
         for face in faces:
             f.write(face + '\n')
 
+def save_xyz(file_path, vertices):
+    with open(file_path, 'w') as xyz_file:
+        for i in range(len(vertices)):
+            vertex = vertices[i]
+            # Write vertex and normal data to XYZ file
+            xyz_file.write(f"{vertex[0]} {vertex[1]} {vertex[2]}\n")
+
+
 def remove_close_vertices(vertices, threshold):
     # dist_matrix = distance_matrix(vertices, vertices)
     # to_remove = set()
@@ -52,7 +60,7 @@ def remove_close_vertices(vertices, threshold):
 # Paths to input and output files
 # input_obj_file = r'c:\Users\xiaji\Documents\projects\3d-sketches-curated-dataset\scaffolds3d_dog.obj'
 # output_obj_file = 'scaffolds3d_dog.obj'
-distance_threshold = 0.00004  # Set your threshold for "close" points
+distance_threshold = 0.0001  # Set your threshold for "close" points
 
 input_dir = r'c:\Users\xiaji\Documents\projects\sketches'
 filenames = os.listdir(input_dir)
@@ -67,8 +75,8 @@ for filename in filenames:
     # noise = np.random.normal(0, 0.001, vertices.shape)
     # filtered_vertices = vertices + noise
     filtered_vertices = remove_close_vertices(vertices, distance_threshold)
-    output_obj_file = output_dir + "/" + filename
+    output_xyz_file = output_dir + "/" + filename.split('.')[0] + '.xyz'
     # Save the filtered obj file
-    save_obj(output_obj_file, filtered_vertices, faces)
+    save_xyz(output_xyz_file, filtered_vertices)
 
     print(f"Filtered {len(vertices) - len(filtered_vertices)} close vertices.")

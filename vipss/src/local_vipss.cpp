@@ -895,6 +895,25 @@ inline double LocalVipss::CalculateScores(const std::vector<arma::vec3>& a_norma
     return angle;
 }
 
+inline bool LocalVipss::FlipClusterNormalSimple(size_t c_a, size_t c_b) const
+{
+    arma::vec3 normal_maa;
+    arma::vec3 normal_mba;
+    {
+        normal_maa(0) =  cluster_normal_x_.coeff(c_a, c_a);
+        normal_maa(1) =  cluster_normal_y_.coeff(c_a, c_a);
+        normal_maa(2) =  cluster_normal_z_.coeff(c_a, c_a);
+
+        normal_mba(0) =  cluster_normal_x_.coeff(c_a, c_b);
+        normal_mba(1) =  cluster_normal_y_.coeff(c_a, c_b);
+        normal_mba(2) =  cluster_normal_z_.coeff(c_a, c_b);
+     
+    }
+    double proj1 = arma::dot( normal_maa , normal_mba); 
+    
+    if(proj1 < 0) return true;
+    return false;
+}
 
 inline bool LocalVipss::FlipClusterNormal(size_t c_a, size_t c_b) const
 {
@@ -915,7 +934,9 @@ inline bool LocalVipss::FlipClusterNormal(size_t c_a, size_t c_b) const
             valid_ids.push_back(id); 
         }
     }
+
     size_t p_size = valid_ids.size();
+    std::cout << "p size " << p_size << std::endl;
     arma::mat normal_ma(p_size, 3);
     arma::mat normal_mb(p_size, 3);
 
@@ -933,6 +954,8 @@ inline bool LocalVipss::FlipClusterNormal(size_t c_a, size_t c_b) const
     
     return IsFlipNormal(normal_ma, normal_mb);
 }
+
+
 
 inline double LocalVipss::CalculateClusterPairScore(size_t c_a, size_t c_b, bool& flip) const
 {
@@ -1293,7 +1316,7 @@ void LocalVipss::FlipClusterNormalsByMST()
             size_t n_cid = iter.row();
             if(flipped_cluster_ids.find(n_cid) != flipped_cluster_ids.end()) continue;
             flipped_cluster_ids.insert(n_cid);
-            if(FlipClusterNormal(cur_cid, n_cid))
+            if(FlipClusterNormalSimple(cur_cid, n_cid))
             {
                 cluster_normal_x_.col(n_cid) *= -1.0;
                 cluster_normal_y_.col(n_cid) *= -1.0;
@@ -1557,12 +1580,12 @@ void LocalVipss::InitNormals()
     BuidClusterCoresPtIds();
     auto t1 = Clock::now();
     double build_mat_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
-    // printf("finish init adj mat and core pt ids time : %f ! \n", build_mat_time);
+    printf("finish init adj mat and core pt ids time : %f ! \n", build_mat_time);
 
     InitNormalWithVipss();
     auto t12 = Clock::now();
     double normal_estimate_time = std::chrono::nanoseconds(t12 - t1).count()/1e9;
-    // printf("finish init cluster normals time : %f ! \n", normal_estimate_time);
+    printf("finish init cluster normals time : %f ! \n", normal_estimate_time);
 
     total_time += build_mat_time + normal_estimate_time;
     G_VP_stats.init_cluster_normal_time_ += (build_mat_time + normal_estimate_time);
@@ -1572,11 +1595,11 @@ void LocalVipss::InitNormals()
     CalculateClusterNeiScores(true);
     auto t3 = Clock::now();
     double scores_time = std::chrono::nanoseconds(t3 - t2).count()/1e9;
-    // printf("finish init cluster neigh scores time : %f ! \n", scores_time);
+    printf("finish init cluster neigh scores time : %f ! \n", scores_time);
     // CalculateClusterScores();
     auto t34 = Clock::now();
     double cluster_scores_time = std::chrono::nanoseconds(t34 - t3).count()/1e9;
-    // printf("finish calculate cluster scores time : %f ! \n", cluster_scores_time);
+    printf("finish calculate cluster scores time : %f ! \n", cluster_scores_time);
     total_time += scores_time;
     total_time += cluster_scores_time;
     sum_score_time += scores_time;
@@ -1590,14 +1613,14 @@ void LocalVipss::InitNormals()
     double MST_time = std::chrono::nanoseconds(ti11 - ti00).count()/1e9;
     total_time += MST_time;
     G_VP_stats.build_normal_MST_time_ += MST_time;
-    // printf("normal MST_time time used : %f \n", MST_time); 
+    printf("normal MST_time time used : %f \n", MST_time); 
     auto ti0 = Clock::now();
     FlipClusterNormalsByMST();
     auto ti1 = Clock::now();
     double flip_time = std::chrono::nanoseconds(ti1 - ti0).count()/1e9;
     G_VP_stats.normal_flip_time_ += flip_time;
     total_time += flip_time;
-    // printf("normal flip time used : %f \n", flip_time);
+    printf("normal flip time used : %f \n", flip_time);
 
     std::string init_ptn_path_iter = out_dir_ + filename_ + "_flipped" + std::to_string(iter_num);
     OuputPtN(init_ptn_path_iter);
