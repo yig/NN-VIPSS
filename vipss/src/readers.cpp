@@ -143,7 +143,7 @@ bool writePLYFile(string filename,const vector<double>&vertices,const vector<uns
 }
 
 bool writePLYFile_VF(string filename,const vector<double>&vertices,const vector<unsigned int>&faces2vertices){
-    filename = filename + ".ply";
+    filename = filename;
     ofstream outer(filename.data(), ofstream::out);
     if (!outer.good()) {
         cout << "Can not create output PLY file " << filename << endl;
