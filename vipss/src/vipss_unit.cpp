@@ -9,6 +9,7 @@ int VIPSSUnit::opt_func_count_g = 0;
 double VIPSSUnit::opt_func_time_g = 0;
 Eigen::VectorXd arma_x_opt_g;
 Eigen::VectorXd res_vec_g;
+Eigen::VectorXd scsc_vec;
 
 void VIPSSUnit::InitPtNormalWithLocalVipss()
 {
@@ -55,52 +56,55 @@ double optfunc_unit_vipss_simple_eigen(const std::vector<double>&x, std::vector<
     // size_t n = drbf->npt;
     size_t n = drbf->npt_;
     // printf("input point number : %llu \n", n);
-    Eigen::VectorXd arma_x(n*3);
+    // Eigen::VectorXd arma_x(n*3);
+
+    // arma_x_opt_g;
+    // res_vec_g;
 
     //(  sin(a)cos(b), sin(a)sin(b), cos(a)  )  a =>[0, pi], b => [-pi, pi];
-    std::vector<double>sina_cosa_sinb_cosb(n * 4);
-    for(size_t i=0;i<n;++i){
-        size_t ind = i*4;
-        sina_cosa_sinb_cosb[ind] = sin(x[i*2]);
-        sina_cosa_sinb_cosb[ind+1] = cos(x[i*2]);
-        sina_cosa_sinb_cosb[ind+2] = sin(x[i*2+1]);
-        sina_cosa_sinb_cosb[ind+3] = cos(x[i*2+1]);
-    }
+    // std::vector<double>sina_cosa_sinb_cosb(n * 4);
+    #pragma omp parallel for 
     for(int i=0;i<n;++i){
-        auto p_scsc = sina_cosa_sinb_cosb.data()+i*4;
-
+        size_t ind = i*4;
+        scsc_vec[ind] = sin(x[i*2]);
+        scsc_vec[ind+1] = cos(x[i*2]);
+        scsc_vec[ind+2] = sin(x[i*2+1]);
+        scsc_vec[ind+3] = cos(x[i*2+1]);
         if(drbf->axi_plane_ == AXI_PlANE::XYZ)
         {
-            arma_x(i) = p_scsc[0] * p_scsc[3];
-            arma_x(i+n) = p_scsc[0] * p_scsc[2];
-            arma_x(i+n*2) = p_scsc[1];
+            arma_x_opt_g(i) = scsc_vec[ind] * scsc_vec[ind + 3];
+            arma_x_opt_g(i+n) = scsc_vec[ind] * scsc_vec[ind + 2];
+            arma_x_opt_g(i+n*2) = scsc_vec[ind + 1];
         } else {
-            arma_x(i) = p_scsc[0] * p_scsc[3];
-            arma_x(i+n) = p_scsc[1];
-            arma_x(i+n*2) = p_scsc[0] * p_scsc[2];
+            arma_x_opt_g(i) = scsc_vec[ind] * scsc_vec[ind + 3];
+            arma_x_opt_g(i+n) = scsc_vec[ind + 1];
+            arma_x_opt_g(i+n*2) = scsc_vec[ind] * scsc_vec[ind + 2];
         }
     }
+    // for(int i=0;i<n;++i){
+        
+    // }
 
-    Eigen::VectorXd a2 = (arma_x.transpose() * drbf->local_vipss_.final_h_eigen_).transpose();
+    Eigen::VectorXd a2 = (arma_x_opt_g.transpose() * drbf->local_vipss_.final_h_eigen_).transpose();
     if (!grad.empty()) {
         grad.resize(n*2);
-        for(size_t i=0;i<n;++i){
-            auto p_scsc = sina_cosa_sinb_cosb.data()+i*4;
-
+        #pragma omp parallel for 
+        for(int i=0;i<n;++i){
+            // auto p_scsc = sina_cosa_sinb_cosb.data()+i*4;
+            size_t ind = i*4;
+            
             if(drbf->axi_plane_ == AXI_PlANE::XYZ)
             {
-                grad[i*2] = a2(i) * p_scsc[1] * p_scsc[3] + a2(i+n) * p_scsc[1] * p_scsc[2] - a2(i+n*2) * p_scsc[0];
-                grad[i*2+1] = -a2(i) * p_scsc[0] * p_scsc[2] + a2(i+n) * p_scsc[0] * p_scsc[3];
+                grad[i*2] = a2(i) * scsc_vec[ind + 1] * scsc_vec[ind + 3] + a2(i+n) * scsc_vec[ind + 1] * scsc_vec[ind + 2] - a2(i+n*2) * scsc_vec[ind];
+                grad[i*2+1] = -a2(i) * scsc_vec[ind] * scsc_vec[ind + 2] + a2(i+n) * scsc_vec[ind] * scsc_vec[ind + 3];
             } else {
-                grad[i*2] = a2(i) * p_scsc[1] * p_scsc[3] + a2(i+n*2) * p_scsc[1] * p_scsc[2] - a2(i+n) * p_scsc[0];
-                grad[i*2+1] = -a2(i) * p_scsc[0] * p_scsc[2] + a2(i+n*2) * p_scsc[0] * p_scsc[3];
+                grad[i*2] = a2(i) * scsc_vec[ind + 1] * scsc_vec[ind + 3] + a2(i+n*2) * scsc_vec[ind + 1] * scsc_vec[ind + 2] - a2(i+n) * scsc_vec[ind];
+                grad[i*2+1] = -a2(i) * scsc_vec[ind] * scsc_vec[ind+ 2] + a2(i+n*2) * scsc_vec[ind] * scsc_vec[ind + 3];
             }
-            
-
             
         }
     }
-    double re =  arma_x.dot( a2 );
+    double re =  arma_x_opt_g.dot( a2 );
     // printf("residual val : %f \n", re);
     // printf("Final_H_ non zero  : %d \n", drbf->Final_H_.n_nonzero);
     // countopt++;
@@ -268,6 +272,9 @@ void VIPSSUnit::OptUnitVipssNormalSimple(){
             // solver_.solveval[i*2 + 1] = atan2( veccc[2], veccc[1]);
         }
     }
+    arma_x_opt_g.resize(npt_ * 3);
+    res_vec_g.resize(npt_);
+    scsc_vec.resize(npt_ * 4);
     // printf("finish init solver ! \n");
     if(1){ 
         std::vector<double>upper(npt_*2);
@@ -418,6 +425,8 @@ void VIPSSUnit::OptUnitVipssNormal(){
             solver_.solveval[i*3 + 2] = atan2( veccc[1], veccc[0]   );
         }
     }
+    arma_x_opt_g.resize(npt_ * 4);
+    res_vec_g.resize(npt_);
     // printf("finish init solver ! \n");
     if(1){
         std::vector<double>upper(npt_*3);
@@ -558,7 +567,7 @@ void VIPSSUnit::Run()
     if(user_lambda_ < 1e-12)
     {
          OptUnitVipssNormalSimple();
-        //OptUnitVipssNormalDirectSimple();
+        // OptUnitVipssNormalDirectSimple();
     } else {
          OptUnitVipssNormal();
         //OptUnitVipssNormalDirect();

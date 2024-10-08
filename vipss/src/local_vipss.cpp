@@ -224,18 +224,19 @@ void LocalVipss::Init(const std::string & path, const std::string& ext)
     voro_gen_.out_dir_ = out_dir_;
 
     voro_gen_.loadData(in_pts);
-    // printf("start to init mesh \n");
+    printf("start to init mesh \n");
     voro_gen_.InitMesh();
+    printf("finish triangulation \n");
     // TestInsertPt();
     // TestVoronoiPts();
     // voro_gen_.BuildPtIdMap();
     voro_gen_.BuildAdjecentMat();
-    // printf("finish build adjecent mat \n");
+    printf("finish build adjecent mat \n");
 
     adjacent_mat_ = voro_gen_.pt_adjecent_mat_;
     points_ = voro_gen_.points_;
 
-    // printf("adjacent mat rows : %lld, cols : %lld \n", adjacent_mat_.n_rows, adjacent_mat_.n_cols);
+    printf("adjacent mat rows : %lld, cols : %lld \n", adjacent_mat_.n_rows, adjacent_mat_.n_cols);
     pt_num_ = points_.size();
 
     cluster_cores_mat_.resize(pt_num_, pt_num_);

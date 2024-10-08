@@ -57,7 +57,7 @@ void VoronoiGen::InsertSphereBoundryPts()
     double cy = (min_y + max_y) / 2.0;
     double cz = (min_z + max_z) / 2.0;
     
-    double scale = 2.0;
+    double scale = 3.0;
     double dx = (max_x - min_x) / 2.0 * scale;
     double dy = (max_y - min_y) / 2.0 * scale;
     double dz = (max_z - min_z) / 2.0 * scale;
@@ -126,7 +126,7 @@ void VoronoiGen::InsertBoundryPts()
         max_z = max_z > in_pts[3*i + 2] ? max_z : in_pts[3*i + 2];
     }
     // bbox final_scale = scale + 1 
-    double scale = 1.0;
+    double scale = 2.0;
     double dx = (max_x - min_x) / 2.0 * scale;
     double dy = (max_y - min_y) / 2.0 * scale;
     double dz = (max_z - min_z) / 2.0 * scale;
@@ -1131,8 +1131,16 @@ void VoronoiGen::GetVoronoiNeiPts(tetgenmesh::point pt, std::vector<tetgenmesh::
     // temp_mesh.setpointtype(newpt, tetgenmesh::UNUSEDVERTEX);
     // printf("start GetCaveBoundryPoint ... \n");
     // tetgenmesh::arraypool *out_cavetetvertlist ;
-    // std::vector<tetgenmesh::point> out_cavetetvertlist;
-    tetMesh_.GetCaveBoundryPoint(pt, &searchtet, splitsh, splitseg, &ivf, candid_pts);
+    std::vector<tetgenmesh::point> out_cavetetvertlist;
+    tetMesh_.GetCaveBoundryPoint(pt, &searchtet, splitsh, splitseg, &ivf, out_cavetetvertlist);
+    for(const auto pt : out_cavetetvertlist)
+    {
+        auto pt_type = tetMesh_.pointtype(pt);
+        if(( pt_type != tetgenmesh::UNUSEDVERTEX) && ( pt_type != tetgenmesh::DUPLICATEDVERTEX))
+        {
+            candid_pts.push_back(pt);
+        }
+    }
 }
 
 void VoronoiGen::InsertPt(tetgenmesh::point pt)
@@ -1213,7 +1221,7 @@ void VoronoiGen::BuildPtIdMap()
     while(ploop != (tetgenmesh::point)NULL)
     {
         const auto p_type = tetMesh_.pointtype(ploop);
-        if ((p_type == tetgenmesh::UNUSEDVERTEX) ) 
+        if ((p_type == tetgenmesh::UNUSEDVERTEX) || (p_type == tetgenmesh::DUPLICATEDVERTEX)) 
         {
             ploop = tetMesh_.pointtraverse();
             continue;
@@ -1224,8 +1232,8 @@ void VoronoiGen::BuildPtIdMap()
         pt_num_ ++;
     }
     pt_adjecent_mat_.resize(pt_num_, pt_num_);
-    // printf("pt num : %zu \n", pt_num_);
-    // printf("point_id_map_ size : %zu \n", point_id_map_.size());
+    printf("pt num : %zu \n", pt_num_);
+    printf("point_id_map_ size : %zu \n", point_id_map_.size());
 
 }
 
@@ -1233,6 +1241,7 @@ void VoronoiGen::BuildAdjecentMat()
 {
     tetgenmesh::point ploop = tetMesh_.pointtraverse();
     // points_.clear()
+    
     cluster_init_pids_.resize(point_id_map_.size());
     cluster_init_pts_.resize(point_id_map_.size());
     cluster_size_vec_.resize(point_id_map_.size() + 1);
