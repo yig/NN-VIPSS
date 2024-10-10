@@ -269,7 +269,7 @@ void VoronoiGen::GenerateVoroData()
     // InsertBoundryPts();
 // 
     auto t0 = Clock::now();
-    InsertSphereBoundryPts();
+    // InsertSphereBoundryPts();
     InsertBoundryPts();
     
 

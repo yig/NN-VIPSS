@@ -566,8 +566,8 @@ void VIPSSUnit::Run()
     auto ts0 = Clock::now();
     if(user_lambda_ < 1e-12)
     {
-         OptUnitVipssNormalSimple();
-        // OptUnitVipssNormalDirectSimple();
+        //  OptUnitVipssNormalSimple();
+        OptUnitVipssNormalDirectSimple();
     } else {
          OptUnitVipssNormal();
         //OptUnitVipssNormalDirect();
@@ -582,6 +582,15 @@ void VIPSSUnit::Run()
     printf("opt fun call count : %d \n", VIPSSUnit::opt_func_count_g);
     // printf("opt fun call time : %f \n", VIPSSUnit::opt_func_time_g);
 
+    for(int i = 0; i < newnormals_.size()/3; ++i)
+    {
+        double normal_len = sqrt(newnormals_[3*i] * newnormals_[3*i] 
+        + newnormals_[3*i + 1] * newnormals_[3*i + 1] + newnormals_[3*i + 2] * newnormals_[3*i + 2]);
+
+        newnormals_[3*i] /= normal_len;
+        newnormals_[3*i + 1] /= normal_len;
+        newnormals_[3*i + 2] /= normal_len;
+    }
     G_VP_stats.opt_solver_time_ += solve_time;
     G_VP_stats.opt_func_call_num_ += VIPSSUnit::opt_func_count_g;
 

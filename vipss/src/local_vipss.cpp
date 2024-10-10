@@ -1572,6 +1572,36 @@ void LocalVipss::OptimizeAdjacentMat()
     // g_file.close();
 }
 
+void LocalVipss::CalClusterAveScores()
+{
+    size_t c_size = points_.size();
+    cluster_scores_ave_.resize(c_size);
+    for(int i = 0; i < int(c_size); ++i)
+    {
+        int cur_nozero_count = cluster_scores_mat_.col(i).nonZeros();
+        double score_sum = cluster_scores_mat_.col(i).sum();
+        if( cur_nozero_count > 0)
+        {
+            cluster_scores_ave_[i] = score_sum / cur_nozero_count;
+        } else {
+            cluster_scores_ave_[i] = 0;
+        }
+       
+    }
+    arma::uvec res = arma::sort_index(cluster_scores_ave_, "descend");
+    std::vector<double> sampled_pts;
+    int sample_num = 20000;
+    for(int i = 0; i < sample_num; ++i)
+    {
+        sampled_pts.push_back(points_[res[i]][0]);
+        sampled_pts.push_back(points_[res[i]][1]);
+        sampled_pts.push_back(points_[res[i]][2]);
+    }
+
+    std::string sample_path = "sampled_pts.xyz";
+    writeXYZ(sample_path, sampled_pts);    
+}
+
 
 void LocalVipss::InitNormals()
 {
@@ -1597,6 +1627,7 @@ void LocalVipss::InitNormals()
     auto t3 = Clock::now();
     double scores_time = std::chrono::nanoseconds(t3 - t2).count()/1e9;
     printf("finish init cluster neigh scores time : %f ! \n", scores_time);
+    // CalClusterAveScores();
     // CalculateClusterScores();
     auto t34 = Clock::now();
     double cluster_scores_time = std::chrono::nanoseconds(t34 - t3).count()/1e9;

@@ -21,7 +21,6 @@
   <ItemGroup>
     <ClInclude Include="vipss\src\happly.h" />
     <ClInclude Include="vipss\src\incremental_vipss.h" />
-    <ClInclude Include="vipss\src\kdtree.hpp" />
     <ClInclude Include="vipss\src\kernel.h" />
     <ClInclude Include="vipss\src\local_vipss.hpp" />
     <ClInclude Include="vipss\src\pico_tree.h" />
@@ -39,7 +38,6 @@
   <ItemGroup>
     <ClCompile Include="vipss\main.cpp" />
     <ClCompile Include="vipss\src\incremental_vipss.cpp" />
-    <ClCompile Include="vipss\src\kdtree.cpp" />
     <ClCompile Include="vipss\src\kernel.cpp" />
     <ClCompile Include="vipss\src\local_vipss.cpp" />
     <ClCompile Include="vipss\src\pico_tree.cpp" />

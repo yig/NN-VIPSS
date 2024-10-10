@@ -73,6 +73,7 @@ class LocalVipss {
                             const std::vector<P3tr>& nei_pts);
         void InitNormals();
         void GroupPtsWithVolume();
+        void CalClusterAveScores();
 
     public:
         void BuidClusterCoresPtIds();
@@ -146,6 +147,7 @@ class LocalVipss {
         SpMat cluster_normal_y_;
         SpMat cluster_normal_z_;
         SpiMat cluster_MST_mat_;
+        arma::vec cluster_scores_ave_;
 
         arma::sp_mat final_H_; 
         arma::uvec cluster_valid_sign_vec_;
