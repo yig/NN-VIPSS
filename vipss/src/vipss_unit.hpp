@@ -50,6 +50,7 @@ class VIPSSUnit {
 
         bool open_debug_ = false;
         bool is_surfacing_ = true;
+        bool hard_constraints_ = true;
  
         //VoronoiGen voro_gen_;
         LocalVipss local_vipss_;
