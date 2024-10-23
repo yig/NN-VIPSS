@@ -33,6 +33,7 @@ class VIPSSUnit {
         void OptUnitVipssNormalDirect();
         void OptUnitVipssNormal();
         void ReconSurface();
+        void GenerateAdaptiveGrid();
         void Run();
         void test_partial_vipss();
         void BuildTetCentersMap();

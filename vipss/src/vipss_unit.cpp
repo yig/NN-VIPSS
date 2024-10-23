@@ -1,6 +1,7 @@
 #include <chrono>
 #include "vipss_unit.hpp"
 #include "stats.h"
+#include "adgrid.h"
 
 typedef std::chrono::high_resolution_clock Clock;
 
@@ -547,6 +548,17 @@ void VIPSSUnit::ReconSurface()
     // local_vipss_.
 }
 
+
+void VIPSSUnit::GenerateAdaptiveGrid()
+{
+    
+    local_vipss_.voro_gen_.GenerateVoroData();
+    local_vipss_.voro_gen_.SetInsertBoundaryPtsToUnused();
+    std::array<size_t,3> resolution = {50,50,50};
+    GenerateAdaptiveGridOut(resolution, local_vipss_.voro_gen_.bbox_min_, local_vipss_.voro_gen_.bbox_max_);
+    
+}
+
 void VIPSSUnit::Run()
 {
     local_vipss_.out_dir_ = data_dir_ + "/" + file_name_ + "/";
@@ -604,17 +616,13 @@ void VIPSSUnit::Run()
     G_VP_stats.opt_solver_time_ += solve_time;
     G_VP_stats.opt_func_call_num_ += VIPSSUnit::opt_func_count_g;
 
-
     auto t01 = Clock::now();
     double total_time = std::chrono::nanoseconds(t01 - t00).count()/1e9;
     printf("total local vipss running time : %f ! \n", total_time);
-
     // std::string out_path  = local_vipss_.out_dir_ + local_vipss_.filename_  + "_opt";
     writePLYFile_VN(out_normal_path_, local_vipss_.out_pts_, newnormals_);
-
     // std::string color_out_path  = local_vipss_.out_dir_ + local_vipss_.filename_  + "_opt_color";
     // output_opt_pts_with_color(local_vipss_.out_pts_, s_func_vals_,color_out_path);
-
     // printf("start to ReconSurface 000 \n");
     // std::string init_path  = local_vipss_.out_dir_ + local_vipss_.filename_  + "_init";
     // writePLYFile_VN(init_path, local_vipss_.out_pts_, initnormals_);

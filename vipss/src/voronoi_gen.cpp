@@ -125,6 +125,10 @@ void VoronoiGen::InsertBoundryPts()
         max_y = max_y > in_pts[3*i + 1] ? max_y : in_pts[3*i + 1];
         max_z = max_z > in_pts[3*i + 2] ? max_z : in_pts[3*i + 2];
     }
+
+    bbox_min_ = {min_x, min_y, min_z};
+    bbox_max_ = {max_x, max_y, max_z};
+
     // bbox final_scale = scale + 1 
     double scale = 0.5;
     double dx = (max_x - min_x) / 2.0 * scale;

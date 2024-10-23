@@ -180,6 +180,10 @@ class VoronoiGen{
         PicoTree pTree_;
         std::vector<std::vector<int>> vorocell_pids_;
         std::vector<std::vector<int>> vorocell_eids_;
+
+        std::array<double, 3> bbox_min_;
+        std::array<double, 3> bbox_max_;
+
         
     private:
         clock_t ts_[6];
