@@ -566,11 +566,21 @@ void VIPSSUnit::Run()
     auto ts0 = Clock::now();
     if(user_lambda_ < 1e-12)
     {
-        //  OptUnitVipssNormalSimple();
-        OptUnitVipssNormalDirectSimple();
+        if (hard_constraints_)
+        {
+            OptUnitVipssNormalSimple();
+        }
+        else {
+            OptUnitVipssNormalDirectSimple();
+        }
     } else {
-         OptUnitVipssNormal();
-        //OptUnitVipssNormalDirect();
+        if (hard_constraints_)
+        {
+            OptUnitVipssNormal();
+        }
+        else {
+            OptUnitVipssNormalDirect();
+        }
     }
 
     Final_H_.clear();
@@ -609,7 +619,11 @@ void VIPSSUnit::Run()
     // std::string init_path  = local_vipss_.out_dir_ + local_vipss_.filename_  + "_init";
     // writePLYFile_VN(init_path, local_vipss_.out_pts_, initnormals_);
     // printf("start to ReconSurface 0001 \n");
-    ReconSurface();
+    if (is_surfacing_)
+    {
+        ReconSurface();
+    }
+    
     std::string log_path = local_vipss_.out_dir_ + "stats.txt";
     WriteStatsLog(log_path, G_VP_stats);
 }

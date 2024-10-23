@@ -14,6 +14,8 @@ DEFINE_double(lambda, 0.0, "The smooth term for vipss");
 DEFINE_int32(volumeDim, 100, "The volume dimension for surfacing marching cubes");
 DEFINE_int32(surfacing, 1, "Whether generate surface using Nature Neighbor HRBF");
 DEFINE_int32(initPV, 1, "Whether to use partial vipss to init point normals, this method runs faster");
+DEFINE_int32(hard_constraints, 1, "Whether to use normal length as hard constraints");
+
 
 
 void SplitPath(const std::string& fullfilename,std::string &filepath);
@@ -25,6 +27,9 @@ int main(int argc, char** argv)
     std::string out_normal_path;
     std::string out_mesh_path;
     gflags::ParseCommandLineFlags(&argc, &argv, true);
+
+
+    vipss_unit.hard_constraints_ = FLAGS_hard_constraints;
     if(FLAGS_input.size() > 0)
     {
         std::string in_path, in_filename, in_extname;
