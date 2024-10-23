@@ -126,7 +126,7 @@ void VoronoiGen::InsertBoundryPts()
         max_z = max_z > in_pts[3*i + 2] ? max_z : in_pts[3*i + 2];
     }
     // bbox final_scale = scale + 1 
-    double scale = 2.0;
+    double scale = 0.5;
     double dx = (max_x - min_x) / 2.0 * scale;
     double dy = (max_y - min_y) / 2.0 * scale;
     double dz = (max_z - min_z) / 2.0 * scale;
@@ -140,7 +140,8 @@ void VoronoiGen::InsertBoundryPts()
     //   | 1-----|-2
     //   |/      |/
     //   0-------3 
-    double box_pts[14][3];
+    const int pt_num = 14;
+    double box_pts[pt_num][3];
     box_pts[0][0] = min_x; box_pts[0][1] = min_y; box_pts[0][2] = min_z;
     box_pts[1][0] = min_x; box_pts[1][1] = max_y; box_pts[1][2] = min_z;
     box_pts[2][0] = max_x; box_pts[2][1] = max_y; box_pts[2][2] = min_z;
@@ -158,7 +159,7 @@ void VoronoiGen::InsertBoundryPts()
     // f3 : 2 1 5 6
     // f4 : 0 1 5 4
     // f5 : 4 5 6 7
-if(1)
+if(pt_num > 8)
 {
     box_pts[8][0] = (box_pts[0][0] + box_pts[1][0] + box_pts[2][0] + box_pts[3][0])/4.0;
     box_pts[8][1] = (box_pts[0][1] + box_pts[1][1] + box_pts[2][1] + box_pts[3][1])/4.0;
@@ -185,7 +186,7 @@ if(1)
     box_pts[13][2] = (box_pts[4][2] + box_pts[5][2] + box_pts[7][2] + box_pts[6][2])/4.0;
 }
 
-    for(size_t i = 0; i < 14; ++i)
+    for(size_t i = 0; i < pt_num; ++i)
     {
         tetgenmesh::point newpt;
         auto& temp_mesh = tetMesh_;
@@ -269,7 +270,7 @@ void VoronoiGen::GenerateVoroData()
     // InsertBoundryPts();
 // 
     auto t0 = Clock::now();
-    // InsertSphereBoundryPts();
+    InsertSphereBoundryPts();
     InsertBoundryPts();
     
 

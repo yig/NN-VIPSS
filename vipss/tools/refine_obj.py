@@ -60,7 +60,7 @@ def remove_close_vertices(vertices, threshold):
 # Paths to input and output files
 # input_obj_file = r'c:\Users\xiaji\Documents\projects\3d-sketches-curated-dataset\scaffolds3d_dog.obj'
 # output_obj_file = 'scaffolds3d_dog.obj'
-distance_threshold = 0.0001  # Set your threshold for "close" points
+distance_threshold = 0.000001  # Set your threshold for "close" points
 
 input_dir = r'c:\Users\xiaji\Documents\projects\sketches'
 filenames = os.listdir(input_dir)
