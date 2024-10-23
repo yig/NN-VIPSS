@@ -11,8 +11,8 @@
 #include <nlohmann/json.hpp>
 #include "SmallVector.h"
 #include <fstream>
-#include "3rd/mtet/mtet.h"
-#include "3rd/mtet/io.h"
+#include "external/mtet/mtet.h"
+#include "external/mtet/mtet_io.h"
 
 
 #endif /* adaptive_grid_gen_h */

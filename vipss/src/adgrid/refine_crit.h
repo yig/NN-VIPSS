@@ -8,7 +8,7 @@
 
 #include <array>
 #include "SmallVector.h"
-#include "3rd/contains.h"
+#include "external/contains.h"
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <Eigen/LU>
