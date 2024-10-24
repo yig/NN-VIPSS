@@ -551,10 +551,23 @@ void VIPSSUnit::ReconSurface()
 
 void VIPSSUnit::GenerateAdaptiveGrid()
 {
-    
+    // std::cout << "call  generate ad grid ... " << std::endl;
     local_vipss_.voro_gen_.GenerateVoroData();
     local_vipss_.voro_gen_.SetInsertBoundaryPtsToUnused();
-    std::array<size_t,3> resolution = {50,50,50};
+    local_vipss_.voro_gen_.BuildTetMeshTetCenterMap();
+    local_vipss_.voro_gen_.BuildPicoTree();
+
+    local_vipss_.normals_ = newnormals_;
+    local_vipss_.s_vals_ = s_func_vals_;
+    local_vipss_.user_lambda_ = user_lambda_;
+    local_vipss_.BuildHRBFPerNode();
+        
+    local_vipss_.SetThis();
+
+    double test_val = LocalVipss::NNDistFunction(R3Pt(0, 0, 0));
+    std::cout << " test val " << test_val << std::endl;
+
+    std::array<size_t,3> resolution = {100,100,50};
     GenerateAdaptiveGridOut(resolution, local_vipss_.voro_gen_.bbox_min_, local_vipss_.voro_gen_.bbox_max_);
     
 }
@@ -629,7 +642,8 @@ void VIPSSUnit::Run()
     // printf("start to ReconSurface 0001 \n");
     if (is_surfacing_)
     {
-        ReconSurface();
+        // ReconSurface();
+        GenerateAdaptiveGrid();
     }
     
     std::string log_path = local_vipss_.out_dir_ + "stats.txt";

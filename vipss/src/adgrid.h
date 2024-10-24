@@ -21,6 +21,7 @@ public:
 
     double evaluate(double x, double y, double z) const override
     {
+        // std::cout << "eval pt : " << x << " " << y << " " << z << std::endl;
         R3Pt newPt(x, y, z);
         return LocalVipss::NNDistFunction(newPt);
     }
@@ -28,8 +29,10 @@ public:
     double evaluate_gradient(double x, double y, double z, double &gx, double &gy, double &gz) const override
     {
         double delt = 1e-8;
+        // std::cout << "pt : " << x << " " << y << " " << z << std::endl;
         R3Pt newPt(x, y, z);
         double dist_val = LocalVipss::NNDistFunction(newPt);
+        // std::cout << "dist_val : " << dist_val << std::endl;
         R3Pt newPt_x(x + delt, y, z);
         double dist_x = LocalVipss::NNDistFunction(newPt_x);
         R3Pt newPt_y(x, y + delt, z);
@@ -40,6 +43,8 @@ public:
         gx = (dist_x - dist_val) / delt;
         gy = (dist_y - dist_val) / delt;
         gz = (dist_z - dist_val) / delt;
+
+        // std::cout << "grad : " << gx << " " << gy << " " << gz << std::endl;
         return dist_val;
     }
 

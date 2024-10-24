@@ -3629,4 +3629,3 @@ inline REAL tetgenmesh::norm2(REAL x, REAL y, REAL z)
 
 
 #endif // #ifndef tetgenH
-

@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "unordered_dense.h"
+#include "external/unordered_dense.h"
 #include <Eigen/Core>
 #include "adaptive_grid_gen.h"
 #include "timer.h"

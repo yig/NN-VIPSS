@@ -1,57 +1,12 @@
-#include <span>
-#include <queue>
-#include <optional>
-#include <CLI/CLI.hpp>
+//#define Check_Flip_Tets
+//#include <mtet/mtet.h>
+//#include <mtet/io.h>
+//#include <ankerl/unordered_dense.h>
+#include "gridgen.h"
 
-#include "adgrid/timer.h"
-#include "adgrid/csg.h"
-#include "adgrid/grid_mesh.h"
-#include "adgrid/grid_refine.h"
-#include "adgrid/external/implicit_functions/implicit_functions.h"
-#include "local_vipss.hpp"
+//using namespace mtet;
 
-
-class HRBFDistanceFunction : public ImplicitFunction<double>
-{
-public:
-    HRBFDistanceFunction()
-    {
-        
-    }
-
-    double evaluate(double x, double y, double z) const override
-    {
-        R3Pt newPt(x, y, z);
-        return LocalVipss::NNDistFunction(newPt);
-    }
-
-    double evaluate_gradient(double x, double y, double z, double &gx, double &gy, double &gz) const override
-    {
-        double delt = 1e-8;
-        R3Pt newPt(x, y, z);
-        double dist_val = LocalVipss::NNDistFunction(newPt);
-        R3Pt newPt_x(x + delt, y, z);
-        double dist_x = LocalVipss::NNDistFunction(newPt_x);
-        R3Pt newPt_y(x, y + delt, z);
-        double dist_y = LocalVipss::NNDistFunction(newPt_y);
-        R3Pt newPt_z(x, y, z + delt);
-        double dist_z = LocalVipss::NNDistFunction(newPt_z);
-
-        gx = (dist_x - dist_val) / delt;
-        gy = (dist_y - dist_val) / delt;
-        gz = (dist_z - dist_val) / delt;
-        return dist_val;
-    }
-
-private:
-    double radius_;
-};
-
-
-void test_func();
-
-
-void GenerateAdaptiveGrid(int argc, const char *argv[])
+int test_ad(int argc, const char *argv[])
 {
     struct
     {
@@ -69,9 +24,31 @@ void GenerateAdaptiveGrid(int argc, const char *argv[])
         bool discretize_later = false;
         //bool analysis_mode = false;
     } args;
-    
+    CLI::App app{"Longest Edge Bisection Refinement"};
+    app.add_option("grid", args.grid_file, "Initial grid file")->required();
+    app.add_option("function", args.function_file, "Implicit function file")->required();
+    app.add_option("-t,--threshold", args.threshold, "Threshold value");
+    app.add_option("-a,--alpha", args.alpha, "Alpha value");
+    app.add_option("-o,--option", args.method, "Options of implicit manifold");
+    app.add_option("--tree", args.csg_file, "CSG Tree file");
+    app.add_option("-m,--max-elements", args.max_elements, "Maximum number of elements");
+    app.add_option("-s,--shortest-edge", args.smallest_edge_length, "Shortest edge length");
+    app.add_option("-d,--discretize", args.discretize_later, "Save the grid file and function values for discretizing them later");
+    app.add_option("-c, --curve_network", args.curve_network, "Generate Curve Network only");
+    CLI11_PARSE(app, argc, argv);
+    // Read initial grid
     mtet::MTetMesh grid;
+    if (args.grid_file.find(".json") != std::string::npos){
+        grid = grid_mesh::load_tet_mesh(args.grid_file);
+    } else {
+        grid = mtet::load_mesh(args.grid_file);
+    }
+    
     int max_elements = args.max_elements;
+    if (max_elements < 0)
+    {
+        max_elements = std::numeric_limits<int>::max();
+    }
     std::string function_file = args.function_file;
     double threshold = args.threshold;
     int mode;
@@ -89,11 +66,10 @@ void GenerateAdaptiveGrid(int argc, const char *argv[])
     }
     
     /// Read implicit function
-    std::vector<std::shared_ptr<HRBFDistanceFunction>> functions;
-    std::shared_ptr<HRBFDistanceFunction> hrbf_func = std::make_shared<HRBFDistanceFunction>();
-    functions.push_back(hrbf_func);
-
+    std::vector<std::unique_ptr<ImplicitFunction<double>>> functions;
+    load_functions(function_file, functions);
     const size_t funcNum = functions.size();
+    
     ///
     /// the lambda function for function evaluations
     ///  @param[in] data            The 3D coordinate
@@ -153,4 +129,5 @@ void GenerateAdaptiveGrid(int argc, const char *argv[])
         mtet::save_mesh("tet_grid.msh", grid);
         mtet::save_mesh("active_tets.msh", grid, std::span<mtet::TetId>(metric_list.activeTetId));
     }
+    return 0;
 }

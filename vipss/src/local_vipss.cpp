@@ -681,6 +681,7 @@ double LocalVipss::NatureNeighborDistanceFunctionOMP(const tetgenmesh::point cur
 {
     std::vector<tetgenmesh::point> nei_pts;
     auto tn0 = Clock::now();
+    // printf("start to get nei pts \n");
     voro_gen_.GetVoronoiNeiPts(cur_pt, nei_pts);
     auto tn1 = Clock::now();
     double search_nn_time = std::chrono::nanoseconds(tn1 - tn0).count()/1e9;
@@ -815,6 +816,7 @@ double LocalVipss::NNDistFunction(const R3Pt &in_pt)
     double new_pt[3] = {in_pt[0], in_pt[1], in_pt[2]};
     // double dist = local_vipss_ptr->NatureNeighborDistanceFunction(&(new_pt[0]));
     double dist = local_vipss_ptr->NatureNeighborDistanceFunctionOMP(&(new_pt[0]));
+    // std::cout << " dist " << dist << std::endl;
     auto t1 = Clock::now();
     double dist_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
     DistCallTime += dist_time;
