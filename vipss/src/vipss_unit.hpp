@@ -43,6 +43,7 @@ class VIPSSUnit {
 
         std::string file_name_;
         std::string data_dir_; 
+        std::string out_dir_;
         std::string out_normal_path_;
         std::string out_surface_path_;
         std::string out_debug_path_;

@@ -18,14 +18,18 @@
 //         //bool analysis_mode = false;
 //     } args;
 
-void GenerateAdaptiveGridOut(const std::array<size_t, 3>& resolution, const std::array<double, 3>& bbox_min, const std::array<double, 3>& bbox_max)
+void GenerateAdaptiveGridOut(const std::array<size_t, 3>& resolution, 
+                             const std::array<double, 3>& bbox_min, 
+                             const std::array<double, 3>& bbox_max,
+                             const std::string& outdir,
+                             const std::string& filename)
 {
     std::cout << "start to call  GenerateAdaptiveGridOut" << std::endl;
     std::cout << "bbox min " << bbox_min[0] << " " << bbox_min[1] << " " << bbox_min[2] << std::endl;
     std::cout << "bbox max " << bbox_max[0] << " " << bbox_max[1] << " " << bbox_max[2] << std::endl;
     mtet::MTetMesh grid = generate_tet_mesh(resolution, bbox_min, bbox_max, grid_mesh::TET5);
 
-    int max_elements = 1000;
+    int max_elements = 10000;
     double threshold = 0.001;
     double alpha = 1.0;
     
@@ -68,7 +72,7 @@ void GenerateAdaptiveGridOut(const std::array<size_t, 3>& resolution, const std:
         }
     };
 
-    int mode = 1;
+    int mode = 0;
     //perform main grid refinement algorithm:
     tet_metric metric_list;
     //an array of 10 timings: {total time getting the multiple indices, total time,time spent on single function, time spent on double functions, time spent on triple functions time spent on double functions' zero crossing test, time spent on three functions' zero crossing test, total subdivision time, total evaluation time,total splitting time}
@@ -90,13 +94,14 @@ void GenerateAdaptiveGridOut(const std::array<size_t, 3>& resolution, const std:
     save_metrics("stats.json", tet_metric_labels, metric_list);
     
     if (1){
+        std::string outfile = outdir + "/" + filename;
         /// save the grid output for discretization tool
-        save_mesh_json("grid.json", grid);
+        save_mesh_json(outfile + "grid.json", grid);
         std::cout << "saved grid json file .... "<< std::endl;
         /// save the grid output for isosurfacing tool
-        save_function_json("function_value.json", grid, metric_list.vertex_func_grad_map, funcNum);
+        save_function_json(outfile + "function_value.json", grid, metric_list.vertex_func_grad_map, funcNum);
         /// write grid and active tets
-        mtet::save_mesh("tet_grid.msh", grid);
-        mtet::save_mesh("active_tets.msh", grid, std::span<mtet::TetId>(metric_list.activeTetId));
+        mtet::save_mesh(outfile + "tet_grid.msh",  grid);
+        mtet::save_mesh(outfile + "active_tets.msh", grid, std::span<mtet::TetId>(metric_list.activeTetId));
     }
 }

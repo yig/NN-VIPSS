@@ -9,6 +9,7 @@
 #include "adgrid/grid_refine.h"
 #include "adgrid/external/implicit_functions/implicit_functions.h"
 #include "local_vipss.hpp"
+#include "adgrid/external/implicit_functions/Hermite_RBF.h"
 
 
 class HRBFDistanceFunction : public ImplicitFunction<double>
@@ -28,7 +29,7 @@ public:
 
     double evaluate_gradient(double x, double y, double z, double &gx, double &gy, double &gz) const override
     {
-        double delt = 1e-8;
+        double delt = 1e-4;
         // std::cout << "pt : " << x << " " << y << " " << z << std::endl;
         R3Pt newPt(x, y, z);
         double dist_val = LocalVipss::NNDistFunction(newPt);
@@ -53,4 +54,9 @@ private:
 };
 
 
-void GenerateAdaptiveGridOut(const std::array<size_t, 3>& resolution, const std::array<double, 3>& bbox_min, const std::array<double, 3>& bbox_max);
+void GenerateAdaptiveGridOut(const std::array<size_t, 3>& resolution, 
+                            const std::array<double, 3>& bbox_min,
+                            const std::array<double, 3>& bbox_max,
+                            const std::string& outdir,
+                            const std::string& fillname);
+

@@ -551,6 +551,8 @@ void VIPSSUnit::ReconSurface()
 
 void VIPSSUnit::GenerateAdaptiveGrid()
 {
+
+    auto t000 = Clock::now();
     // std::cout << "call  generate ad grid ... " << std::endl;
     local_vipss_.voro_gen_.GenerateVoroData();
     local_vipss_.voro_gen_.SetInsertBoundaryPtsToUnused();
@@ -561,15 +563,16 @@ void VIPSSUnit::GenerateAdaptiveGrid()
     local_vipss_.s_vals_ = s_func_vals_;
     local_vipss_.user_lambda_ = user_lambda_;
     local_vipss_.BuildHRBFPerNode();
-        
-    local_vipss_.SetThis();
-
+    local_vipss_.SetThis(); 
     double test_val = LocalVipss::NNDistFunction(R3Pt(0, 0, 0));
     std::cout << " test val " << test_val << std::endl;
+    std::array<size_t,3> resolution = {50,50,50};
+    GenerateAdaptiveGridOut(resolution, local_vipss_.voro_gen_.bbox_min_, 
+                            local_vipss_.voro_gen_.bbox_max_, out_dir_,  file_name_);
+    auto t001 = Clock::now();
+    double adgrid_gen_time = std::chrono::nanoseconds(t001 - t000).count() / 1e9;
 
-    std::array<size_t,3> resolution = {100,100,50};
-    GenerateAdaptiveGridOut(resolution, local_vipss_.voro_gen_.bbox_min_, local_vipss_.voro_gen_.bbox_max_);
-    
+    printf("adaptive grid generation time : %f ! \n", adgrid_gen_time);
 }
 
 void VIPSSUnit::Run()

@@ -16,8 +16,6 @@ DEFINE_int32(surfacing, 1, "Whether generate surface using Nature Neighbor HRBF"
 DEFINE_int32(initPV, 1, "Whether to use partial vipss to init point normals, this method runs faster");
 DEFINE_int32(hard_constraints, 1, "Whether to use normal length as hard constraints");
 
-
-
 void SplitPath(const std::string& fullfilename,std::string &filepath);
 void SplitFileName (const std::string& fullfilename,std::string &filepath,std::string &filename,std::string &extname);
 
@@ -47,6 +45,10 @@ int main(int argc, char** argv)
             vipss_unit.is_surfacing_ = FLAGS_surfacing;
             std::string out_path, out_filename, out_extname;
             SplitFileName(FLAGS_output, out_path, out_filename, out_extname);
+
+            vipss_unit.out_dir_ = out_path;
+            vipss_unit.file_name_ = out_filename;
+
             // std::cout << "output path : " << out_path << std::endl;
             // std::cout << "out_filename : " << out_filename << std::endl;
             // std::cout << "out_extname : " << out_extname << std::endl;
@@ -54,6 +56,8 @@ int main(int argc, char** argv)
             vipss_unit.out_surface_path_ = FLAGS_output;
             vipss_unit.out_debug_path_ = out_path + "/" + out_filename + "_debug.txt";
         } else {
+            vipss_unit.out_dir_ = in_path;
+            vipss_unit.file_name_ = in_filename;
             vipss_unit.out_normal_path_ = in_path + "/" + in_filename + "_out_normal";
             vipss_unit.out_surface_path_ = in_path + "/" + in_filename + "_out_surface";
             vipss_unit.out_debug_path_ = in_path + "/" + in_filename + "_debug.txt";
