@@ -27,10 +27,26 @@ void GenerateAdaptiveGridOut(const std::array<size_t, 3>& resolution,
     std::cout << "start to call  GenerateAdaptiveGridOut" << std::endl;
     std::cout << "bbox min " << bbox_min[0] << " " << bbox_min[1] << " " << bbox_min[2] << std::endl;
     std::cout << "bbox max " << bbox_max[0] << " " << bbox_max[1] << " " << bbox_max[2] << std::endl;
-    mtet::MTetMesh grid = generate_tet_mesh(resolution, bbox_min, bbox_max, grid_mesh::TET5);
 
-    int max_elements = 10000;
-    double threshold = 0.001;
+    double expand_scale = 0.2;
+    double dx = bbox_max[0] - bbox_min[0];
+    double dy = bbox_max[1] - bbox_min[1];
+    double dz = bbox_max[2] - bbox_min[2];
+
+    std::array<double, 3> expand_bbox_min = {bbox_min[0] - expand_scale * dx, 
+                                            bbox_min[1] - expand_scale * dy,
+                                            bbox_min[2] - expand_scale * dz};
+    std::array<double, 3> expand_bbox_max = {bbox_max[0] + expand_scale * dx, 
+                                            bbox_max[1] + expand_scale * dy,
+                                            bbox_max[2] + expand_scale * dz};
+
+
+    std::array<double, 3> new_bbox_min;
+
+    mtet::MTetMesh grid = generate_tet_mesh(resolution, expand_bbox_min, expand_bbox_max, grid_mesh::TET5);
+
+    int max_elements = std::numeric_limits<int>::max();
+    double threshold = 0.0005;
     double alpha = 1.0;
     
     llvm_vecsmall::SmallVector<csg_unit, 20> csg_tree = {};

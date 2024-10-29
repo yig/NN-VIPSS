@@ -566,7 +566,7 @@ void VIPSSUnit::GenerateAdaptiveGrid()
     local_vipss_.SetThis(); 
     double test_val = LocalVipss::NNDistFunction(R3Pt(0, 0, 0));
     std::cout << " test val " << test_val << std::endl;
-    std::array<size_t,3> resolution = {50,50,50};
+    std::array<size_t,3> resolution = {4, 4, 4};
     GenerateAdaptiveGridOut(resolution, local_vipss_.voro_gen_.bbox_min_, 
                             local_vipss_.voro_gen_.bbox_max_, out_dir_,  file_name_);
     auto t001 = Clock::now();
