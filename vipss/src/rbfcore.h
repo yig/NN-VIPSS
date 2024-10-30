@@ -216,9 +216,10 @@ public:
 
     std::vector<double> EstimateNormals(const std::vector<double>& pts);
 
-
 public:
     double Dist_Function(const double x, const double y, const double z);
+    double evaluate_gradient(double x, double y, double z, double &gx, double &gy, double &gz) ;
+
     inline double Dist_Function(const double *p);
 
 public:

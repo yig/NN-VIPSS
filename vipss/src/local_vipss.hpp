@@ -91,7 +91,9 @@ class LocalVipss {
 
         double NodeDistanceFunction(const tetgenmesh::point nn_pt, const tetgenmesh::point cur_pt) const;
         double NatureNeighborDistanceFunctionOMP(const tetgenmesh::point cur_pt) const;
+        double NatureNeighborGradientOMP(const tetgenmesh::point cur_pt,double* gradient) const;
         static double NNDistFunction(const R3Pt &in_pt);  
+        static double NNDistGradient(const R3Pt &in_pt, double* gradient); 
         void SetThis();      
         void VisualFuncValues(double (*function)(const R3Pt &in_pt), const VoroPlane& plane,
                               const std::string& dist_fuc_color_path);

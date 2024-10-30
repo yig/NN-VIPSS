@@ -86,7 +86,7 @@ void XCube_Hessian_Kernel_2p(const double *p1, const double *p2, double *H){
     for(int i=0;i<3;++i)diff[i] = p1[i] - p2[i];
     double len_dist  = sqrt(MyUtility::len(diff));
 
-    if(len_dist<1e-8){
+    if(len_dist<1e-12){
         for(int i=0;i<9;++i)H[i] = 0;
     }else{
         for(int i=0;i<3;++i)for(int j=0;j<3;++j)
@@ -243,9 +243,65 @@ double RBF_Core::Dist_Function(const double *p){
 
     double re = loc_part + poly_part;
     return re;
+}
 
+double RBF_Core::evaluate_gradient(double x, double y, double z, double &gx, double &gy, double &gz)  
+{
+    // size_t num_pt = npt;
+
+    double pt[3] = {x, y, z};
+    gx = 0;
+    gy = 0;
+    gz = 0;
+
+    const double *p_pts = pts.data();
+    double G[3];
+    for(int i=0;i<npt;++i) kern_(i) = Kernal_Function_2p(p_pts+i*3, pt);
+    for(int i=0;i<key_npt;++i){
+        Kernal_Gradient_Function_2p(pt,p_pts+i*3,G);
+        gx += G[0] * a[i];
+        gy += G[1] * a[i];
+        gz += G[2] * a[i];
+        //for(int j=0;j<3;++j)kern(npt+i*3+j) = -G[j];
+        for(int j=0;j<3;++j)kern_(npt+i+j*key_npt) = G[j];
+    }
+
+
+    arma::mat33 Hess;
+    for(int i=0;i<key_npt;++i){
+        // Kernal_Hessian_Function_2p(pt, p_pts+i*3, H);
+        arma::vec3 diff = {pt[0] - pts[3 *i],pt[1] - pts[3 *i + 1], pt[2] - pts[3 *i + 2]};
+        double len =  arma::norm(diff);
+        if (len > 1e-10) {
+           Hess = diff * (diff.t() / len);
+            Hess(0, 0) += len;
+            Hess(1, 1) += len;
+            Hess(2, 2) += len;
+            Hess *= 3;
+        }
+        for(int j = 0; j < 3; ++j)
+        {
+            gx += Hess.col(j)[0] * a[npt + j * key_npt + i];
+            gy += Hess.col(j)[1] * a[npt + j * key_npt + i];
+            gz += Hess.col(j)[2] * a[npt + j * key_npt + i];
+        }
+    }
+
+    gx += b[1];
+    gy += b[2];
+    gz += b[3];
+
+    double loc_part = dot(kern_,a);
+    for(int i=0;i<3;++i) {
+            kb_(i+1) = pt[i];
+        }
+    double poly_part = arma::dot(kb_,b);
+
+    double re = loc_part + poly_part;
+    return re;
 
 }
+
 int RBF_Core::DistFuncCallNum = 0;
 double RBF_Core::DistFuncCallTime = 0.0;
 static RBF_Core * s_hrbf;

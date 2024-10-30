@@ -725,6 +725,83 @@ double LocalVipss::NatureNeighborDistanceFunctionOMP(const tetgenmesh::point cur
     return 0;
 }
 
+double LocalVipss::NatureNeighborGradientOMP(const tetgenmesh::point cur_pt, double* gradient) const
+{
+    std::vector<tetgenmesh::point> nei_pts;
+    auto tn0 = Clock::now();
+    // printf("start to get nei pts \n");
+    voro_gen_.GetVoronoiNeiPts(cur_pt, nei_pts);
+    auto tn1 = Clock::now();
+    double search_nn_time = std::chrono::nanoseconds(tn1 - tn0).count()/1e9;
+    search_nn_time_sum_ += search_nn_time;
+    // printf("nn num %ld \n", nei_pts.size());
+    size_t nn_num = nei_pts.size();
+    int i;  
+    auto t0 = Clock::now();
+    arma::vec nn_dist_vec_(nn_num);
+    arma::vec nn_volume_vec_(nn_num);
+    arma::vec gx_vec_(nn_num);
+    arma::vec gy_vec_(nn_num);
+    arma::vec gz_vec_(nn_num);
+    
+    ave_voxel_nn_pt_num_ += nn_num;
+    const std::vector<double*>& all_pts = points_;
+
+#pragma omp parallel for shared(node_rbf_vec_, voro_gen_, VoronoiGen::point_id_map_, nei_pts, cur_pt, nn_dist_vec_, nn_volume_vec_) private(i)
+    for( i = 0; i < nn_num; ++i)
+    {
+        auto nn_pt = nei_pts[i];
+        if(VoronoiGen::point_id_map_.find(nn_pt) != VoronoiGen::point_id_map_.end())
+        {
+            size_t pid = VoronoiGen::point_id_map_[nn_pt];
+            const arma::vec& a = node_rbf_vec_[pid]->a;
+            const arma::vec& b = node_rbf_vec_[pid]->b;
+            const std::vector<size_t>& cluster_pids = VoronoiGen::cluster_init_pids_[pid];
+            // nn_dist_vec_[i] = HRBF_Dist_Alone(cur_pt,  a, b, cluster_pids, all_pts);
+            // nn_dist_vec_[i] = 1;
+            double gx, gy, gz;
+            nn_dist_vec_[i] = node_rbf_vec_[pid]->evaluate_gradient(cur_pt[0],cur_pt[1], cur_pt[2], gx, gy, gz);
+            gx_vec_[i] = gx;
+            gy_vec_[i] = gy;
+            gz_vec_[i] = gz;
+
+            // printf("--------- analytic grad: %f %f %f \n", gx, gy, gz);
+            // double delt = 1e-10;
+            // double n_dx = node_rbf_vec_[pid]->evaluate_gradient(cur_pt[0] - delt ,cur_pt[1], cur_pt[2], gx, gy, gz);
+            // double p_dx = node_rbf_vec_[pid]->evaluate_gradient(cur_pt[0] + delt ,cur_pt[1], cur_pt[2], gx, gy, gz);
+            // double new_gx = (p_dx - n_dx)  / (2 *delt);
+            // double new_dy = node_rbf_vec_[pid]->evaluate_gradient(cur_pt[0], cur_pt[1] + delt, cur_pt[2], gx, gy, gz);
+            // double new_gy = (new_dy - nn_dist_vec_[i])  / delt;
+            // double new_dz = node_rbf_vec_[pid]->evaluate_gradient(cur_pt[0], cur_pt[1], cur_pt[2] + delt, gx, gy, gz);
+            // double new_gz = (new_dz - nn_dist_vec_[i])  / delt;
+
+            // printf("--------- numerical grad: %f %f %f \n", new_gx, new_gy, new_gz);
+
+            int thread_id = omp_get_thread_num();
+            nn_volume_vec_[i] = voro_gen_.CalTruncatedCellVolumePassOMP(cur_pt, nn_pt, thread_id); 
+        }
+    }
+    auto t1 = Clock::now();
+    double pass_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
+    pass_time_sum_ += pass_time;
+
+    double volume_sum = arma::accu(nn_volume_vec_);
+    if(volume_sum > 1e-20)
+    {
+
+        gradient[0] = arma::dot(nn_volume_vec_, gx_vec_) / volume_sum;
+        gradient[1] = arma::dot(nn_volume_vec_, gy_vec_) / volume_sum;
+        gradient[2] = arma::dot(nn_volume_vec_, gz_vec_) / volume_sum;
+
+        return arma::dot(nn_dist_vec_, nn_volume_vec_) / volume_sum;
+    }
+
+    gradient[0] = 0;
+    gradient[1] = 0;
+    gradient[2] = 0;
+    return 0;
+}
+
 
 void LocalVipss::InitNormalWithVipss()
 {
@@ -816,6 +893,19 @@ double LocalVipss::NNDistFunction(const R3Pt &in_pt)
     double new_pt[3] = {in_pt[0], in_pt[1], in_pt[2]};
     // double dist = local_vipss_ptr->NatureNeighborDistanceFunction(&(new_pt[0]));
     double dist = local_vipss_ptr->NatureNeighborDistanceFunctionOMP(&(new_pt[0]));
+    // std::cout << " dist " << dist << std::endl;
+    auto t1 = Clock::now();
+    double dist_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
+    DistCallTime += dist_time;
+    return dist;
+}
+double LocalVipss::NNDistGradient(const R3Pt &in_pt, double* gradient)
+{
+    DistCallNum ++;
+    auto t0 = Clock::now();
+    double new_pt[3] = {in_pt[0], in_pt[1], in_pt[2]};
+    // double dist = local_vipss_ptr->NatureNeighborDistanceFunction(&(new_pt[0]));
+    double dist = local_vipss_ptr->NatureNeighborGradientOMP(&(new_pt[0]), gradient);
     // std::cout << " dist " << dist << std::endl;
     auto t1 = Clock::now();
     double dist_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;

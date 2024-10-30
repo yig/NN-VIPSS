@@ -40,14 +40,27 @@ void GenerateAdaptiveGridOut(const std::array<size_t, 3>& resolution,
                                             bbox_max[1] + expand_scale * dy,
                                             bbox_max[2] + expand_scale * dz};
 
-
     std::array<double, 3> new_bbox_min;
 
-    mtet::MTetMesh grid = generate_tet_mesh(resolution, expand_bbox_min, expand_bbox_max, grid_mesh::TET5);
+    int vol_dim = 16;
+    dx = expand_bbox_max[0] - expand_bbox_min[0];
+    dy = expand_bbox_max[1] - expand_bbox_min[1];
+    dz = expand_bbox_max[2] - expand_bbox_min[2];
+
+    double max_len = std::max(dx, std::max(dy, dz));
+    double voxel_len = max_len / double(vol_dim);
+    int dimx = std::max(int(dx / voxel_len), 1);
+    int dimy = std::max(int(dy / voxel_len), 1);
+    int dimz = std::max(int(dz / voxel_len), 1);
+
+    std::array<size_t, 3> new_resolution = {dimx, dimy, dimz};
+
+    mtet::MTetMesh grid = generate_tet_mesh(new_resolution, expand_bbox_min, expand_bbox_max, grid_mesh::TET5);
 
     int max_elements = std::numeric_limits<int>::max();
     double threshold = 0.0005;
     double alpha = 1.0;
+    // alpha = std::numeric_limits<double>::max();
     
     llvm_vecsmall::SmallVector<csg_unit, 20> csg_tree = {};
     /// Read implicit function
