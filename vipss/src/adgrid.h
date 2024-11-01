@@ -1,16 +1,18 @@
+#pragma once
 #include <span>
 #include <queue>
 #include <optional>
+#include "local_vipss.hpp"
 #include <CLI/CLI.hpp>
 
-#include "adgrid/timer.h"
-#include "adgrid/csg.h"
-#include "adgrid/grid_mesh.h"
-#include "adgrid/grid_refine.h"
-#include "adgrid/external/implicit_functions/implicit_functions.h"
-#include "local_vipss.hpp"
-#include "adgrid/external/implicit_functions/Hermite_RBF.h"
+// #include "adgrid/timer.h"
+// #include "adgrid/csg.h"
+// #include "adgrid/grid_mesh.h"
+// #include "adgrid/grid_refine.h"
+// #include "adgrid/external/implicit_functions/implicit_functions.h"
+// #include "adgrid/external/implicit_functions/Hermite_RBF.h"
 
+#include "implicit_functions/implicit_functions.h"
 
 class HRBFDistanceFunction : public ImplicitFunction<double>
 {
