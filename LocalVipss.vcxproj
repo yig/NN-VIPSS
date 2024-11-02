@@ -168,9 +168,9 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_DISABLE_EXTENDED_ALIGNED_STORAGE;LIBIGL_PREDICATES_USE_FLOAT</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_DISABLE_EXTENDED_ALIGNED_STORAGE</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)\3rd\armadillo\include;$(SolutionDir)\3rd\eigen-3.4.0;$(SolutionDir)\3rd\nlopt\include;$(SolutionDir)\vipss\src;$(SolutionDir)\vipss\src\surfacer;$(SolutionDir)\vipss\src\surfacer\utils;$(SolutionDir)\3rd\OpenBLAS\include;$(SolutionDir)\3rd;$(SolutionDir)\vipss\src\adgrid;$(SolutionDir)\vipss\src\adgrid\external;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\3rd\armadillo\include;$(SolutionDir)\3rd\eigen-3.4.0;$(SolutionDir)\3rd\nlopt\include;$(SolutionDir)\vipss\src;$(SolutionDir)\vipss\src\surfacer;$(SolutionDir)\vipss\src\surfacer\utils;$(SolutionDir)\3rd\OpenBLAS\include;$(SolutionDir)\3rd;$(SolutionDir)\vipss\src\adgrid_headers;$(SolutionDir)\vipss\src\adgrid_headers\external;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DisableSpecificWarnings>4996;4267;4477;4244;4703;4101;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <OpenMPSupport>true</OpenMPSupport>

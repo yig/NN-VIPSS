@@ -95,9 +95,6 @@
     <ClCompile Include="vipss\src\rbf_Hermite.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="vipss\src\predicates.cxx">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="vipss\src\rbf_api.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -123,6 +120,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="vipss\src\adgrid.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="vipss\src\tet_predicates.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
