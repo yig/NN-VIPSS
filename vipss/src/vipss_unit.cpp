@@ -568,7 +568,7 @@ void VIPSSUnit::GenerateAdaptiveGrid()
     // std::cout << " test val " << test_val << std::endl;
     std::array<size_t,3> resolution = {32, 32, 32};
     GenerateAdaptiveGridOut(resolution, local_vipss_.voro_gen_.bbox_min_, 
-                            local_vipss_.voro_gen_.bbox_max_, out_dir_,  file_name_);
+                            local_vipss_.voro_gen_.bbox_max_, out_dir_,  file_name_, adgrid_threshold_);
     auto t001 = Clock::now();
     double adgrid_gen_time = std::chrono::nanoseconds(t001 - t000).count() / 1e9;
 

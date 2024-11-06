@@ -35,6 +35,7 @@ int main(int argc, char** argv)
         bool hardConstraints = true;
         bool rbf_base = false;
         double opt_threshold = 1e-7;
+        double adgrid_threshold = 0.001;
     }args;
     
     // gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -48,6 +49,7 @@ int main(int argc, char** argv)
     app.add_option("-H, --hardConstraints", args.hardConstraints, "use hard constraints for energy optimization");
     app.add_option("-R, --use_rbfBase",args.rbf_base, "use simplified rbf base");
     app.add_option("-t, --opt_threshold",args.opt_threshold, "use simplified rbf base");
+    app.add_option("-a, --adgrid_threshold",args.adgrid_threshold, "adptive gird generation threshold");
     CLI11_PARSE(app, argc, argv);
 
     vipss_unit.hard_constraints_ = args.hardConstraints;
@@ -63,7 +65,7 @@ int main(int argc, char** argv)
         LocalVipss::InitWithPartialVipss = args.initPV;
         LocalVipss::use_rbf_base_ = args.rbf_base;
         vipss_unit.is_surfacing_ = args.surfacing;
-
+        vipss_unit.adgrid_threshold_ = args.adgrid_threshold;
         if(args.output.size() > 0)
         {
             std::string out_path, out_filename, out_extname;

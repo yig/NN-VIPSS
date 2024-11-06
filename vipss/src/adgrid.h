@@ -91,5 +91,5 @@ void GenerateAdaptiveGridOut(const std::array<size_t, 3>& resolution,
                             const std::array<double, 3>& bbox_min,
                             const std::array<double, 3>& bbox_max,
                             const std::string& outdir,
-                            const std::string& fillname);
+                            const std::string& fillname, double threshold = 0.001);
 
