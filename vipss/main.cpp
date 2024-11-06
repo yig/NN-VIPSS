@@ -68,6 +68,8 @@ int main(int argc, char** argv)
         LocalVipss::use_rbf_base_ = args.rbf_base;
         vipss_unit.is_surfacing_ = args.surfacing;
         vipss_unit.adgrid_threshold_ = args.adgrid_threshold;
+        vipss_unit.use_adgrid_ = args.use_adgrid;
+        
         if(args.output.size() > 0)
         {
             std::string out_path, out_filename, out_extname;

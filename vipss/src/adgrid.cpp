@@ -136,18 +136,18 @@ void GenerateAdaptiveGridOut(const std::array<size_t, 3>& resolution,
 
     std::array<double, 3> new_bbox_min;
 
-    int vol_dim = 16;
+    int vol_dim = 3;
     dx = expand_bbox_max[0] - expand_bbox_min[0];
     dy = expand_bbox_max[1] - expand_bbox_min[1];
     dz = expand_bbox_max[2] - expand_bbox_min[2];
 
     double max_len = std::max(dx, std::max(dy, dz));
-    double voxel_len = max_len / double(vol_dim);
-    int dimx = std::max(int(dx / voxel_len), 1);
-    int dimy = std::max(int(dy / voxel_len), 1);
-    int dimz = std::max(int(dz / voxel_len), 1);
+    // double voxel_len = max_len / double(vol_dim);
+    // int dimx = std::max(int(dx / voxel_len), 1);
+    // int dimy = std::max(int(dy / voxel_len), 1);
+    // int dimz = std::max(int(dz / voxel_len), 1);
 
-    std::array<size_t, 3> new_resolution = {dimx, dimy, dimz};
+    std::array<size_t, 3> new_resolution = {vol_dim, vol_dim, vol_dim};
 
     mtet::MTetMesh mesh = generate_tet_mesh(new_resolution, expand_bbox_min, expand_bbox_max, grid_mesh::TET5);
     // mtet::MTetMesh mesh;
@@ -611,15 +611,20 @@ void GenerateAdaptiveGridOut(const std::array<size_t, 3>& resolution,
 
     std::string outfile = outdir + "/" + filename;
     // save timing records
-    save_timings(outfile + "_timings.json",time_label, profileTimer);
+    std::string str_th =  std::to_string(in_threshold);
+
+    str_th.erase(str_th.find_last_not_of('0') + 1, std::string::npos);
+    
+
+    save_timings(outfile + "_timings_" + str_th + ".json",time_label, profileTimer);
     // save statistics
-    save_metrics(outfile + "_stats.json", tet_metric_labels, {(double)mesh.get_num_tets(), activeTet, min_rratio_all, min_rratio_active, (double)sub_call_two, (double) sub_call_three});
+    save_metrics(outfile + "_stats_"  + str_th +".json", tet_metric_labels, {(double)mesh.get_num_tets(), activeTet, min_rratio_all, min_rratio_active, (double)sub_call_two, (double) sub_call_three});
     // save the mesh output for isosurfacing tool
-    save_mesh_json(outfile + "_mesh.json", mesh);
+    save_mesh_json(outfile + "_mesh_" + str_th + ".json", mesh);
     // save the mesh output for isosurfacing tool
-    save_function_json(outfile + "_function_value.json", mesh, vertex_func_grad_map, funcNum);
+    save_function_json(outfile + "_function_value_" + str_th + ".json", mesh, vertex_func_grad_map, funcNum);
     // //write mesh and active tets
-    mtet::save_mesh(outfile + "_tet_mesh.msh", mesh);
-    mtet::save_mesh(outfile + "_active_tets.msh", mesh, std::span<mtet::TetId>(activeTetId));
+    mtet::save_mesh(outfile + "_tet_mesh_" + str_th + ".msh", mesh);
+    mtet::save_mesh(outfile + "_active_tets_" + str_th + ".msh", mesh, std::span<mtet::TetId>(activeTetId));
     
 }
