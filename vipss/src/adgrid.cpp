@@ -286,20 +286,20 @@ void GenerateAdaptiveGridOut(const std::array<size_t, 3>& resolution,
 
     std::array<size_t, 3> new_resolution = {dimx, dimy, dimz};
 
-    // mtet::MTetMesh mesh = generate_tet_mesh(new_resolution, expand_bbox_min, expand_bbox_max, grid_mesh::TET5);
-    mtet::MTetMesh mesh;
-    json j;
-    j["resolution"] = {1};
-    j["bbox_min"] = expand_bbox_min;
-    j["bbox_max"] = expand_bbox_max;
-    std::string temp_out = "temp.json";
-    std::ofstream fout(temp_out.c_str(),std::ios::out);
-    fout << j.dump(4) << std::endl;
-    fout.close();
-    // if (args.mesh_file.find(".json") != std::string::npos){
-    mesh = grid_mesh::load_tet_mesh(temp_out);
-    mtet::save_mesh("init.msh", mesh);
-    mesh = mtet::load_mesh("init.msh");
+    mtet::MTetMesh mesh = generate_tet_mesh(new_resolution, expand_bbox_min, expand_bbox_max, grid_mesh::TET5);
+    // mtet::MTetMesh mesh;
+    // json j;
+    // j["resolution"] = {1};
+    // j["bbox_min"] = expand_bbox_min;
+    // j["bbox_max"] = expand_bbox_max;
+    // std::string temp_out = "temp.json";
+    // std::ofstream fout(temp_out.c_str(),std::ios::out);
+    // fout << j.dump(4) << std::endl;
+    // fout.close();
+    // // if (args.mesh_file.find(".json") != std::string::npos){
+    // mesh = grid_mesh::load_tet_mesh(temp_out);
+    // mtet::save_mesh("init.msh", mesh);
+    // mesh = mtet::load_mesh("init.msh");
 
     std::cout << " finish init tet mesh" << std::endl;
     // } else {

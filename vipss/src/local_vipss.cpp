@@ -15,6 +15,7 @@ double LocalVipss::search_nn_time_sum_ = 0;
 double LocalVipss::pass_time_sum_ = 0;
 int LocalVipss::ave_voxel_nn_pt_num_ = 0;
 int LocalVipss::InitWithPartialVipss = 1;
+bool LocalVipss::use_rbf_base_ = false;
 
 std::vector<tetgenmesh::point> LocalVipss::points_;
 // std::vector<std::vector<size_t>> LocalVipss::cluster_all_pt_ids_;
@@ -433,7 +434,9 @@ void LocalVipss::AddClusterHMatrix(const std::vector<size_t>& p_ids, const arma:
     size_t unit_npt = p_ids.size();
     size_t unit_key_npt = unit_npt;
     std::vector<Triplet> coefficients;
-    for(size_t i = 0; i < unit_npt; ++i)
+    size_t iter_num = use_rbf_base_? 1 : unit_npt;
+
+    for(size_t i = 0; i < iter_num; ++i)
     {
         size_t pi = p_ids[i];
         if(user_lambda_ > 1e-12)

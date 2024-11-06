@@ -105,6 +105,7 @@ namespace grid_mesh {
         for (auto &t: tets) {
             mesh.add_tet(vertex_ids[t[0]], vertex_ids[t[1]], vertex_ids[t[2]], vertex_ids[t[3]]);
         }
+        mesh.initialize_connectivity();
         return mesh;
     }
 
