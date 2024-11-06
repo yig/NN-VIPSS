@@ -94,6 +94,7 @@ class VIPSSUnit {
         double opt_tor_ = 1e-10;
         int max_opt_iter_ = 4000;
         double adgrid_threshold_ = 0.001;
+        bool use_adgrid_ = true;
 
 
     

@@ -645,8 +645,13 @@ void VIPSSUnit::Run()
     // printf("start to ReconSurface 0001 \n");
     if (is_surfacing_)
     {
-        // ReconSurface();
-        GenerateAdaptiveGrid();
+        if(use_adgrid_)
+        {
+            GenerateAdaptiveGrid();
+        } else {
+            ReconSurface();
+        }
+       
     }
     
     std::string log_path = local_vipss_.out_dir_ + "stats.txt";

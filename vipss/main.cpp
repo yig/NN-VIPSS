@@ -36,6 +36,7 @@ int main(int argc, char** argv)
         bool rbf_base = false;
         double opt_threshold = 1e-7;
         double adgrid_threshold = 0.001;
+        bool use_adgrid = true;
     }args;
     
     // gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -50,6 +51,7 @@ int main(int argc, char** argv)
     app.add_option("-R, --use_rbfBase",args.rbf_base, "use simplified rbf base");
     app.add_option("-t, --opt_threshold",args.opt_threshold, "use simplified rbf base");
     app.add_option("-a, --adgrid_threshold",args.adgrid_threshold, "adptive gird generation threshold");
+    app.add_option("-A, --use_adgrid",args.use_adgrid, "use adptive gird to generate mesh");
     CLI11_PARSE(app, argc, argv);
 
     vipss_unit.hard_constraints_ = args.hardConstraints;
