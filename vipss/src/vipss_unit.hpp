@@ -38,6 +38,7 @@ class VIPSSUnit {
         void test_partial_vipss();
         void BuildTetCentersMap();
         void BuildLocalHRBFPerNode();
+        void CalEnergyWithGtNormal();
 
     public:
 
@@ -91,8 +92,8 @@ class VIPSSUnit {
 
         HRBF_SURFACE_TYPE hrbf_type_;
 
-        double opt_tor_ = 1e-10;
-        int max_opt_iter_ = 4000;
+        double opt_tor_ = 1e-7;
+        int max_opt_iter_ = 3000;
         double adgrid_threshold_ = 0.001;
         bool use_adgrid_ = true;
 

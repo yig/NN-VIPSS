@@ -95,6 +95,8 @@ public:
 //    }
 
     Solver(){}
+public:
+    static bool open_log_;
 
 
 public:

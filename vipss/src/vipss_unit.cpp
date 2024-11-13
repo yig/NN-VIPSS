@@ -592,6 +592,7 @@ void VIPSSUnit::Run()
     G_VP_stats.take_h_sub_block_time_ = get_h_sub_block_time;
 
     auto ts0 = Clock::now();
+    Solver::open_log_ = true;
     if(user_lambda_ < 1e-12)
     {
         if (hard_constraints_)
@@ -650,11 +651,51 @@ void VIPSSUnit::Run()
             GenerateAdaptiveGrid();
         } else {
             ReconSurface();
-        }
-       
+        }  
     }
-    
+
     std::string log_path = local_vipss_.out_dir_ + "stats.txt";
     WriteStatsLog(log_path, G_VP_stats);
+
+    CalEnergyWithGtNormal();
 }
 
+void VIPSSUnit::CalEnergyWithGtNormal()
+{
+    std::string norm_path = "c:\\Users\\xiaji\\Documents\\projects\\sketches_results\\crab_out_normal_old.ply";
+    std::vector<double> vertices;
+    std::vector<double> normals;
+    readPLYFile(norm_path, vertices, normals);
+
+    if(user_lambda_ <= 1e-12)
+    {
+        size_t n = vertices.size()/3;
+        Eigen::VectorXd arma_x(n*3);
+        for(int i=0;i<n;++i){
+            // auto p_scsc = sina_cosa_sinb_cosb.data()+i*4;
+            arma_x(i)     = normals[3*i];
+            arma_x(i+n)   = normals[3*i + 1];
+            arma_x(i+n*2) = normals[3*i + 2];
+        }
+
+        Eigen::VectorXd a2 = (arma_x.transpose() * local_vipss_.final_h_eigen_).transpose();
+        double re = arma_x.dot(a2);
+        std::cout << "final residual val : " << re << std::endl;
+    } else {
+        size_t n = vertices.size()/3;
+        Eigen::VectorXd arma_x(n*4);
+        for(int i=0;i<n;++i){
+            // auto p_scsc = sina_cosa_sinb_cosb.data()+i*4;
+            arma_x(i)       = s_func_vals_[i];
+            arma_x(i + n)   = normals[3*i];
+            arma_x(i + n*2) = normals[3*i + 1];
+            arma_x(i + n*3) = normals[3*i + 2];
+        }
+
+        Eigen::VectorXd a2 = (arma_x.transpose() * local_vipss_.final_h_eigen_).transpose();
+        double re = arma_x.dot(a2);
+        std::cout << "final residual val : " << re << std::endl;
+    }
+    
+
+}

@@ -40,11 +40,10 @@ public:
         gy = gradient[1];
         gz = gradient[2];
 
-        // std::cout << "analytic grad : " << gx << " " << gy << " " << gz << std::endl;
         // std::cout << "analytic dist_val : " << dist_val << std::endl;
         // dist_val = LocalVipss::NNDistFunction(newPt);
-        // std::cout << "numerical dist_val : " << dist_val << std::endl;
-        // double delt = 1e-10; 
+        // // std::cout << "numerical dist_val : " << dist_val << std::endl;
+        // double delt = 1e-12; 
         // R3Pt newPt_x(x + delt, y, z);
         // double dist_x = LocalVipss::NNDistFunction(newPt_x);
         // R3Pt newPt_y(x, y + delt, z);
@@ -56,6 +55,7 @@ public:
         // double n_gz = (dist_z - dist_val) / delt;
 
         // std::cout << "n grad : " << n_gx << " " << n_gy << " " << n_gz << std::endl;
+        // std::cout << "analytic grad : " << gx << " " << gy << " " << gz << std::endl;
         return dist_val;
     }
 

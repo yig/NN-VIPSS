@@ -746,6 +746,7 @@ double LocalVipss::NatureNeighborGradientOMP(const tetgenmesh::point cur_pt, dou
     arma::vec gx_vec_(nn_num);
     arma::vec gy_vec_(nn_num);
     arma::vec gz_vec_(nn_num);
+    std::vector<arma::vec3> nn_vol_grads_(nn_num);
     
     ave_voxel_nn_pt_num_ += nn_num;
     const std::vector<double*>& all_pts = points_;
@@ -767,41 +768,47 @@ double LocalVipss::NatureNeighborGradientOMP(const tetgenmesh::point cur_pt, dou
             gx_vec_[i] = gx;
             gy_vec_[i] = gy;
             gz_vec_[i] = gz;
-
-            // printf("--------- analytic grad: %f %f %f \n", gx, gy, gz);
-            // double delt = 1e-10;
-            // double n_dx = node_rbf_vec_[pid]->evaluate_gradient(cur_pt[0] - delt ,cur_pt[1], cur_pt[2], gx, gy, gz);
-            // double p_dx = node_rbf_vec_[pid]->evaluate_gradient(cur_pt[0] + delt ,cur_pt[1], cur_pt[2], gx, gy, gz);
-            // double new_gx = (p_dx - n_dx)  / (2 *delt);
-            // double new_dy = node_rbf_vec_[pid]->evaluate_gradient(cur_pt[0], cur_pt[1] + delt, cur_pt[2], gx, gy, gz);
-            // double new_gy = (new_dy - nn_dist_vec_[i])  / delt;
-            // double new_dz = node_rbf_vec_[pid]->evaluate_gradient(cur_pt[0], cur_pt[1], cur_pt[2] + delt, gx, gy, gz);
-            // double new_gz = (new_dz - nn_dist_vec_[i])  / delt;
-
-            // printf("--------- numerical grad: %f %f %f \n", new_gx, new_gy, new_gz);
-
             int thread_id = omp_get_thread_num();
-            nn_volume_vec_[i] = voro_gen_.CalTruncatedCellVolumePassOMP(cur_pt, nn_pt, thread_id); 
+            // nn_volume_vec_[i] = voro_gen_.CalTruncatedCellVolumePassOMP(cur_pt, nn_pt, thread_id); 
+            arma::vec3 vol_grad; 
+            nn_volume_vec_[i] = voro_gen_.CalTruncatedCellVolumeGradientOMP(cur_pt, nn_pt, vol_grad, thread_id);
+            nn_vol_grads_[i] = vol_grad;
         }
     }
+
     auto t1 = Clock::now();
     double pass_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
     pass_time_sum_ += pass_time;
-
     double volume_sum = arma::accu(nn_volume_vec_);
-    if(volume_sum > 1e-20)
+    arma::vec3 vol_grads_sum = {0, 0, 0};
+    for(const auto& cur_grad : nn_vol_grads_)
     {
-
-        gradient[0] = arma::dot(nn_volume_vec_, gx_vec_) / volume_sum;
-        gradient[1] = arma::dot(nn_volume_vec_, gy_vec_) / volume_sum;
-        gradient[2] = arma::dot(nn_volume_vec_, gz_vec_) / volume_sum;
-
-        return arma::dot(nn_dist_vec_, nn_volume_vec_) / volume_sum;
+        vol_grads_sum += cur_grad;
     }
 
     gradient[0] = 0;
     gradient[1] = 0;
     gradient[2] = 0;
+
+    if(volume_sum > 1e-20)
+    {
+
+        gradient[0] += arma::dot(nn_volume_vec_, gx_vec_) / volume_sum;
+        gradient[1] += arma::dot(nn_volume_vec_, gy_vec_) / volume_sum;
+        gradient[2] += arma::dot(nn_volume_vec_, gz_vec_) / volume_sum;
+
+        arma::vec3 partial_grad = {0, 0, 0};
+        for(int vi = 0; vi < nn_num; ++vi)
+        {
+            partial_grad += nn_dist_vec_[vi]/ (volume_sum * volume_sum) * ( volume_sum * nn_vol_grads_[vi] - nn_volume_vec_[vi] * vol_grads_sum);
+        }
+        gradient[0] += partial_grad[0];
+        gradient[1] += partial_grad[1];
+        gradient[2] += partial_grad[2];
+        return arma::dot(nn_dist_vec_, nn_volume_vec_) / volume_sum;
+    }
+
+    
     return 0;
 }
 

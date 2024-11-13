@@ -700,7 +700,6 @@ double VoronoiGen::CalTruncatedCellVolumePassOMP(tetgenmesh::point in_pt, tetgen
                     trunc_tets[(tet_count + tet_total_count)*2 + 1] = &intersect_pts[3 * (intersect_total_count + intersect_count)];
                     intersect_count++;
                     tet_count ++;
-
                 } 
                 else if(proj1 >= 0 && proj2 >= 0)
                 {
@@ -724,9 +723,166 @@ double VoronoiGen::CalTruncatedCellVolumePassOMP(tetgenmesh::point in_pt, tetgen
         tet_total_count += tet_count;
     }
     double cell_volume = 0;
-
     if(intersect_total_count > 0)
     {
+        const double* trunc_pt = intersect_pts; 
+        int cur_tet_id = 0;
+        for(size_t i = 0; i < f_num; ++i)
+        {
+            const int f_tet_num = face_tet_count[i];
+            const auto f_pt = trunc_tets[cur_tet_id*2];
+            // printf("cur face f_tet_num : %d \n", f_tet_num);
+            for(int ti = 0; ti < f_tet_num; ++ti )
+            {
+                double volume = CalTetrahedronVolumeDet(trunc_tets[cur_tet_id*2], 
+                                                        trunc_tets[cur_tet_id*2 + 1], 
+                                                        f_pt,
+                                                        trunc_pt);
+                cell_volume += volume;
+                cur_tet_id ++;
+            }
+        }
+        return cell_volume;
+    }
+    return 0;
+}
+
+double VoronoiGen::CalTruncatedCellVolumeGradientOMP(tetgenmesh::point in_pt, tetgenmesh::point nei_pt, 
+                                                        arma::vec3& gradient, int thread_id)
+{
+    double plane_mid_x = (in_pt[0] + nei_pt[0])/2.0;
+    double plane_mid_y = (in_pt[1] + nei_pt[1])/2.0;
+    double plane_mid_z = (in_pt[2] + nei_pt[2])/2.0;
+    double p_nx  = (in_pt[0] - nei_pt[0]);
+    double p_ny  = (in_pt[1] - nei_pt[1]);
+    double p_nz  = (in_pt[2] - nei_pt[2]);
+    double pn_len = sqrt(p_nx * p_nx + p_ny * p_ny + p_nz * p_nz);
+    if(pn_len > 0) 
+    {
+        p_nx /= pn_len;
+        p_ny /= pn_len;
+        p_nz /= pn_len;
+    }
+    // if(point_id_map_.find(nei_pt) == point_id_map_.end())
+    // return 0;
+    const auto vc_id   = point_id_map_[nei_pt];
+    // if(vc_id >= voronoi_data_.numberofvcells) return 0;
+    const auto v_cell  = voronoi_data_.vcelllist[vc_id];
+    const auto vf_list = voronoi_data_.vfacetlist;
+    const auto ve_list = voronoi_data_.vedgelist;
+    const auto vp_list = voronoi_data_.vpointlist;
+    // printf("pt size 0001 : %ld \n", points_.size());
+    if(v_cell == NULL) return 0;
+    const int f_num = v_cell[0];
+
+    int cur_opm_id = thread_id;
+    double* intersect_pts = intersect_pts_omp_[cur_opm_id];
+    double* trunc_center = truncated_centers_omp_[cur_opm_id];
+    double** trunc_tets = truncated_tets_omp_[cur_opm_id];
+    int* face_tet_count = face_tet_count_omp_[cur_opm_id];
+
+    int intersect_total_count = 0;
+    int tet_total_count = 0;
+    for(size_t i = 0; i < f_num; ++i)
+    {
+        size_t f_id = v_cell[i + 1];
+        const auto& facet = vf_list[f_id];
+        size_t e_num = facet.elist[0];
+        int tet_count = 0;
+        int intersect_count = 0; 
+        for(size_t j = 0; j < e_num; ++j)
+        {
+            // printf("edge id : %ld \n", j);
+            size_t e_id = facet.elist[1 + j];
+            const auto& ve = ve_list[e_id];
+            if(ve.v1 != -1 && ve.v2 != -1)
+            {
+                double dx = vp_list[3 * ve.v1]     - plane_mid_x;
+                double dy = vp_list[3 * ve.v1 + 1] - plane_mid_y;
+                double dz = vp_list[3 * ve.v1 + 2] - plane_mid_z;
+                double proj1 = dx * p_nx + dy * p_ny + dz * p_nz;
+
+                dx = vp_list[3 * ve.v2]     - plane_mid_x;
+                dy = vp_list[3 * ve.v2 + 1] - plane_mid_y;
+                dz = vp_list[3 * ve.v2 + 2] - plane_mid_z;
+                double proj2 = dx * p_nx + dy * p_ny + dz * p_nz;
+                if(proj1 * proj2 < 0 )
+                {
+                    double r1 = abs(proj1) /(abs(proj1) + abs(proj2));
+                    double r2 = abs(proj2) /(abs(proj1) + abs(proj2));
+                    double inter_x = r2 * vp_list[3 * ve.v1]     + r1 * vp_list[3 * ve.v2];
+                    double inter_y = r2 * vp_list[3 * ve.v1 + 1] + r1 * vp_list[3 * ve.v2 + 1];
+                    double inter_z = r2 * vp_list[3 * ve.v1 + 2] + r1 * vp_list[3 * ve.v2 + 2];
+                    intersect_pts[3 * (intersect_total_count + intersect_count)]     = inter_x;
+                    intersect_pts[3 * (intersect_total_count + intersect_count) + 1] = inter_y;
+                    intersect_pts[3 * (intersect_total_count + intersect_count) + 2] = inter_z;
+                    int posi_id = proj1 > 0 ? ve.v1 : ve.v2;
+                    trunc_tets[(tet_total_count + tet_count)*2] = &vp_list[3 * posi_id];
+                    trunc_tets[(tet_count + tet_total_count)*2 + 1] = &intersect_pts[3 * (intersect_total_count + intersect_count)];
+                    intersect_count++;
+                    tet_count ++;
+                } 
+                else if(proj1 >= 0 && proj2 >= 0)
+                {
+                    trunc_tets[(tet_total_count + tet_count)*2] = &vp_list[3 * ve.v2];
+                    trunc_tets[(tet_total_count + tet_count)*2 + 1] = &vp_list[3 * ve.v1];
+                    tet_count ++;
+                } 
+            } 
+        }
+        // printf("intersect_count num : %d \n", intersect_count);
+        if(intersect_count > 0)
+        {
+            trunc_tets[(tet_total_count + tet_count)*2] = &intersect_pts[3 * (intersect_total_count)];
+            trunc_tets[(tet_total_count + tet_count)*2 + 1] = &intersect_pts[3 * intersect_total_count + 3];
+            intersect_total_count += 2;
+            tet_count ++;
+        }
+        // printf("tet_count num : %d \n", tet_count);
+        face_tet_count[i] = tet_count;
+        tet_total_count += tet_count;
+    }
+    double cell_volume = 0;
+    if(intersect_total_count > 0)
+    {
+        std::array<double,3> truncated_face_center;
+        for(int ii = 0; ii < intersect_total_count; ++ii)
+        {
+            truncated_face_center[0] += intersect_pts[3 * ii];
+            truncated_face_center[1] += intersect_pts[3 * ii + 1];
+            truncated_face_center[2] += intersect_pts[3 * ii + 2];
+        }
+        truncated_face_center[0] /= double(intersect_total_count);
+        truncated_face_center[1] /= double(intersect_total_count);
+        truncated_face_center[2] /= double(intersect_total_count);
+
+        // std::vector<std::array<double, 3>> triangle_centers(intersect_total_count/2);
+        std::vector<double> triangle_areas(intersect_total_count/2);
+        arma::vec3 f_centroid; 
+        double f_area = 0.0;
+        for(int ii = 0; ii < intersect_total_count/2; ++ii)
+        {
+            arma::vec3 tri_center;
+            tri_center[0] = (intersect_pts[3 * (2 * ii)]     + intersect_pts[3 * (2 * ii + 1)]     + truncated_face_center[0])/3;
+            tri_center[1] = (intersect_pts[3 * (2 * ii) + 1] + intersect_pts[3 * (2 * ii + 1) + 1] + truncated_face_center[1])/3;
+            tri_center[2] = (intersect_pts[3 * (2 * ii) + 2] + intersect_pts[3 * (2 * ii + 1) + 2] + truncated_face_center[2])/3;
+            arma::mat triMat(2, 3);
+            triMat[0,0] = intersect_pts[3 * (2 * ii)]     - truncated_face_center[0];
+            triMat[0,1] = intersect_pts[3 * (2 * ii) + 1] - truncated_face_center[1];
+            triMat[0,2] = intersect_pts[3 * (2 * ii) + 2] - truncated_face_center[2];
+
+            triMat[1,0] = intersect_pts[3 * (2 * ii + 1)]     - truncated_face_center[0];
+            triMat[1,1] = intersect_pts[3 * (2 * ii + 1) + 1] - truncated_face_center[1];
+            triMat[1,2] = intersect_pts[3 * (2 * ii + 1) + 2] - truncated_face_center[2];
+            double area = sqrt(arma::det(triMat * triMat.t())) * 0.5;
+            f_area += area;
+            f_centroid += tri_center * area;
+        }
+        f_centroid /= f_area;
+        arma::vec3 curPt = {in_pt[0], in_pt[1], in_pt[2]};
+        double pt_dist = PtDistance(in_pt, nei_pt);
+        gradient = f_area / pt_dist * (f_centroid - curPt);
+
         const double* trunc_pt = intersect_pts; 
         int cur_tet_id = 0;
         for(size_t i = 0; i < f_num; ++i)

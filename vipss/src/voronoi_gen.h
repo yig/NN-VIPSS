@@ -123,6 +123,8 @@ class VoronoiGen{
         void BuildPicoTree();
         tetgenmesh::tetrahedron* GetClosetTet(double x, double y, double z);
         double CalTruncatedCellVolumePassOMP(tetgenmesh::point in_pt, tetgenmesh::point nei_pt, int thread_id = 0);
+        double CalTruncatedCellVolumeGradientOMP(tetgenmesh::point in_pt, tetgenmesh::point nei_pt, 
+                                                    arma::vec3& gradient, int thread_id);
         void OutputTetMesh(const std::string& tetmesh_path);
         void SetInsertBoundaryPtsToUnused();
 

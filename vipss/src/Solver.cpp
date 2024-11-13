@@ -13,6 +13,8 @@ typedef std::chrono::high_resolution_clock Clock;
 typedef unsigned int uint;
 //static GRBModel static_model;
 
+bool Solver::open_log_ = false;
+
 void LinearVec::set_label(int label){
     this->label = label;
 }
@@ -92,6 +94,11 @@ int optwrapper(vector<double>&para,
     }
     catch(std::exception &e) {
         // std::cout << "nlopt failed: " << e.what() << std::endl;
+        // if(open_log_)
+        // {
+        //     std::cout << "nlopt failed: " << e.what() << std::endl;
+        //     std::cout << "Obj: "<< std::setprecision(10) << sol.init_energy << " -> " <<sol.energy << std::endl;
+        // }
     }
 
 
@@ -148,13 +155,22 @@ int Solver::nloptwrapper(vector<double>&lowerbound,
         auto t1 = Clock::now();
         result = myopt.optimize(sol.solveval, sol.energy);
         auto t2 = Clock::now();
-        // cout << "nlopt time: " << (sol.time = std::chrono::nanoseconds(t2 - t1).count()/1e9) <<endl;
+        
         sol.Statue = (result >= nlopt::SUCCESS);
-        // cout<<"Statu: "<<result<<endl;
-        // std::cout << "Obj: "<< std::setprecision(10) << sol.energy << std::endl;
+        if(open_log_)
+        {
+            cout << "-----nlopt time: " << (sol.time = std::chrono::nanoseconds(t2 - t1).count()/1e9) <<endl;
+            cout<<"-----Statu: "<<result<<endl;
+            std::cout << "-----Obj: "<< std::setprecision(10) << sol.energy << std::endl;
+        }
+        
     }
     catch(std::exception &e) {
-        // std::cout << "nlopt failed: " << e.what() << std::endl;
+        if(open_log_)
+        {
+            std::cout << "nlopt failed: " << e.what() << std::endl;
+            std::cout << "Obj: "<< std::setprecision(10) << sol.init_energy << " -> " <<sol.energy << std::endl;
+        }
     }
     return result;
 }
@@ -197,14 +213,22 @@ int Solver::nloptwrapper(vector<double>&lowerbound,
         auto t1 = Clock::now();
         result = myopt.optimize(sol.solveval, sol.energy);
         auto t2 = Clock::now();
-        // cout << "nlopt time: " << (sol.time = std::chrono::nanoseconds(t2 - t1).count()/1e9) <<endl;
-
         sol.Statue = (result >= nlopt::SUCCESS);
-        // cout<<"Statu: "<<result<<endl;
-        // std::cout << "Obj: "<< std::setprecision(10) << sol.init_energy << " -> " <<sol.energy << std::endl;
+        if(open_log_)
+        {
+            cout << "nlopt time: " << (sol.time = std::chrono::nanoseconds(t2 - t1).count()/1e9) <<endl;
+            cout<<"Statu: "<<result<<endl;
+            std::cout << "Obj: "<< std::setprecision(10) << sol.init_energy << " -> " <<sol.energy << std::endl;
+        }
+        
     }
     catch(std::exception &e) {
-        // std::cout << "nlopt failed: " << e.what() << std::endl;
+        if(open_log_)
+        {
+            std::cout << "nlopt failed: " << e.what() << std::endl;
+            std::cout << "Obj: "<< std::setprecision(10) << sol.init_energy << " -> " <<sol.energy << std::endl;
+        }
+        
     }
 
 
@@ -265,14 +289,23 @@ int Solver::nloptwrapperDirect(std::vector<double>&lowerbound,
         auto t1 = Clock::now();
         result = myopt.optimize(sol.solveval, sol.energy);
         auto t2 = Clock::now();
-        // cout << "nlopt time: " << (sol.time = std::chrono::nanoseconds(t2 - t1).count()/1e9) <<endl;
+        
 
         sol.Statue = (result >= nlopt::SUCCESS);
-        // cout<<"Statu: "<<result<<endl;
-        // std::cout << "Obj: "<< std::setprecision(10) << sol.init_energy << " -> " <<sol.energy << std::endl;
+        if(open_log_)
+        {
+            cout << "nlopt time: " << (sol.time = std::chrono::nanoseconds(t2 - t1).count()/1e9) <<endl;
+            cout<<"Statu: "<<result<<endl;
+            std::cout << "Obj: "<< std::setprecision(10) << sol.init_energy << " -> " <<sol.energy << std::endl;
+        }
+        
     }
     catch(std::exception &e) {
-        // std::cout << "nlopt failed: " << e.what() << std::endl;
+        if(open_log_)
+        {
+            std::cout << "nlopt failed: " << e.what() << std::endl;
+            std::cout << "Obj: "<< std::setprecision(10) << sol.init_energy << " -> " <<sol.energy << std::endl;
+        }
     }
 
 
