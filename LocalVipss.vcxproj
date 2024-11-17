@@ -29,6 +29,7 @@
     <ClInclude Include="vipss\src\rbf_api.h" />
     <ClInclude Include="vipss\src\readers.h" />
     <ClInclude Include="vipss\src\sample.h" />
+    <ClInclude Include="vipss\src\SimpleOctree.h" />
     <ClInclude Include="vipss\src\Solver.h" />
     <ClInclude Include="vipss\src\sp_mat.h" />
     <ClInclude Include="vipss\src\tetgen.h" />
@@ -43,6 +44,7 @@
     <ClCompile Include="vipss\src\kernel.cpp" />
     <ClCompile Include="vipss\src\local_vipss.cpp" />
     <ClCompile Include="vipss\src\pico_tree.cpp" />
+    <ClCompile Include="vipss\src\SimpleOctree.cpp" />
     <ClCompile Include="vipss\src\tet_predicates.cxx" />
     <ClCompile Include="vipss\src\rbfcore.cpp" />
     <ClCompile Include="vipss\src\rbf_api.cpp" />

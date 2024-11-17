@@ -63,6 +63,9 @@
     <ClInclude Include="vipss\src\adgrid.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="vipss\src\SimpleOctree.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="vipss\src\voronoi_gen.cpp">
@@ -123,6 +126,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="vipss\src\tet_predicates.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="vipss\src\SimpleOctree.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
