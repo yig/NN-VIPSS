@@ -16,8 +16,17 @@ int PicoTree::SearchNearestPt(double x, double y, double z)
     data_type query[3] = {x, y, z};
     Nn result;
     kdtree_->SearchNn(query, result);
-    
-    // return result.index;
+
     int pt_id = result.index;
     return pt_id;
+}
+
+
+
+double PicoTree::NearestPtDist(double x, double y, double z)
+{
+    data_type query[3] = {x, y, z};
+    Nn result;
+    kdtree_->SearchNn(query, result);
+    return result.distance;
 }

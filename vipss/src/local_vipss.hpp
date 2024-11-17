@@ -73,7 +73,7 @@ class LocalVipss {
                             const std::vector<P3tr>& nei_pts);
         void InitNormals();
         void GroupPtsWithVolume();
-        void CalClusterAveScores();
+        void SamplePtsWihtClusterAveScores();
 
     public:
         void BuidClusterCoresPtIds();
@@ -209,4 +209,5 @@ class LocalVipss {
         size_t in_cluster_surface_pt_count = 0;
         static int ave_voxel_nn_pt_num_; 
         static bool use_rbf_base_; 
+        static bool feature_preserve_sample_;
 };

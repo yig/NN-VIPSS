@@ -657,7 +657,7 @@ void VIPSSUnit::Run()
     std::string log_path = local_vipss_.out_dir_ + "stats.txt";
     WriteStatsLog(log_path, G_VP_stats);
 
-    CalEnergyWithGtNormal();
+    // CalEnergyWithGtNormal();
 }
 
 void VIPSSUnit::CalEnergyWithGtNormal()

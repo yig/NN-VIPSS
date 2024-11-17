@@ -11,6 +11,8 @@ double Gaussian_Kernel(const double x_square){
     return exp(-x_square*inv_sigma_squarex2);
 }
 
+
+
 inline double Vec_Dist(const double *p1, const double *p2)
 {
     double dx = p1[0] - p2[0];
@@ -167,7 +169,7 @@ arma::mat BuildHrbfMat(std::vector<double>&pts){
     return Minv;
 }
 
-arma::mat BuildHrbfMat(const std::vector<tetgenmesh::point>&pts, const std::vector<size_t>&pids)
+arma::mat BuildHrbfMat(const std::vector<tetgenmesh::point>&pts, const std::vector<size_t>&pids, bool use_rbf_base)
 {
     int npt = int(pids.size());
     int key_npt = npt;
@@ -209,11 +211,39 @@ arma::mat BuildHrbfMat(const std::vector<tetgenmesh::point>&pts, const std::vect
     }
 
     bigM.submat(0,m_dim,m_dim-1, m_dim + 3) = N;
-    bigM.submat(m_dim,0,m_dim + 3, m_dim-1) = N.t();
-    arma::mat bigMinv = inv(bigM);
-    arma::mat Minv = bigMinv.submat(0,0,m_dim-1,m_dim-1);
-    return Minv;
+    bigM.submat(m_dim,0,m_dim + 3, m_dim-1) = N.t(); 
+    // bool use_rbf_base = true;
+    arma::mat Minv(m_dim, m_dim);
+    if(use_rbf_base)
+    {
+        arma::vec invTaget1(m_dim + 4);
+        invTaget1[0] = 1.0;
+        arma::vec x = arma::solve(bigM, invTaget1, arma::solve_opts::fast); 
+        arma::mat x_t = x.t();
+        Minv.submat(0,0,0,m_dim-1) = x_t.submat(0,0,0,m_dim-1);
+    
 
+        arma::vec invTaget2(m_dim + 4);
+        invTaget1[1] = 1.0;
+        arma::mat x2 = arma::solve(bigM, invTaget2, arma::solve_opts::fast).t();
+        Minv.submat(1,0,1,m_dim-1) = x2.submat(0,0,0,m_dim-1);
+
+        arma::vec invTaget3(m_dim + 4);
+        invTaget1[2] = 1.0;
+        arma::mat x3 = arma::solve(bigM, invTaget3, arma::solve_opts::fast).t();
+        Minv.submat(2,0,2,m_dim-1) = x3.submat(0,0,0,m_dim-1);
+
+        arma::vec invTaget4(m_dim + 4);
+        invTaget1[3] = 1.0;
+        arma::mat x4 = arma::solve(bigM, invTaget2, arma::solve_opts::fast).t();
+        Minv.submat(3,0,3,m_dim-1) = x4.submat(0,0,0,m_dim-1);
+
+    } else {
+        arma::mat bigMinv = inv(bigM);
+        Minv = bigMinv.submat(0,0,m_dim-1,m_dim-1);
+    }
+
+    return Minv;
 }
 
 

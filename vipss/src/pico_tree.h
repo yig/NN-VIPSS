@@ -19,6 +19,7 @@ public:
 
 void Init(const std::vector<double>& in_pts);
 int SearchNearestPt(double x, double y, double z);
+double NearestPtDist(double x, double y, double z);
 
 public:
     // pico_tree::KdTree<Space> kdtree_;

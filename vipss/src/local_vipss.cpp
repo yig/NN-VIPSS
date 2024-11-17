@@ -8,6 +8,7 @@
 #include <random>
 #include "stats.h"
 #include "kernel.h"
+#include "SimpleOctree.h"
 
 typedef std::chrono::high_resolution_clock Clock;
 
@@ -16,6 +17,7 @@ double LocalVipss::pass_time_sum_ = 0;
 int LocalVipss::ave_voxel_nn_pt_num_ = 0;
 int LocalVipss::InitWithPartialVipss = 1;
 bool LocalVipss::use_rbf_base_ = false;
+bool LocalVipss::feature_preserve_sample_ = false;
 
 std::vector<tetgenmesh::point> LocalVipss::points_;
 // std::vector<std::vector<size_t>> LocalVipss::cluster_all_pt_ids_;
@@ -496,6 +498,7 @@ void LocalVipss::BuildMatrixH()
 
     //std::vector<std::vector<Triplet>> ele_vector(cluster_num);
     auto t5 = Clock::now();
+    // VIPSSKernel::use_rbf_base = LocalVipss::use_rbf_base_;
 // #pragma omp parallel for shared(points_, VoronoiGen::cluster_init_pids_) 
 #pragma omp parallel for
     for(int i =0; i < cluster_num; ++i)
@@ -1674,9 +1677,33 @@ void LocalVipss::OptimizeAdjacentMat()
     // g_file.close();
 }
 
-void LocalVipss::CalClusterAveScores()
+void LocalVipss::SamplePtsWihtClusterAveScores()
 {
+
+    std::vector<double> sampled_pts;
     size_t c_size = points_.size();
+    std::vector<SimOctree::Point> new_pts;
+    for(size_t i = 0; i < c_size; ++i)
+    {
+        SimOctree::Point newP = {points_[i][0], points_[i][1], points_[i][2]};
+        new_pts.push_back(newP);
+    }
+    SimOctree::SimpleOctree octree;
+    octree.InitOctTree(new_pts, 6);
+    octree.GetLeafPts();
+    // std::cout << " octree sample leaf pt number : " << octree.leaf_pts_.size() << std::endl;
+    for(int i = 0; i < octree.leaf_pts_.size(); ++i)
+    {
+        sampled_pts.push_back(octree.leaf_pts_[i][0]);
+        sampled_pts.push_back(octree.leaf_pts_[i][1]);
+        sampled_pts.push_back(octree.leaf_pts_[i][2]);
+    }
+    std::string octree_sample_path = "octree_sampled_pts.xyz";
+    writeXYZ(octree_sample_path, sampled_pts);
+
+    PicoTree newPicoTree;
+    newPicoTree.Init(sampled_pts);
+
     cluster_scores_ave_.resize(c_size);
     for(int i = 0; i < int(c_size); ++i)
     {
@@ -1688,16 +1715,19 @@ void LocalVipss::CalClusterAveScores()
         } else {
             cluster_scores_ave_[i] = 0;
         }
-       
+        
     }
     arma::uvec res = arma::sort_index(cluster_scores_ave_, "descend");
-    std::vector<double> sampled_pts;
-    int sample_num = 20000;
+    
+    int sample_num = int(c_size * 0.05);
     for(int i = 0; i < sample_num; ++i)
     {
-        sampled_pts.push_back(points_[res[i]][0]);
-        sampled_pts.push_back(points_[res[i]][1]);
-        sampled_pts.push_back(points_[res[i]][2]);
+        if(newPicoTree.NearestPtDist(points_[res[i]][0], points_[res[i]][1], points_[res[i]][2]) > 1e-8)
+        {
+            sampled_pts.push_back(points_[res[i]][0]);
+            sampled_pts.push_back(points_[res[i]][1]);
+            sampled_pts.push_back(points_[res[i]][2]);
+        }
     }
 
     std::string sample_path = "sampled_pts.xyz";
@@ -1729,7 +1759,11 @@ void LocalVipss::InitNormals()
     auto t3 = Clock::now();
     double scores_time = std::chrono::nanoseconds(t3 - t2).count()/1e9;
     printf("finish init cluster neigh scores time : %f ! \n", scores_time);
-    // CalClusterAveScores();
+    // if(feature_preserve_sample_)
+    {
+        // SamplePtsWihtClusterAveScores();
+    }
+    //
     // CalculateClusterScores();
     auto t34 = Clock::now();
     double cluster_scores_time = std::chrono::nanoseconds(t34 - t3).count()/1e9;

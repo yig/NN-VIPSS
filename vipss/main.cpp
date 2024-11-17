@@ -70,6 +70,8 @@ int main(int argc, char** argv)
         vipss_unit.adgrid_threshold_ = args.adgrid_threshold;
         vipss_unit.use_adgrid_ = args.use_adgrid;
         
+        
+        
         if(args.output.size() > 0)
         {
             std::string out_path, out_filename, out_extname;
