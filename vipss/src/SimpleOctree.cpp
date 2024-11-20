@@ -192,8 +192,6 @@ void SimpleOctree::DivideNode(std::shared_ptr<TreeNode> node, const std::vector<
     if(node->depth_ > max_depth_) return;
     std::array<double,3> center = node->GetCenter();
     auto child_boxes = node->bbox_.DividBBox();
-
-
     for(int i = 0; i < 8; ++i)
     {
         std::vector<size_t> child_pids;

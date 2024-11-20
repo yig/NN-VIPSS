@@ -72,8 +72,10 @@ class LocalVipss {
                             const std::vector<P3tr>& key_pts, 
                             const std::vector<P3tr>& nei_pts);
         void InitNormals();
+        void InitNormalsWithSample();
         void GroupPtsWithVolume();
-        void SamplePtsWihtClusterAveScores();
+        void SamplePtsWithClusterAveScores();
+        void SamplePtsWithOctree(int depth = 7);
 
     public:
         void BuidClusterCoresPtIds();
@@ -180,6 +182,8 @@ class LocalVipss {
         std::vector<uint>finalMesh_fv_;
         //arma::vec nn_dist_vec_;
         //arma::vec nn_volume_vec_;
+
+        SimOctree::SimpleOctree octree_;
         
     public:
         int max_group_iter_ = 12;

@@ -46,6 +46,7 @@ class SimpleOctree{
         void InitOctTree(const std::vector<Point>& pts, int depth = 5);
         void DivideNode(std::shared_ptr<TreeNode> node, const std::vector<size_t>& pids);
         void GetLeafPts();
+        void SplitLeafNode();
 
     public:
         // std::unordered_map<SimpleOctTree*, int> depth;
@@ -54,6 +55,7 @@ class SimpleOctree{
         std::vector<Point> pts_;
         int max_depth_ = 6; 
         std::vector<Point> leaf_pts_;
+        std::unordered_map<std::shared_ptr<TreeNode>, std::vector<size_t> > split_leaf_pids_;
 };
 
 }

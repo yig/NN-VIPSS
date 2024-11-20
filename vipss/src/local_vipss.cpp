@@ -1678,7 +1678,32 @@ void LocalVipss::OptimizeAdjacentMat()
     // g_file.close();
 }
 
-void LocalVipss::SamplePtsWihtClusterAveScores()
+void LocalVipss::SamplePtsWithOctree(int depth)
+{
+    std::vector<double> sampled_pts;
+    size_t c_size = points_.size();
+    std::vector<SimOctree::Point> new_pts;
+    for(size_t i = 0; i < c_size; ++i)
+    {
+        SimOctree::Point newP = {points_[i][0], points_[i][1], points_[i][2]};
+        new_pts.push_back(newP);
+    }
+    
+    octree_.InitOctTree(new_pts, depth);
+    octree_.GetLeafPts();
+    // std::cout << " octree sample leaf pt number : " << octree.leaf_pts_.size() << std::endl;
+    for(int i = 0; i < octree_.leaf_pts_.size(); ++i)
+    {
+        sampled_pts.push_back(octree_.leaf_pts_[i][0]);
+        sampled_pts.push_back(octree_.leaf_pts_[i][1]);
+        sampled_pts.push_back(octree_.leaf_pts_[i][2]);
+    }
+    std::string octree_sample_path = out_dir_  + filename_ +  "_octree_sample.xyz";
+    std::cout << "save octree sample result to file : " << octree_sample_path << std::endl;
+    writeXYZ(octree_sample_path, sampled_pts);
+}
+
+void LocalVipss::SamplePtsWithClusterAveScores()
 {
 
     std::vector<double> sampled_pts;
@@ -1740,6 +1765,68 @@ void LocalVipss::SamplePtsWihtClusterAveScores()
 }
 
 
+void LocalVipss::InitNormalsWithSample()
+{
+    SamplePtsWithOctree();
+    double total_time = 0;
+    auto t0 = Clock::now();
+    BuildClusterAdjacentMat();
+    BuidClusterCoresPtIds();
+    auto t1 = Clock::now();
+    double build_mat_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
+    printf("finish init adj mat and core pt ids time : %f ! \n", build_mat_time);
+
+    InitNormalWithVipss();
+    auto t12 = Clock::now();
+    double normal_estimate_time = std::chrono::nanoseconds(t12 - t1).count()/1e9;
+    printf("finish init cluster normals time : %f ! \n", normal_estimate_time);
+
+    total_time += build_mat_time + normal_estimate_time;
+    G_VP_stats.init_cluster_normal_time_ += (build_mat_time + normal_estimate_time);
+    double sum_score_time = 0;
+
+    auto t2 = Clock::now();
+    CalculateClusterNeiScores(true);
+    auto t3 = Clock::now();
+    double scores_time = std::chrono::nanoseconds(t3 - t2).count()/1e9;
+    printf("finish init cluster neigh scores time : %f ! \n", scores_time);
+    
+    //
+    // CalculateClusterScores();
+    auto t34 = Clock::now();
+    double cluster_scores_time = std::chrono::nanoseconds(t34 - t3).count()/1e9;
+    printf("finish calculate cluster scores time : %f ! \n", cluster_scores_time);
+    total_time += scores_time;
+    total_time += cluster_scores_time;
+    sum_score_time += scores_time;
+    sum_score_time += cluster_scores_time;
+    G_VP_stats.cal_cluster_neigbor_scores_time_ += (scores_time + cluster_scores_time);
+
+    size_t iter_num = 1;
+    auto ti00 = Clock::now();
+    BuildClusterMST();
+    auto ti11 = Clock::now();
+    double MST_time = std::chrono::nanoseconds(ti11 - ti00).count()/1e9;
+    total_time += MST_time;
+    G_VP_stats.build_normal_MST_time_ += MST_time;
+    printf("normal MST_time time used : %f \n", MST_time); 
+    auto ti0 = Clock::now();
+    FlipClusterNormalsByMST();
+    auto ti1 = Clock::now();
+    double flip_time = std::chrono::nanoseconds(ti1 - ti0).count()/1e9;
+    G_VP_stats.normal_flip_time_ += flip_time;
+    total_time += flip_time;
+    printf("normal flip time used : %f \n", flip_time);
+
+    std::string init_ptn_path_iter = out_dir_ + filename_ + "_flipped" + std::to_string(iter_num);
+    OuputPtN(init_ptn_path_iter);
+    auto finat_t = Clock::now();
+    double init_total_time = std::chrono::nanoseconds(finat_t - t0).count()/1e9;
+
+    printf("Normal initializtion with local vipss total time used : %f \n", init_total_time);
+    G_VP_stats.init_normal_total_time_ += init_total_time;
+}
+
 void LocalVipss::InitNormals()
 {
     double total_time = 0;
@@ -1766,7 +1853,7 @@ void LocalVipss::InitNormals()
     printf("finish init cluster neigh scores time : %f ! \n", scores_time);
     if(feature_preserve_sample_)
     {
-        SamplePtsWihtClusterAveScores();
+        SamplePtsWithClusterAveScores();
     }
     //
     // CalculateClusterScores();
