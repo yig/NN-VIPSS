@@ -37,6 +37,7 @@ int main(int argc, char** argv)
         double opt_threshold = 1e-7;
         double adgrid_threshold = 0.001;
         bool use_adgrid = true;
+        bool feature_preserve_sample = false;
     }args;
     
     // gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -52,7 +53,13 @@ int main(int argc, char** argv)
     app.add_option("-t, --opt_threshold",args.opt_threshold, "use simplified rbf base");
     app.add_option("-a, --adgrid_threshold",args.adgrid_threshold, "adptive gird generation threshold");
     app.add_option("-A, --use_adgrid",args.use_adgrid, "use adptive gird to generate mesh");
+    app.add_option("-F, --feature_preserve_sample",args.feature_preserve_sample, "use adptive gird to generate mesh");
+
+    
     CLI11_PARSE(app, argc, argv);
+    LocalVipss::feature_preserve_sample_ = args.feature_preserve_sample;
+
+    // std::cout << "LocalVipss::feature_preserve_sample_ " <<  LocalVipss::feature_preserve_sample_ << std::endl;
 
     vipss_unit.hard_constraints_ = args.hardConstraints;
     if(args.input.size() > 0)
@@ -70,7 +77,7 @@ int main(int argc, char** argv)
         vipss_unit.adgrid_threshold_ = args.adgrid_threshold;
         vipss_unit.use_adgrid_ = args.use_adgrid;
         
-        
+
         
         if(args.output.size() > 0)
         {
@@ -78,6 +85,7 @@ int main(int argc, char** argv)
             SplitFileName(args.output, out_path, out_filename, out_extname);
             vipss_unit.out_dir_ = out_path;
             vipss_unit.file_name_ = out_filename;
+            vipss_unit.local_vipss_.out_dir_ = vipss_unit.out_dir_;
 
             // std::cout << "output path : " << out_path << std::endl;
             // std::cout << "out_filename : " << out_filename << std::endl;
@@ -92,6 +100,8 @@ int main(int argc, char** argv)
             vipss_unit.out_surface_path_ = in_path + "/" + in_filename + "_out_surface";
             vipss_unit.out_debug_path_ = in_path + "/" + in_filename + "_debug.txt";
         }
+        vipss_unit.local_vipss_.out_dir_ = vipss_unit.out_dir_;
+        vipss_unit.local_vipss_.filename_ = vipss_unit.file_name_;
         vipss_unit.user_lambda_ = args.lambda;
         vipss_unit.use_hrbf_surface_ = true;
         vipss_unit.volume_dim_ = args.volumeDim; 

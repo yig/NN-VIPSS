@@ -224,6 +224,7 @@ void LocalVipss::Init(const std::string & path, const std::string& ext)
     auto t0 = Clock::now();
     // printf("read point size : %d \n", in_pts.size());
     // voro_gen_.loadData(path);
+    
     voro_gen_.out_dir_ = out_dir_;
 
     voro_gen_.loadData(in_pts);
@@ -504,7 +505,7 @@ void LocalVipss::BuildMatrixH()
     for(int i =0; i < cluster_num; ++i)
     {
         const auto& cluster_pt_ids = VoronoiGen::cluster_init_pids_[i];
-        auto Minv =  VIPSSKernel::BuildHrbfMat(points_, cluster_pt_ids);
+        auto Minv =  VIPSSKernel::BuildHrbfMat(points_, cluster_pt_ids, use_rbf_base_);
         size_t unit_npt = cluster_pt_ids.size();
         size_t j_ele_num = unit_npt * unit_npt * 16;
 
@@ -1698,8 +1699,9 @@ void LocalVipss::SamplePtsWihtClusterAveScores()
         sampled_pts.push_back(octree.leaf_pts_[i][1]);
         sampled_pts.push_back(octree.leaf_pts_[i][2]);
     }
-    std::string octree_sample_path = "octree_sampled_pts.xyz";
-    writeXYZ(octree_sample_path, sampled_pts);
+    // std::string octree_sample_path = out_dir_  + filename_ +  "_octree_sample.xyz";
+    // std::cout << "save octree sample result to file : " << octree_sample_path << std::endl;
+    // writeXYZ(octree_sample_path, sampled_pts);
 
     PicoTree newPicoTree;
     newPicoTree.Init(sampled_pts);
@@ -1715,22 +1717,25 @@ void LocalVipss::SamplePtsWihtClusterAveScores()
         } else {
             cluster_scores_ave_[i] = 0;
         }
-        
     }
     arma::uvec res = arma::sort_index(cluster_scores_ave_, "descend");
     
-    int sample_num = int(c_size * 0.05);
-    for(int i = 0; i < sample_num; ++i)
+    int sample_num = int(c_size * 0.15);
+    int count = 0;
+    for(int i = 0; i < c_size; ++i)
     {
         if(newPicoTree.NearestPtDist(points_[res[i]][0], points_[res[i]][1], points_[res[i]][2]) > 1e-8)
         {
             sampled_pts.push_back(points_[res[i]][0]);
             sampled_pts.push_back(points_[res[i]][1]);
             sampled_pts.push_back(points_[res[i]][2]);
+            count ++;
+            if(count >= sample_num) break;
         }
     }
 
-    std::string sample_path = "sampled_pts.xyz";
+    std::string sample_path = out_dir_ + filename_ +  "_feature_sample.xyz";
+    std::cout << "save feature sample result to file : " << sample_path << std::endl;
     writeXYZ(sample_path, sampled_pts);    
 }
 
@@ -1759,9 +1764,9 @@ void LocalVipss::InitNormals()
     auto t3 = Clock::now();
     double scores_time = std::chrono::nanoseconds(t3 - t2).count()/1e9;
     printf("finish init cluster neigh scores time : %f ! \n", scores_time);
-    // if(feature_preserve_sample_)
+    if(feature_preserve_sample_)
     {
-        // SamplePtsWihtClusterAveScores();
+        SamplePtsWihtClusterAveScores();
     }
     //
     // CalculateClusterScores();

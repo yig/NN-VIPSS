@@ -18,7 +18,8 @@ void VIPSSUnit::InitPtNormalWithLocalVipss()
     
     local_vipss_.filename_ = file_name_;
     // l_vp.filename_ = "planck";
-    local_vipss_.out_dir_ = data_dir + local_vipss_.filename_ + "/";
+    local_vipss_.out_dir_ = out_dir_;
+    // std::cout << " out dir --------------- " << local_vipss_.out_dir_ << std::endl;
     std::string path = data_dir + local_vipss_.filename_ + "/" + local_vipss_.filename_ + ".ply";
 
     // local_vipss_.angle_threshold_ = 30;
