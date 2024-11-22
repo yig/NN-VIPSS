@@ -10710,6 +10710,30 @@ int tetgenmesh::GetCaveBoundryPoint(point insertpt, triface *searchtet, face *sp
   //   intersect p. It may include 1, 2, or n tetrahedra.
   // If p lies on a segment or subface, also create the initial sub-cavity
   //   sC(p) which contains all subfaces (and segment) which intersect p.
+  if(loc == ONVERTEX)
+  {
+    auto ori_pt = org(*searchtet);
+    // printf("ori pt : %f %f %f \n", ori_pt[0], ori_pt[1], ori_pt[2]);
+    // printf("insertpt pt : %f %f %f \n", insertpt[0], insertpt[1], insertpt[2]);
+    arraypool *tetlist, *ptlist;
+    tetlist = cavetetlist;
+    tetlist->restart();
+    ptlist = cavetetvertlist;
+    ptlist->restart();
+    getvertexstar(1, ori_pt, tetlist, ptlist, NULL);
+    for (int i = 0; i < ptlist->objects; i++) {
+      auto pt = * (tetgenmesh::point *) ptlist-> lookup(i);
+      if ((pointtype(pt) == tetgenmesh::verttype::UNUSEDVERTEX) ||
+      (pointtype(pt) == tetgenmesh::verttype::DUPLICATEDVERTEX) ) 
+      {
+          continue;
+      }
+      out_cavetetvertlist.push_back(pt);
+    }
+    cavetetlist->restart();
+    cavetetvertlist->restart();
+    return 1;
+  }
 
   if (loc == OUTSIDE) {
     flip14count++;

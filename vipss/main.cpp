@@ -37,7 +37,7 @@ int main(int argc, char** argv)
         double opt_threshold = 1e-7;
         double adgrid_threshold = 0.001;
         bool use_adgrid = true;
-        bool feature_preserve_sample = false;
+        bool octree_sample = false;
     }args;
     
     // gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -53,11 +53,11 @@ int main(int argc, char** argv)
     app.add_option("-t, --opt_threshold",args.opt_threshold, "use simplified rbf base");
     app.add_option("-a, --adgrid_threshold",args.adgrid_threshold, "adptive gird generation threshold");
     app.add_option("-A, --use_adgrid",args.use_adgrid, "use adptive gird to generate mesh");
-    app.add_option("-F, --feature_preserve_sample",args.feature_preserve_sample, "use adptive gird to generate mesh");
+    app.add_option("-O, --octree_sample",args.octree_sample, "use adptive gird to generate mesh");
 
     
     CLI11_PARSE(app, argc, argv);
-    LocalVipss::feature_preserve_sample_ = args.feature_preserve_sample;
+    LocalVipss::use_octree_sample_ = args.octree_sample;
 
     // std::cout << "LocalVipss::feature_preserve_sample_ " <<  LocalVipss::feature_preserve_sample_ << std::endl;
 

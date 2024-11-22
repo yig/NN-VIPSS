@@ -1457,7 +1457,6 @@ void VoronoiGen::InitMesh()
     Tetrahedralize();
     // BuildPtIdMap();
     
-    
     tetlist_ = new tetgenmesh::arraypool(sizeof(tetgenmesh::triface), 10);
     ptlist_ = new tetgenmesh::arraypool(sizeof(tetgenmesh::point), 10);
 

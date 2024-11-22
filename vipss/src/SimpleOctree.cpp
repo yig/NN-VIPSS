@@ -14,6 +14,14 @@ inline double SquareDistance(const Point& p1, const Point& p2)
     return dx * dx + dy * dy + dz * dz;
 }
 
+inline double SquareDistance(const Point& p1, const double* p2)
+{
+    double dx = p1[0] - p2[0];
+    double dy = p1[1] - p2[1];
+    double dz = p1[2] - p2[2];
+    return dx * dx + dy * dy + dz * dz;
+}
+
 OctBBox::OctBBox(const Point& minP, const Point& maxP) 
 :min_pt_(minP), max_pt_(maxP)  
 {
@@ -34,6 +42,22 @@ inline bool IsInsideBox(const Point& pt, const OctBBox& box)
     }
     return false;
 }
+
+inline bool IsInsideBox(const double* pt, const OctBBox& box)
+{
+    if(pt[0] >= box.min_pt_[0] && pt[0] <= box.max_pt_[0])
+    {
+        if(pt[1] >= box.min_pt_[1] && pt[1] <= box.max_pt_[1])
+        {
+            if(pt[2] >= box.min_pt_[2] && pt[2] <= box.max_pt_[2])
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 
 void OctBBox::SaveBoxMesh(const std::string& path) const
 {
@@ -165,33 +189,33 @@ std::array<double,3> TreeNode::GetCenter() const
     return center;
 }
 
-void SimpleOctree::InitOctTree(const std::vector<Point>& pts, int depth)
+void SimpleOctree::InitOctTree(const std::vector<double>& pts, int depth)
 {
-    size_t ptn = pts.size();
-    pts_ = pts;
+    size_t ptn = pts.size()/3;
+    pt_data_ = (double*) pts.data();
     std::vector<size_t> new_ids;
     for(size_t i = 0; i < ptn; ++i)
     {
         new_ids.push_back(i);
     }
-    // std::cout << " new ids size " << ptn << std::endl;
+    std::cout << pt_data_[0] << " " << pt_data_[1] << " " << pt_data_[2] << std::endl;
+    std::cout << " new ids size " << ptn << std::endl;
     root_node_ = std::make_shared<TreeNode>();
-    root_node_->bbox_.GetCornersFromPts(pts_);
+    root_node_->bbox_.GetCornersFromPts(pts);
     root_node_->depth_ = 0;
     max_depth_ = depth;
-
     // root_node_->bbox_.SaveBoxMesh("box_mesh.obj");
-
+    std::cout << " start to divide octree  "  << std::endl;
     DivideNode(root_node_, new_ids);
-
     // std::cout << "leaf_pids_ size : " << leaf_pids_.size() << std::endl;
 } 
 
 void SimpleOctree::DivideNode(std::shared_ptr<TreeNode> node, const std::vector<size_t>& pids)
 {
     if(node->depth_ > max_depth_) return;
-    std::array<double,3> center = node->GetCenter();
+    // std::array<double,3> center = node->GetCenter();
     auto child_boxes = node->bbox_.DividBBox();
+    // std::vector<int> visited_pids(0, pids.size()); 
     for(int i = 0; i < 8; ++i)
     {
         std::vector<size_t> child_pids;
@@ -202,8 +226,10 @@ void SimpleOctree::DivideNode(std::shared_ptr<TreeNode> node, const std::vector<
         auto& cur_box = child_boxes[i]; 
         for(const auto pid : pids)
         {
-            if(IsInsideBox(pts_[pid], cur_box))
+            // if(visited_pids[pid]) continue;
+            if(IsInsideBox(&pt_data_[3*pid], cur_box))
             {
+                // visited_pids[pid] = 1;
                 child_pids.push_back(pid);
             } 
         }
@@ -215,17 +241,57 @@ void SimpleOctree::DivideNode(std::shared_ptr<TreeNode> node, const std::vector<
         }
         DivideNode(node->childNodes[i], child_pids);
     }
-
 }
 
-
-
-void SimpleOctree::GetLeafPts()
+LeafNodeMap SimpleOctree::SplitLeafNode(LeafNodeMap& leaf_pids)
 {
-    leaf_pts_.clear();
-    for(auto &ele : leaf_pids_)
+    LeafNodeMap out_map;
+    for(auto &ele : leaf_pids)
     {
         Point closet_pt;
+        auto cur_node = ele.first;
+        auto pids = ele.second;
+        if(pids.empty()) continue;
+        // std::vector<int> visited_pids(0, pids.size()); 
+        auto child_boxes = cur_node->bbox_.DividBBox();
+        for(int i = 0; i < 8; ++i)
+        {
+            std::vector<size_t> child_pids;
+            cur_node->childNodes[i] = std::make_shared<TreeNode>();
+            cur_node->childNodes[i]->parentNode = cur_node;
+            cur_node->childNodes[i]->depth_ = cur_node->depth_ + 1;
+            cur_node->childNodes[i]->bbox_ = child_boxes[i]; 
+            auto& cur_box = child_boxes[i]; 
+            for(const auto pid : pids)
+            {
+                // if(visited_pids[pid]) continue;
+                if(IsInsideBox(&pt_data_[3*pid], cur_box))
+                {
+                    child_pids.push_back(pid);
+                    // visited_pids[pid] = 1;
+                } 
+            }
+            out_map[cur_node->childNodes[i]] = child_pids;
+        }
+    }
+    return out_map;
+}
+
+void SimpleOctree::SplitLeafNode(int iter_num)
+{
+    split_leaf_pids_ = SplitLeafNode(leaf_pids_);
+    for(int i = 1; i < iter_num; ++i)
+    {
+        split_leaf_pids_ = SplitLeafNode(split_leaf_pids_);
+    }
+}
+
+std::vector<double> SimpleOctree::GetLeafPts(LeafNodeMap& leaf_pids)
+{
+    std::vector<double> leaf_pts;
+    for(auto &ele : leaf_pids)
+    {
+        size_t closet_pt_id;
         auto cur_node = ele.first;
         auto pids = ele.second;
         auto center = cur_node->GetCenter();
@@ -233,12 +299,26 @@ void SimpleOctree::GetLeafPts()
         if(pids.empty()) continue;
         for(const auto& pid : pids)
         {
-            double cur_dist = SquareDistance(center, pts_[pid]);
+            double cur_dist = SquareDistance(center, &pt_data_[3*pid]);
             min_dist = min_dist < cur_dist? min_dist : cur_dist;
-            closet_pt = pts_[pid];
+            closet_pt_id = pid;
         }
-        leaf_pts_.push_back(closet_pt);
+        leaf_pts.push_back(pt_data_[3 * closet_pt_id]);
+        leaf_pts.push_back(pt_data_[3 * closet_pt_id + 1]);
+        leaf_pts.push_back(pt_data_[3 * closet_pt_id + 2]);
     }
+    return leaf_pts;
 }
+
+std::vector<double> SimpleOctree::GetLeafMapPts()
+{
+    return GetLeafPts(leaf_pids_);
+}
+
+std::vector<double> SimpleOctree::GetSplitLeafMapPts()
+{
+    return GetLeafPts(split_leaf_pids_);
+}
+
 
 }

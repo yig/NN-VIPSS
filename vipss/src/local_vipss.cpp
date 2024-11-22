@@ -17,7 +17,7 @@ double LocalVipss::pass_time_sum_ = 0;
 int LocalVipss::ave_voxel_nn_pt_num_ = 0;
 int LocalVipss::InitWithPartialVipss = 1;
 bool LocalVipss::use_rbf_base_ = false;
-bool LocalVipss::feature_preserve_sample_ = false;
+bool LocalVipss::use_octree_sample_ = false;
 
 std::vector<tetgenmesh::point> LocalVipss::points_;
 // std::vector<std::vector<size_t>> LocalVipss::cluster_all_pt_ids_;
@@ -221,33 +221,75 @@ void LocalVipss::Init(const std::string & path, const std::string& ext)
     }
     // printf("load data file : %s \n", path.c_str());
     printf("read point size : %lu \n", in_pts.size()/3);
-    auto t0 = Clock::now();
-    // printf("read point size : %d \n", in_pts.size());
-    // voro_gen_.loadData(path);
     
-    voro_gen_.out_dir_ = out_dir_;
+    if(use_octree_sample_)
+    {
+        auto t0 = Clock::now();
+        SamplePtsWithOctree(in_pts, octree_sample_depth_);
+        Init(octree_leaf_pts_);
+        auto ts1 = Clock::now();
+        double sample_time = std::chrono::nanoseconds(ts1 - t0).count()/1e9;
+        printf("Init octree sample time : %f s ! \n", sample_time);
+    } else {
+        Init(in_pts);
+    } 
+    
+    // voro_gen_.out_dir_ = out_dir_;
+    // voro_gen_.loadData(octree_leaf_pts_);
+    // printf("start to init mesh \n");
+    // voro_gen_.InitMesh();
+    // printf("finish triangulation \n");
+    // // TestInsertPt();
+    // // TestVoronoiPts();
+    // // voro_gen_.BuildPtIdMap();
+    // voro_gen_.BuildAdjecentMat();
+    // printf("finish build adjecent mat \n");
 
+    // adjacent_mat_ = voro_gen_.pt_adjecent_mat_;
+    // points_ = voro_gen_.points_;
+
+    // printf("adjacent mat rows : %lld, cols : %lld \n", adjacent_mat_.n_rows, adjacent_mat_.n_cols);
+    // pt_num_ = points_.size();
+
+    // cluster_cores_mat_.resize(pt_num_, pt_num_);
+    // cluster_cores_mat_.eye();
+    
+
+    // vipss_api_.Set_RBF_PARA();
+    // vipss_api_.is_surfacing_ = false;
+    // vipss_api_.outpath_ = out_dir_;
+    // vipss_api_.user_lambda_ = user_lambda_;
+    // vipss_api_.user_lambda_ = user_lambda_;
+    // vipss_api_.n_voxel_line_ = volume_dim_;
+
+    // cluster_normal_x_.resize(pt_num_, pt_num_);
+    // cluster_normal_y_.resize(pt_num_, pt_num_);
+    // cluster_normal_z_.resize(pt_num_, pt_num_);
+
+    // cluster_scores_mat_.resize(pt_num_, pt_num_);
+    // cluster_adjacent_mat_.resize(pt_num_, pt_num_);
+    // auto t1 = Clock::now(); 
+    // double init_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
+    // printf("build triangulation and initilization : %f s ! \n", init_time);
+}
+
+void LocalVipss::Init(const std::vector<double>& in_pts)
+{   
+    auto t0 = Clock::now();
+    voro_gen_.out_dir_ = out_dir_;
     voro_gen_.loadData(in_pts);
     printf("start to init mesh \n");
     voro_gen_.InitMesh();
     printf("finish triangulation \n");
-    // TestInsertPt();
-    // TestVoronoiPts();
-    // voro_gen_.BuildPtIdMap();
     voro_gen_.BuildAdjecentMat();
     printf("finish build adjecent mat \n");
-
     adjacent_mat_ = voro_gen_.pt_adjecent_mat_;
     points_ = voro_gen_.points_;
-
     printf("adjacent mat rows : %lld, cols : %lld \n", adjacent_mat_.n_rows, adjacent_mat_.n_cols);
     pt_num_ = points_.size();
 
     cluster_cores_mat_.resize(pt_num_, pt_num_);
     cluster_cores_mat_.eye();
-    
-    // printf("input point size : %zu \n", pt_num_);
-
     vipss_api_.Set_RBF_PARA();
     vipss_api_.is_surfacing_ = false;
     vipss_api_.outpath_ = out_dir_;
@@ -584,6 +626,7 @@ void LocalVipss::BuildHRBFPerNode()
 // if(0)
     
     size_t npt = this->points_.size();
+    printf("cluster num : %lu \n", npt);
     size_t cluster_num = cluster_cores_mat_.n_cols;
     double time_sum = 0;
     node_rbf_vec_.resize(cluster_num);
@@ -702,7 +745,8 @@ double LocalVipss::NatureNeighborDistanceFunctionOMP(const tetgenmesh::point cur
     ave_voxel_nn_pt_num_ += nn_num;
     const std::vector<double*>& all_pts = points_;
 
-#pragma omp parallel for shared(node_rbf_vec_, voro_gen_, VoronoiGen::point_id_map_, nei_pts, cur_pt, nn_dist_vec_, nn_volume_vec_) private(i)
+#pragma omp parallel for 
+// shared(node_rbf_vec_, voro_gen_, VoronoiGen::point_id_map_, nei_pts, cur_pt, nn_dist_vec_, nn_volume_vec_) private(i)
     for( i = 0; i < nn_num; ++i)
     {
         auto nn_pt = nei_pts[i];
@@ -712,6 +756,7 @@ double LocalVipss::NatureNeighborDistanceFunctionOMP(const tetgenmesh::point cur
             const arma::vec& a = node_rbf_vec_[pid]->a;
             const arma::vec& b = node_rbf_vec_[pid]->b;
             const std::vector<size_t>& cluster_pids = VoronoiGen::cluster_init_pids_[pid];
+            // std::cout << " n id " << pid << std::endl;
             nn_dist_vec_[i] = HRBF_Dist_Alone(cur_pt,  a, b, cluster_pids, all_pts);
             // nn_dist_vec_[i] = 1;
             // nn_dist_vec_[i] = node_rbf_vec_[pid]->Dist_Function(cur_pt);
@@ -913,6 +958,22 @@ double LocalVipss::NNDistFunction(const R3Pt &in_pt)
     DistCallTime += dist_time;
     return dist;
 }
+
+// double LocalVipss::NNDistFunction(const double* in_pt)
+// {
+//     DistCallNum ++;
+//     auto t0 = Clock::now();
+//     // double new_pt[3] = {in_pt[0], in_pt[1], in_pt[2]};
+//     // double dist = local_vipss_ptr->NatureNeighborDistanceFunction(&(new_pt[0]));
+//     double dist = local_vipss_ptr->NatureNeighborDistanceFunctionOMP((const tetgenmesh::point)in_pt);
+//     // std::cout << " dist " << dist << std::endl;
+//     auto t1 = Clock::now();
+//     double dist_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
+//     DistCallTime += dist_time;
+//     return dist;
+// }
+
+
 double LocalVipss::NNDistGradient(const R3Pt &in_pt, double* gradient)
 {
     DistCallNum ++;
@@ -1678,154 +1739,91 @@ void LocalVipss::OptimizeAdjacentMat()
     // g_file.close();
 }
 
-void LocalVipss::SamplePtsWithOctree(int depth)
+void LocalVipss::SamplePtsWithOctree(const std::vector<double>& pts, int depth)
 {
     std::vector<double> sampled_pts;
     size_t c_size = points_.size();
-    std::vector<SimOctree::Point> new_pts;
-    for(size_t i = 0; i < c_size; ++i)
-    {
-        SimOctree::Point newP = {points_[i][0], points_[i][1], points_[i][2]};
-        new_pts.push_back(newP);
-    }
-    
-    octree_.InitOctTree(new_pts, depth);
-    octree_.GetLeafPts();
-    // std::cout << " octree sample leaf pt number : " << octree.leaf_pts_.size() << std::endl;
-    for(int i = 0; i < octree_.leaf_pts_.size(); ++i)
-    {
-        sampled_pts.push_back(octree_.leaf_pts_[i][0]);
-        sampled_pts.push_back(octree_.leaf_pts_[i][1]);
-        sampled_pts.push_back(octree_.leaf_pts_[i][2]);
-    }
+    SimOctree::SimpleOctree octree;
+    std::cout << " start to init octree " << std::endl;
+    octree.InitOctTree(pts, depth);
+
+    std::cout << " start to split octree leaf nodes " << std::endl;
+    octree.SplitLeafNode(2);
+
+    octree_leaf_pts_ = octree.GetLeafMapPts();
+    octree_split_leaf_pts_ = octree.GetSplitLeafMapPts();
+
     std::string octree_sample_path = out_dir_  + filename_ +  "_octree_sample.xyz";
     std::cout << "save octree sample result to file : " << octree_sample_path << std::endl;
-    writeXYZ(octree_sample_path, sampled_pts);
+    writeXYZ(octree_sample_path, octree_leaf_pts_);
+
+    std::string octree_split_sample_path = out_dir_  + filename_ +  "_octree_sample_split.xyz";
+    std::cout << "save octree sample result to file : " << octree_sample_path << std::endl;
+    writeXYZ(octree_split_sample_path, octree_split_leaf_pts_);
 }
 
 void LocalVipss::SamplePtsWithClusterAveScores()
 {
 
-    std::vector<double> sampled_pts;
-    size_t c_size = points_.size();
-    std::vector<SimOctree::Point> new_pts;
-    for(size_t i = 0; i < c_size; ++i)
-    {
-        SimOctree::Point newP = {points_[i][0], points_[i][1], points_[i][2]};
-        new_pts.push_back(newP);
-    }
-    SimOctree::SimpleOctree octree;
-    octree.InitOctTree(new_pts, 6);
-    octree.GetLeafPts();
-    // std::cout << " octree sample leaf pt number : " << octree.leaf_pts_.size() << std::endl;
-    for(int i = 0; i < octree.leaf_pts_.size(); ++i)
-    {
-        sampled_pts.push_back(octree.leaf_pts_[i][0]);
-        sampled_pts.push_back(octree.leaf_pts_[i][1]);
-        sampled_pts.push_back(octree.leaf_pts_[i][2]);
-    }
-    // std::string octree_sample_path = out_dir_  + filename_ +  "_octree_sample.xyz";
-    // std::cout << "save octree sample result to file : " << octree_sample_path << std::endl;
-    // writeXYZ(octree_sample_path, sampled_pts);
+    // std::vector<double> sampled_pts;
+    // size_t c_size = points_.size();
+    // std::vector<SimOctree::Point> new_pts;
+    // for(size_t i = 0; i < c_size; ++i)
+    // {
+    //     SimOctree::Point newP = {points_[i][0], points_[i][1], points_[i][2]};
+    //     new_pts.push_back(newP);
+    // }
+    // SimOctree::SimpleOctree octree;
+    // octree.InitOctTree(new_pts, 6);
+    // auto leaf_pts = octree.GetLeafMapPts();
+    // // std::cout << " octree sample leaf pt number : " << octree.leaf_pts_.size() << std::endl;
+    // for(int i = 0; i < leaf_pts.size(); ++i)
+    // {
+    //     sampled_pts.push_back(leaf_pts[i][0]);
+    //     sampled_pts.push_back(leaf_pts[i][1]);
+    //     sampled_pts.push_back(leaf_pts[i][2]);
+    // }
+    // // std::string octree_sample_path = out_dir_  + filename_ +  "_octree_sample.xyz";
+    // // std::cout << "save octree sample result to file : " << octree_sample_path << std::endl;
+    // // writeXYZ(octree_sample_path, sampled_pts);
 
-    PicoTree newPicoTree;
-    newPicoTree.Init(sampled_pts);
+    // PicoTree newPicoTree;
+    // newPicoTree.Init(sampled_pts);
 
-    cluster_scores_ave_.resize(c_size);
-    for(int i = 0; i < int(c_size); ++i)
-    {
-        int cur_nozero_count = cluster_scores_mat_.col(i).nonZeros();
-        double score_sum = cluster_scores_mat_.col(i).sum();
-        if( cur_nozero_count > 0)
-        {
-            cluster_scores_ave_[i] = score_sum / cur_nozero_count;
-        } else {
-            cluster_scores_ave_[i] = 0;
-        }
-    }
-    arma::uvec res = arma::sort_index(cluster_scores_ave_, "descend");
+    // cluster_scores_ave_.resize(c_size);
+    // for(int i = 0; i < int(c_size); ++i)
+    // {
+    //     int cur_nozero_count = cluster_scores_mat_.col(i).nonZeros();
+    //     double score_sum = cluster_scores_mat_.col(i).sum();
+    //     if( cur_nozero_count > 0)
+    //     {
+    //         cluster_scores_ave_[i] = score_sum / cur_nozero_count;
+    //     } else {
+    //         cluster_scores_ave_[i] = 0;
+    //     }
+    // }
+    // arma::uvec res = arma::sort_index(cluster_scores_ave_, "descend");
     
-    int sample_num = int(c_size * 0.15);
-    int count = 0;
-    for(int i = 0; i < c_size; ++i)
-    {
-        if(newPicoTree.NearestPtDist(points_[res[i]][0], points_[res[i]][1], points_[res[i]][2]) > 1e-8)
-        {
-            sampled_pts.push_back(points_[res[i]][0]);
-            sampled_pts.push_back(points_[res[i]][1]);
-            sampled_pts.push_back(points_[res[i]][2]);
-            count ++;
-            if(count >= sample_num) break;
-        }
-    }
+    // int sample_num = int(c_size * 0.15);
+    // int count = 0;
+    // for(int i = 0; i < c_size; ++i)
+    // {
+    //     if(newPicoTree.NearestPtDist(points_[res[i]][0], points_[res[i]][1], points_[res[i]][2]) > 1e-8)
+    //     {
+    //         sampled_pts.push_back(points_[res[i]][0]);
+    //         sampled_pts.push_back(points_[res[i]][1]);
+    //         sampled_pts.push_back(points_[res[i]][2]);
+    //         count ++;
+    //         if(count >= sample_num) break;
+    //     }
+    // }
 
-    std::string sample_path = out_dir_ + filename_ +  "_feature_sample.xyz";
-    std::cout << "save feature sample result to file : " << sample_path << std::endl;
-    writeXYZ(sample_path, sampled_pts);    
+    // std::string sample_path = out_dir_ + filename_ +  "_feature_sample.xyz";
+    // std::cout << "save feature sample result to file : " << sample_path << std::endl;
+    // writeXYZ(sample_path, sampled_pts);    
 }
 
 
-void LocalVipss::InitNormalsWithSample()
-{
-    SamplePtsWithOctree();
-    double total_time = 0;
-    auto t0 = Clock::now();
-    BuildClusterAdjacentMat();
-    BuidClusterCoresPtIds();
-    auto t1 = Clock::now();
-    double build_mat_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
-    printf("finish init adj mat and core pt ids time : %f ! \n", build_mat_time);
-
-    InitNormalWithVipss();
-    auto t12 = Clock::now();
-    double normal_estimate_time = std::chrono::nanoseconds(t12 - t1).count()/1e9;
-    printf("finish init cluster normals time : %f ! \n", normal_estimate_time);
-
-    total_time += build_mat_time + normal_estimate_time;
-    G_VP_stats.init_cluster_normal_time_ += (build_mat_time + normal_estimate_time);
-    double sum_score_time = 0;
-
-    auto t2 = Clock::now();
-    CalculateClusterNeiScores(true);
-    auto t3 = Clock::now();
-    double scores_time = std::chrono::nanoseconds(t3 - t2).count()/1e9;
-    printf("finish init cluster neigh scores time : %f ! \n", scores_time);
-    
-    //
-    // CalculateClusterScores();
-    auto t34 = Clock::now();
-    double cluster_scores_time = std::chrono::nanoseconds(t34 - t3).count()/1e9;
-    printf("finish calculate cluster scores time : %f ! \n", cluster_scores_time);
-    total_time += scores_time;
-    total_time += cluster_scores_time;
-    sum_score_time += scores_time;
-    sum_score_time += cluster_scores_time;
-    G_VP_stats.cal_cluster_neigbor_scores_time_ += (scores_time + cluster_scores_time);
-
-    size_t iter_num = 1;
-    auto ti00 = Clock::now();
-    BuildClusterMST();
-    auto ti11 = Clock::now();
-    double MST_time = std::chrono::nanoseconds(ti11 - ti00).count()/1e9;
-    total_time += MST_time;
-    G_VP_stats.build_normal_MST_time_ += MST_time;
-    printf("normal MST_time time used : %f \n", MST_time); 
-    auto ti0 = Clock::now();
-    FlipClusterNormalsByMST();
-    auto ti1 = Clock::now();
-    double flip_time = std::chrono::nanoseconds(ti1 - ti0).count()/1e9;
-    G_VP_stats.normal_flip_time_ += flip_time;
-    total_time += flip_time;
-    printf("normal flip time used : %f \n", flip_time);
-
-    std::string init_ptn_path_iter = out_dir_ + filename_ + "_flipped" + std::to_string(iter_num);
-    OuputPtN(init_ptn_path_iter);
-    auto finat_t = Clock::now();
-    double init_total_time = std::chrono::nanoseconds(finat_t - t0).count()/1e9;
-
-    printf("Normal initializtion with local vipss total time used : %f \n", init_total_time);
-    G_VP_stats.init_normal_total_time_ += init_total_time;
-}
 
 void LocalVipss::InitNormals()
 {
@@ -1851,10 +1849,10 @@ void LocalVipss::InitNormals()
     auto t3 = Clock::now();
     double scores_time = std::chrono::nanoseconds(t3 - t2).count()/1e9;
     printf("finish init cluster neigh scores time : %f ! \n", scores_time);
-    if(feature_preserve_sample_)
-    {
-        SamplePtsWithClusterAveScores();
-    }
+    // if(feature_preserve_sample_)
+    // {
+    //     SamplePtsWithClusterAveScores();
+    // }
     //
     // CalculateClusterScores();
     auto t34 = Clock::now();

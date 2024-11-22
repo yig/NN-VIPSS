@@ -40,6 +40,10 @@ class VIPSSUnit {
         void BuildLocalHRBFPerNode();
         void CalEnergyWithGtNormal();
 
+        void SolveOptimizaiton();
+        void BuildNNHRBFFunctions();
+
+
     public:
 
         std::string file_name_;
@@ -96,6 +100,7 @@ class VIPSSUnit {
         int max_opt_iter_ = 3000;
         double adgrid_threshold_ = 0.001;
         bool use_adgrid_ = true;
+        double distfunc_threshold_ = 0.3;
 
 
     

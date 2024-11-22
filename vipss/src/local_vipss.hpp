@@ -5,6 +5,7 @@
 #include "sp_mat.h"
 
 
+
 class C_Edege{
     public:
         C_Edege(size_t c_a, size_t c_b)
@@ -45,6 +46,7 @@ class LocalVipss {
         ~ LocalVipss() {};
 
         void Init(const std::string & path, const std::string& ext);
+        void Init(const std::vector<double>& in_pts);
 
         void BuildHRBFPerNode();
         inline std::vector<double> GetClusterNormalsFromIds
@@ -75,7 +77,7 @@ class LocalVipss {
         void InitNormalsWithSample();
         void GroupPtsWithVolume();
         void SamplePtsWithClusterAveScores();
-        void SamplePtsWithOctree(int depth = 7);
+        void SamplePtsWithOctree(const std::vector<double>& pts, int depth= 7);
 
     public:
         void BuidClusterCoresPtIds();
@@ -95,6 +97,7 @@ class LocalVipss {
         double NatureNeighborDistanceFunctionOMP(const tetgenmesh::point cur_pt) const;
         double NatureNeighborGradientOMP(const tetgenmesh::point cur_pt,double* gradient) const;
         static double NNDistFunction(const R3Pt &in_pt);  
+        // double NNDistFunction(const double* in_pt);
         static double NNDistGradient(const R3Pt &in_pt, double* gradient); 
         void SetThis();      
         void VisualFuncValues(double (*function)(const R3Pt &in_pt), const VoroPlane& plane,
@@ -182,8 +185,10 @@ class LocalVipss {
         std::vector<uint>finalMesh_fv_;
         //arma::vec nn_dist_vec_;
         //arma::vec nn_volume_vec_;
-
-        SimOctree::SimpleOctree octree_;
+        // SimOctree2::Point newbbox;
+        // SimOctree::SimpleOctree octree_;
+        std::vector<double> octree_leaf_pts_;
+        std::vector<double> octree_split_leaf_pts_;
         
     public:
         int max_group_iter_ = 12;
@@ -213,5 +218,7 @@ class LocalVipss {
         size_t in_cluster_surface_pt_count = 0;
         static int ave_voxel_nn_pt_num_; 
         static bool use_rbf_base_; 
-        static bool feature_preserve_sample_;
+        static bool use_octree_sample_;
+        // bool use_octree_sample_ = true; 
+        int octree_sample_depth_ = 7;
 };
