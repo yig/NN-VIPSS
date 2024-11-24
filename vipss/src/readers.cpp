@@ -1564,11 +1564,37 @@ void WriteStatsLog(const std::string& path, const VP_STATS& vp_stats)
 
         log_file << "     " << std::endl;
         log_file << "time statistics for surface : " << std::endl;
-        log_file << "generate voroi data time : " << vp_stats.generate_voroi_data_time_ << std::endl;
-        log_file << "build cluster HRBF time : " << vp_stats.build_per_cluster_hrbf_total_time_ << std::endl;
+        // log_file << "generate voroi data time : " << vp_stats.generate_voroi_data_time_ << std::endl;
+        log_file << "build cluster HRBF time : " << vp_stats.build_nn_rbf_time_ << std::endl;
         log_file << "natural neighbor n search time : " << vp_stats.neighbor_search_time_ << std::endl;
         log_file << "cal nn coords and HRBF time : " << vp_stats.cal_nn_coordinate_and_hbrf_time_ << std::endl;
         log_file << "voxel dist func val evaluated count : " << vp_stats.voxel_cal_num << std::endl;
         log_file << "natural neighbor surfacing total time : " << vp_stats.surface_total_time_ << std::endl;
+    } 
+}
+
+
+
+void WriteStatsTimeCSV(const std::string& path, const VP_STATS& vp_stats)
+{
+    std::ofstream csv_file;
+    csv_file.open(path);
+    if(csv_file)
+    {
+        csv_file << "tetgen triangulation, " << vp_stats.tetgen_triangulation_time_ << std::endl;
+        csv_file << "init normal, " << vp_stats.init_normal_total_time_ << std::endl;
+        // csv_file << " cal cluster scores time : " << vp_stats.cal_cluster_neigbor_scores_time_ << std::endl;
+        csv_file << "construct Hmat, " << vp_stats.build_H_total_time_ << std::endl;
+        // csv_file << "cal cluster J total time : " << vp_stats.cal_cluster_J_total_time_ << std::endl;
+        csv_file << "optimization, " << vp_stats.opt_solver_time_ << std::endl;
+        csv_file << "opt num, " << vp_stats.opt_func_call_num_ << std::endl;
+        double iter_per_time = vp_stats.opt_solver_time_ / double(vp_stats.opt_func_call_num_);
+        csv_file << "opt per iter time, " << iter_per_time << std::endl;
+        // csv_file << "optimization total time : " << vp_stats.build_H_total_time_ << std::endl;
+        csv_file << "generate voro, " << vp_stats.generate_voro_data_time_ << std::endl;
+        csv_file << "build nn HRBF, " << vp_stats.build_nn_rbf_time_ << std::endl;
+        // csv_file << "natural jm, " << vp_stats.neighbor_search_time_ << std::endl;
+        csv_file << "evaluate count, " << vp_stats.nn_evaluate_count_ << std::endl;
+        csv_file << "NN surface,  " << vp_stats.surface_total_time_ << std::endl;
     } 
 }

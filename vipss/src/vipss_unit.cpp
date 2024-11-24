@@ -15,7 +15,6 @@ Eigen::VectorXd scsc_vec;
 void VIPSSUnit::InitPtNormalWithLocalVipss()
 {
     std::string& data_dir =  data_dir_;
-    
     local_vipss_.filename_ = file_name_;
     // l_vp.filename_ = "planck";
     local_vipss_.out_dir_ = out_dir_;
@@ -27,13 +26,28 @@ void VIPSSUnit::InitPtNormalWithLocalVipss()
     // local_vipss_.max_iter_ = 30;
     local_vipss_.use_hrbf_surface_ = false;
     local_vipss_.angle_threshold_ = merge_angle_;
+    auto t1 = Clock::now();
     // local_vipss_.volume_dim_ = 100;
     local_vipss_.Init(input_data_path_, input_data_ext_);
     local_vipss_.InitNormals();
-    local_vipss_.ClearPartialMemory();
-    local_vipss_.BuildMatrixH();
+    auto t2 = Clock::now();
+    G_VP_stats.init_normal_total_time_ = std::chrono::nanoseconds(t2 - t1).count() / 1e9;
+    G_VP_stats.tetgen_triangulation_time_ = local_vipss_.tet_gen_triangulation_time_;
     npt_ = local_vipss_.points_.size();
     initnormals_ = local_vipss_.out_normals_;
+    // printf("adaptive grid generation time : %f ! \n", adgrid_gen_time);
+    auto t3 = Clock::now();
+    local_vipss_.ClearPartialMemory();
+    local_vipss_.BuildMatrixH();
+    if(user_lambda_ < 1e-10)
+    {
+         local_vipss_.final_h_eigen_ = local_vipss_.final_h_eigen_.block(npt_, npt_, 3 * npt_, 3 * npt_);
+    } 
+    auto t4 = Clock::now();
+    G_VP_stats.build_H_total_time_ = std::chrono::nanoseconds(t4 - t3).count() / 1e9;
+    // double construct_Hmat_time = std::chrono::nanoseconds(t4 - t3).count() / 1e9;
+    
+    
     // printf("unit vipss J mat init time : %f \n", local_vipss_.vipss_api_.u_v_time);
 }
 
@@ -454,16 +468,25 @@ void VIPSSUnit::OptUnitVipssNormal(){
 
 void VIPSSUnit::BuildNNHRBFFunctions()
 {
+    auto t000 = Clock::now();
     local_vipss_.voro_gen_.GenerateVoroData();
     local_vipss_.voro_gen_.SetInsertBoundaryPtsToUnused();
+    auto t001 = Clock::now();
+    G_VP_stats.generate_voro_data_time_ = std::chrono::nanoseconds(t001 - t000).count() / 1e9;
+    // G_VP_stats.generate_voro_data_time_ = generate_voro_data_time
     local_vipss_.voro_gen_.BuildTetMeshTetCenterMap();
     local_vipss_.voro_gen_.BuildPicoTree();
-
+    // auto t002 = Clock::now();
+    // double generate_voro_data_time = std::chrono::nanoseconds(t002 - t001).count() / 1e9;
     local_vipss_.normals_ = newnormals_;
     local_vipss_.s_vals_ = s_func_vals_;
     local_vipss_.user_lambda_ = user_lambda_;
     local_vipss_.BuildHRBFPerNode();
     local_vipss_.SetThis(); 
+    auto t003 = Clock::now();
+    // double build_nn_rbf_time  
+    G_VP_stats.build_nn_rbf_time_ = std::chrono::nanoseconds(t003 - t001).count() / 1e9;
+
 }
 
 void VIPSSUnit::ReconSurface()
@@ -491,7 +514,7 @@ void VIPSSUnit::ReconSurface()
         // std::string out_path = data_dir_ + "/" + file_name_  + "/nn_surface";
         auto t005 = Clock::now();
         double surface_file_save_time = std::chrono::nanoseconds(t005 - t004).count() / 1e9;
-        double total_surface_time = std::chrono::nanoseconds(t005 - t000).count() / 1e9;
+        double total_surface_time = std::chrono::nanoseconds(t004 - t000).count() / 1e9;
         writePLYFile_VF(out_surface_path_, finalMesh_v_, finalMesh_fv_);
         std::cout << "------- tet search time "<< tetgenmesh::tet_search_time_st << std::endl;
         std::cout << "------- voxel pt ave nn num "<< LocalVipss::ave_voxel_nn_pt_num_ / LocalVipss::DistCallNum << std::endl;
@@ -503,7 +526,9 @@ void VIPSSUnit::ReconSurface()
         G_VP_stats.neighbor_search_time_ += local_vipss_.search_nn_time_sum_;
         G_VP_stats.cal_nn_coordinate_and_hbrf_time_ += local_vipss_.pass_time_sum_;
         G_VP_stats.voxel_cal_num += LocalVipss::DistCallNum;
-        G_VP_stats.surface_total_time_ += total_surface_time;
+        G_VP_stats.nn_evaluate_count_ = LocalVipss::DistCallNum;
+        // G_VP_stats.surface_total_time_ += total_surface_time;
+        G_VP_stats.surface_total_time_ = total_surface_time;
 
     } else {
         rbf_api_.user_lambda_ = user_lambda_;
@@ -529,29 +554,24 @@ void VIPSSUnit::ReconSurface()
 
 void VIPSSUnit::GenerateAdaptiveGrid()
 {
-
-    auto t000 = Clock::now();
-   
+    auto t000 = Clock::now();   
     // std::cout << " test val " << test_val << std::endl;
     std::array<size_t,3> resolution = {3, 3, 3};
     GenerateAdaptiveGridOut(resolution, local_vipss_.voro_gen_.bbox_min_, 
                             local_vipss_.voro_gen_.bbox_max_, out_dir_,  file_name_, adgrid_threshold_);
     auto t001 = Clock::now();
     double adgrid_gen_time = std::chrono::nanoseconds(t001 - t000).count() / 1e9;
-
     printf("adaptive grid generation time : %f ! \n", adgrid_gen_time);
 }
+
 void VIPSSUnit::SolveOptimizaiton()
 {
-    auto tn0 = Clock::now();
-    if(user_lambda_ < 1e-10)
-    {
-         local_vipss_.final_h_eigen_ = local_vipss_.final_h_eigen_.block(npt_, npt_, 3 * npt_, 3 * npt_);
-    } 
-    auto tn1 = Clock::now();
-    double get_h_sub_block_time = std::chrono::nanoseconds(tn1 - tn0).count() / 1e9;
-    // printf("get H sub block time : %f ! \n", get_h_sub_block_time);
-    G_VP_stats.take_h_sub_block_time_ = get_h_sub_block_time;
+    // auto tn0 = Clock::now();
+    
+    // auto tn1 = Clock::now();
+    // double get_h_sub_block_time = std::chrono::nanoseconds(tn1 - tn0).count() / 1e9;
+    // // printf("get H sub block time : %f ! \n", get_h_sub_block_time);
+    // G_VP_stats.take_h_sub_block_time_ = get_h_sub_block_time;
     auto ts0 = Clock::now();
     Solver::open_log_ = true;
     if(user_lambda_ < 1e-12)
@@ -574,10 +594,7 @@ void VIPSSUnit::SolveOptimizaiton()
     }
     Final_H_.clear();
     local_vipss_.final_H_.clear();
-    auto ts1 = Clock::now();
-    double solve_time = std::chrono::nanoseconds(ts1 - ts0).count() / 1e9;
-    printf("opt solve time : %f ! \n", solve_time);
-    printf("opt fun call count : %d \n", VIPSSUnit::opt_func_count_g);
+    
     // printf("opt fun call time : %f \n", VIPSSUnit::opt_func_time_g);
 #pragma omp parallel for
     for(int i = 0; i < newnormals_.size()/3; ++i)
@@ -589,8 +606,13 @@ void VIPSSUnit::SolveOptimizaiton()
         newnormals_[3*i + 1] /= normal_len;
         newnormals_[3*i + 2] /= normal_len;
     }
-    G_VP_stats.opt_solver_time_ += solve_time;
-    G_VP_stats.opt_func_call_num_ += VIPSSUnit::opt_func_count_g;
+
+    auto ts1 = Clock::now();
+    double solve_time = std::chrono::nanoseconds(ts1 - ts0).count() / 1e9;
+    printf("opt solve time : %f ! \n", solve_time);
+    printf("opt fun call count : %d \n", VIPSSUnit::opt_func_count_g);
+    G_VP_stats.opt_solver_time_ = solve_time;
+    G_VP_stats.opt_func_call_num_ = VIPSSUnit::opt_func_count_g;
 }
 
 void VIPSSUnit::Run()
@@ -643,7 +665,8 @@ void VIPSSUnit::Run()
         }  
     }
 
-
+    std::string out_csv_file = out_dir_ + file_name_ + "_time_stats.cvs";
+    WriteStatsTimeCSV(out_csv_file, G_VP_stats);
 }
 
 void VIPSSUnit::CalEnergyWithGtNormal()

@@ -221,4 +221,6 @@ class LocalVipss {
         static bool use_octree_sample_;
         // bool use_octree_sample_ = true; 
         int octree_sample_depth_ = 7;
+        double tet_gen_triangulation_time_;
+        double tet_build_adj_mat_time_;
 };

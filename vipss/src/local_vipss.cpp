@@ -233,44 +233,6 @@ void LocalVipss::Init(const std::string & path, const std::string& ext)
     } else {
         Init(in_pts);
     } 
-    
-    // voro_gen_.out_dir_ = out_dir_;
-    // voro_gen_.loadData(octree_leaf_pts_);
-    // printf("start to init mesh \n");
-    // voro_gen_.InitMesh();
-    // printf("finish triangulation \n");
-    // // TestInsertPt();
-    // // TestVoronoiPts();
-    // // voro_gen_.BuildPtIdMap();
-    // voro_gen_.BuildAdjecentMat();
-    // printf("finish build adjecent mat \n");
-
-    // adjacent_mat_ = voro_gen_.pt_adjecent_mat_;
-    // points_ = voro_gen_.points_;
-
-    // printf("adjacent mat rows : %lld, cols : %lld \n", adjacent_mat_.n_rows, adjacent_mat_.n_cols);
-    // pt_num_ = points_.size();
-
-    // cluster_cores_mat_.resize(pt_num_, pt_num_);
-    // cluster_cores_mat_.eye();
-    
-
-    // vipss_api_.Set_RBF_PARA();
-    // vipss_api_.is_surfacing_ = false;
-    // vipss_api_.outpath_ = out_dir_;
-    // vipss_api_.user_lambda_ = user_lambda_;
-    // vipss_api_.user_lambda_ = user_lambda_;
-    // vipss_api_.n_voxel_line_ = volume_dim_;
-
-    // cluster_normal_x_.resize(pt_num_, pt_num_);
-    // cluster_normal_y_.resize(pt_num_, pt_num_);
-    // cluster_normal_z_.resize(pt_num_, pt_num_);
-
-    // cluster_scores_mat_.resize(pt_num_, pt_num_);
-    // cluster_adjacent_mat_.resize(pt_num_, pt_num_);
-    // auto t1 = Clock::now(); 
-    // double init_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
-    // printf("build triangulation and initilization : %f s ! \n", init_time);
 }
 
 void LocalVipss::Init(const std::vector<double>& in_pts)
@@ -280,8 +242,13 @@ void LocalVipss::Init(const std::vector<double>& in_pts)
     voro_gen_.loadData(in_pts);
     printf("start to init mesh \n");
     voro_gen_.InitMesh();
+    auto t001 = Clock::now();
+    tet_gen_triangulation_time_ = std::chrono::nanoseconds(t001 - t0).count()/1e9;
     printf("finish triangulation \n");
     voro_gen_.BuildAdjecentMat();
+    auto t002 = Clock::now();
+    tet_build_adj_mat_time_ = std::chrono::nanoseconds(t002 - t001).count()/1e9;
+
     printf("finish build adjecent mat \n");
     adjacent_mat_ = voro_gen_.pt_adjecent_mat_;
     points_ = voro_gen_.points_;
@@ -586,10 +553,10 @@ void LocalVipss::BuildMatrixH()
     // printf("--- build final_h  from triplets vector time : %f \n", build_h_from_tris_time);
     printf("--- build_H_time_total sum  time : %f \n", build_H_time_total);
 
-    G_VP_stats.build_H_total_time_ += build_H_time_total;
-    G_VP_stats.cal_cluster_J_total_time_ += build_j_time_total_;
-    G_VP_stats.add_J_ele_to_triplet_vector_time_ += add_ele_to_vector_time;
-    G_VP_stats.build_eigen_final_h_from_tris_time_ += build_h_from_tris_time;
+    // G_VP_stats.build_H_total_time_ += build_H_time_total;
+    // G_VP_stats.cal_cluster_J_total_time_ += build_j_time_total_;
+    // G_VP_stats.add_J_ele_to_triplet_vector_time_ += add_ele_to_vector_time;
+    // G_VP_stats.build_eigen_final_h_from_tris_time_ += build_h_from_tris_time;
 
 }
 
@@ -1886,7 +1853,7 @@ void LocalVipss::InitNormals()
     double init_total_time = std::chrono::nanoseconds(finat_t - t0).count()/1e9;
 
     printf("Normal initializtion with local vipss total time used : %f \n", init_total_time);
-    G_VP_stats.init_normal_total_time_ += init_total_time;
+    // G_VP_stats.init_normal_total_time_ += init_total_time;
 }
 
 
