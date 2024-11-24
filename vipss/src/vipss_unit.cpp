@@ -604,6 +604,7 @@ void VIPSSUnit::Run()
     auto new_pts = local_vipss_.octree_leaf_pts_;
     if(LocalVipss::use_octree_sample_)
     {
+        auto ts00 = Clock::now();
         const auto&pts = local_vipss_.octree_split_leaf_pts_;
         // const auto&pts = local_vipss_.octree_leaf_pts_;
         std::cout << "split pts size : " << pts.size()/3 << std::endl;
@@ -620,6 +621,9 @@ void VIPSSUnit::Run()
                 new_pts.push_back(pts[3*i + 2]);
             }
         }
+        auto ts01 = Clock::now();
+        double total_time = std::chrono::nanoseconds(ts01 - ts00).count()/1e9;
+        printf("------- remaining pts dist function evaluation time : %f ! \n", total_time);
         std::string octree_sample_path = out_dir_  + file_name_ +  "_octree_distSample.xyz";
         writeXYZ(octree_sample_path, new_pts);
     }
