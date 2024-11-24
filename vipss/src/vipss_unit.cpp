@@ -486,7 +486,8 @@ void VIPSSUnit::BuildNNHRBFFunctions()
     auto t003 = Clock::now();
     // double build_nn_rbf_time  
     G_VP_stats.build_nn_rbf_time_ = std::chrono::nanoseconds(t003 - t001).count() / 1e9;
-
+    G_VP_stats.average_neighbor_num_ = local_vipss_.voro_gen_.average_neighbor_num_;
+    G_VP_stats.pt_num_ = local_vipss_.points_.size();
 }
 
 void VIPSSUnit::ReconSurface()

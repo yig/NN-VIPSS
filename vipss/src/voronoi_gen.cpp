@@ -1439,7 +1439,7 @@ void VoronoiGen::BuildAdjecentMat()
         cluster_size_vec_[cur_p_id + 1] = cur_cluster_pids.size();
         // printf("cur pt id 000 : %d \n", cur_p_id);
     }
-
+    average_neighbor_num_ = size_t((double) arma::sum(cluster_size_vec_) / double(points_.size()));
     cluster_accum_size_vec_.resize(points_.size() + 1);
     cluster_accum_size_vec_[0] = 0;
     for(int i = 1; i < int(points_.size()); ++i)

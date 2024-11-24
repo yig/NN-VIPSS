@@ -185,6 +185,7 @@ class VoronoiGen{
 
         std::array<double, 3> bbox_min_;
         std::array<double, 3> bbox_max_;
+        size_t average_neighbor_num_ = 0;
 
         
     private:

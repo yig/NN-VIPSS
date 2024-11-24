@@ -601,8 +601,8 @@ void LocalVipss::BuildHRBFPerNode()
     vipss_api_.user_lambda_ = user_lambda_;
 
     // printf("cluster num : %lu \n", cluster_num);
-
-    for(size_t i =0; i < cluster_num; ++i)
+#pragma omp parallel for 
+    for(int i =0; i < cluster_num; ++i)
     {
         std::vector<double> cluster_pt_vec = VoronoiGen::cluster_init_pts_[i];
         const std::vector<size_t>& cluster_pt_ids = VoronoiGen::cluster_init_pids_[i];

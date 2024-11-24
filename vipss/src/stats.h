@@ -30,7 +30,8 @@ struct VP_STATS {
     double build_nn_rbf_time_ = 0;
     int nn_evaluate_count_ = 0;
     double tetgen_triangulation_time_ = 0;
-
+    int pt_num_ = 0;
+    int average_neighbor_num_ = 0;
 };
 
 extern VP_STATS G_VP_stats; 
