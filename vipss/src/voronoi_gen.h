@@ -127,6 +127,7 @@ class VoronoiGen{
                                                     arma::vec3& gradient, int thread_id);
         void OutputTetMesh(const std::string& tetmesh_path);
         void SetInsertBoundaryPtsToUnused();
+        void InsertPts(const std::vector<std::array<double,3>>& insert_pts);
 
         bool InsideTet(tetgenmesh::point search_pt, tetgenmesh::point p0, tetgenmesh::point p1, tetgenmesh::point p2, tetgenmesh::point p3);
                 

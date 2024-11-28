@@ -2,6 +2,7 @@
 #include "vipss_unit.hpp"
 #include "stats.h"
 #include "adgrid.h"
+#include "SimpleOctree.h"
 
 typedef std::chrono::high_resolution_clock Clock;
 
@@ -469,6 +470,14 @@ void VIPSSUnit::OptUnitVipssNormal(){
 void VIPSSUnit::BuildNNHRBFFunctions()
 {
     auto t000 = Clock::now();
+    if(make_nn_const_neighbor_num_)
+    {
+        SimOctree::SimpleOctree octree;
+        // std::cout << " start to init octree " << std::endl;
+        octree.InitOctTree(local_vipss_.origin_in_pts_, 2);
+        std::cout << " insert octree center pts num : " << octree.octree_centers_.size() << std::endl; 
+        local_vipss_.voro_gen_.InsertPts(octree.octree_centers_);
+    }
     local_vipss_.voro_gen_.GenerateVoroData();
     local_vipss_.voro_gen_.SetInsertBoundaryPtsToUnused();
     auto t001 = Clock::now();

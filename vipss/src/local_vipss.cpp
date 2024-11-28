@@ -221,7 +221,7 @@ void LocalVipss::Init(const std::string & path, const std::string& ext)
     }
     // printf("load data file : %s \n", path.c_str());
     printf("read point size : %lu \n", in_pts.size()/3);
-    
+    origin_in_pts_ = in_pts;
     if(use_octree_sample_)
     {
         auto t0 = Clock::now();
@@ -232,7 +232,7 @@ void LocalVipss::Init(const std::string & path, const std::string& ext)
         printf("Init octree sample time : %f s ! \n", sample_time);
     } else {
         Init(in_pts);
-    } 
+    }   
 }
 
 void LocalVipss::Init(const std::vector<double>& in_pts)

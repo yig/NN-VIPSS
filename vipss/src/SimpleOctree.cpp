@@ -204,6 +204,11 @@ void SimpleOctree::InitOctTree(const std::vector<double>& pts, int depth)
     root_node_->bbox_.GetCornersFromPts(pts);
     root_node_->depth_ = 0;
     max_depth_ = depth;
+    auto root_center = root_node_->GetCenter();
+    octree_centers_.push_back(root_center);
+    // octree_centers_.push_back(root_center[0]);
+    // octree_centers_.push_back(root_center[1]);
+    // octree_centers_.push_back(root_center[2]);
     // root_node_->bbox_.SaveBoxMesh("box_mesh.obj");
     std::cout << " start to divide octree  "  << std::endl;
     DivideNode(root_node_, new_ids);
@@ -223,6 +228,11 @@ void SimpleOctree::DivideNode(std::shared_ptr<TreeNode> node, const std::vector<
         node->childNodes[i]->parentNode = node;
         node->childNodes[i]->depth_ = node->depth_ + 1;
         node->childNodes[i]->bbox_ = child_boxes[i]; 
+        auto node_center = node->childNodes[i]->GetCenter();
+        octree_centers_.push_back(node_center);
+        // octree_centers_.push_back(node_center[0]);
+        // octree_centers_.push_back(node_center[1]);
+        // octree_centers_.push_back(node_center[2]);
         auto& cur_box = child_boxes[i]; 
         for(const auto pid : pids)
         {

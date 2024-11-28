@@ -189,6 +189,7 @@ class LocalVipss {
         // SimOctree::SimpleOctree octree_;
         std::vector<double> octree_leaf_pts_;
         std::vector<double> octree_split_leaf_pts_;
+        std::vector<double> origin_in_pts_;
         
     public:
         int max_group_iter_ = 12;

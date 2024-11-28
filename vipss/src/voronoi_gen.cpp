@@ -216,6 +216,35 @@ if(pt_num > 8)
     }
 }
 
+void VoronoiGen::InsertPts(const std::vector<std::array<double,3>>& insert_pts)
+{
+    size_t pt_num = insert_pts.size();
+    for(size_t i = 0; i < pt_num; ++i)
+    {
+        tetgenmesh::point newpt;
+        auto& temp_mesh = tetMesh_;
+        temp_mesh.makepoint(&newpt, tetgenmesh::VOLVERTEX);
+        newpt[0] = insert_pts[i][0];
+        newpt[1] = insert_pts[i][1];
+        newpt[2] = insert_pts[i][2];
+        tetgenmesh::insertvertexflags ivf;
+        ivf.bowywat = 1; // Use Bowyer-Watson algorithm
+        ivf.lawson = 0;
+        tetgenmesh::triface searchtet;
+        searchtet.tet = NULL;
+        ivf.iloc = (int) tetgenmesh::UNKNOWN;
+        auto t0 = Clock::now();
+        tetgenmesh::face *splitsh = NULL;
+        tetgenmesh::face *splitseg = NULL;
+        // temp_mesh.setpointtype(newpt, tetgenmesh::UNUSEDVERTEX);
+        if(temp_mesh.insertpoint(newpt, &searchtet, splitsh, splitseg,  &ivf))
+        {
+            
+        }
+        insert_boundary_pts_.insert(newpt);
+    }
+}
+
 void VoronoiGen::SetInsertBoundaryPtsToUnused()
 {
     for(auto pt : insert_boundary_pts_)

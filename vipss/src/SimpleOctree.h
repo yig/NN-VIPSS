@@ -50,6 +50,8 @@ class SimpleOctree{
         std::vector<double> GetLeafMapPts();
         std::vector<double> GetSplitLeafMapPts();
         void SplitLeafNode(int iter_num);
+        // void BuildOctreeCenters(int depth);
+
     private: 
         std::vector<double> GetLeafPts(LeafNodeMap& leaf_pids);
         LeafNodeMap SplitLeafNode(LeafNodeMap& leaf_pids);
@@ -65,6 +67,7 @@ class SimpleOctree{
         // std::vector<Point> leaf_pts_;
         // std::vector<Point> split_leaf_pts_;
         std::unordered_map<std::shared_ptr<TreeNode>, std::vector<size_t> > split_leaf_pids_;
+        std::vector<Point> octree_centers_;
 };
 
 }
