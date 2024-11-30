@@ -526,6 +526,7 @@ void VIPSSUnit::BuildNNHRBFFunctions()
             local_vipss_.normals_.push_back(gradient[1] );
             local_vipss_.normals_.push_back(gradient[2] );
         }
+        G_VP_stats.octree_dummy_pt_num_ = valid_pts.size();
         local_vipss_.voro_gen_.InsertPts(valid_pts);
         local_vipss_.voro_gen_.SetInsertBoundaryPtsToUnused();
         local_vipss_.voro_gen_.BuildTetMeshTetCenterMap();

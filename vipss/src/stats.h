@@ -33,6 +33,7 @@ struct VP_STATS {
     int pt_num_ = 0;
     int average_neighbor_num_ = 0;
     int average_cluster_size_ = 0;
+    int octree_dummy_pt_num_ = 0;
 };
 
 extern VP_STATS G_VP_stats; 
