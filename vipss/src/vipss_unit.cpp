@@ -475,13 +475,21 @@ void VIPSSUnit::BuildNNHRBFFunctions()
     {
         SimOctree::SimpleOctree octree;
         // std::cout << " start to init octree " << std::endl;
-        octree.InitOctTree(local_vipss_.origin_in_pts_, 3);
+        octree.InitOctTree(local_vipss_.origin_in_pts_, 2);
         std::cout << " insert octree center pts num : " << octree.octree_centers_.size() << std::endl; 
         octree_sample_pts = octree.octree_centers_;
         // local_vipss_.voro_gen_.InsertPts(octree.octree_centers_);
     }
     local_vipss_.voro_gen_.GenerateVoroData();
     local_vipss_.voro_gen_.SetInsertBoundaryPtsToUnused();
+    auto& dummy_map = local_vipss_.voro_gen_.dummy_pt_dist_vals_map_;
+    // for(auto pt : local_vipss_.voro_gen_.insert_boundary_pts_)
+    // {
+    //     double dist_val = LocalVipss::NNDistFunction(R3Pt(pt[0], pt[1], pt[2]));
+    //     std::cout << " dummy pt dist val : " <<
+    //     dummy_map[pt] = dist_val;
+    // }
+    local_vipss_.voro_gen_.insert_boundary_pts_.clear();
     auto t001 = Clock::now();
     G_VP_stats.generate_voro_data_time_ = std::chrono::nanoseconds(t001 - t000).count() / 1e9;
     // G_VP_stats.generate_voro_data_time_ = generate_voro_data_time
@@ -500,11 +508,13 @@ void VIPSSUnit::BuildNNHRBFFunctions()
         std::vector<double> insert_pt_func_vals;
         std::vector<double> insert_pt_func_gradients;
         std::vector<std::array<double,3>> valid_pts;
+        std::vector<double> dummy_dist_vals; 
         for(auto pt : octree_sample_pts)
         {
             double dist_val = LocalVipss::NNDistFunction(R3Pt(pt[0], pt[1], pt[2]));
-            if(abs(dist_val) < 0.25) continue;
+            if(abs(dist_val) < 0.2) continue;
             valid_pts.push_back(pt);
+            dummy_dist_vals.push_back(dist_val);
 
             // std::cout << " dist val  : " << dist_val << std::endl;
             local_vipss_.s_vals_.push_back(dist_val);
@@ -530,6 +540,11 @@ void VIPSSUnit::BuildNNHRBFFunctions()
         local_vipss_.voro_gen_.InsertPts(valid_pts);
         local_vipss_.voro_gen_.SetInsertBoundaryPtsToUnused();
         local_vipss_.voro_gen_.BuildTetMeshTetCenterMap();
+        
+        for(int i = 0; i < valid_pts.size(); ++i)
+        {
+            dummy_map[local_vipss_.voro_gen_.insert_boundary_pts_[i]] = dummy_dist_vals[i];
+        }
         // std::cout << "finish BuildTetMeshTetCenterMap " << std::endl;
         local_vipss_.voro_gen_.BuildPicoTree();
         local_vipss_.voro_gen_.voronoi_data_.clean_memory();

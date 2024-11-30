@@ -64,6 +64,7 @@ class SimpleOctree{
         std::shared_ptr<TreeNode> root_node_;
         // std::vector<Point> pts_;
         int max_depth_ = 6; 
+        bool sample_dummy_pts_ = false;
         // std::vector<Point> leaf_pts_;
         // std::vector<Point> split_leaf_pts_;
         std::unordered_map<std::shared_ptr<TreeNode>, std::vector<size_t> > split_leaf_pids_;

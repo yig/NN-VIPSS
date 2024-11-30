@@ -708,12 +708,14 @@ double LocalVipss::NatureNeighborDistanceFunctionOMP(const tetgenmesh::point cur
     arma::vec nn_volume_vec_(nn_num);
     ave_voxel_nn_pt_num_ += nn_num;
     const std::vector<double*>& all_pts = points_;
+    arma::vec dummy_vals(nn_num);
 
 #pragma omp parallel for 
-// shared(node_rbf_vec_, voro_gen_, VoronoiGen::point_id_map_, nei_pts, cur_pt, nn_dist_vec_, nn_volume_vec_) private(i)
+// shared(node_rbf_vec_, voro_gen_, VoronoiGen::point_id_map_, nei_pts, cur_pt, nn_dist_vec_, nn_volume_vec_) private(i)    
     for( i = 0; i < nn_num; ++i)
     {
         auto nn_pt = nei_pts[i];
+
         if(VoronoiGen::point_id_map_.find(nn_pt) != VoronoiGen::point_id_map_.end())
         {
             size_t pid = VoronoiGen::point_id_map_[nn_pt];
@@ -732,6 +734,11 @@ double LocalVipss::NatureNeighborDistanceFunctionOMP(const tetgenmesh::point cur
             int thread_id = omp_get_thread_num();
             // nn_volume_vec_[i] = 1.0;
             nn_volume_vec_[i] = voro_gen_.CalTruncatedCellVolumePassOMP(cur_pt, nn_pt, thread_id); 
+        } else {
+            if(voro_gen_.dummy_pt_dist_vals_map_.find(nn_pt) != voro_gen_.dummy_pt_dist_vals_map_.end())
+            {
+                dummy_vals[i] =  voro_gen_.dummy_pt_dist_vals_map_[nn_pt];
+            }
         }
     }
     auto t1 = Clock::now();
@@ -739,10 +746,13 @@ double LocalVipss::NatureNeighborDistanceFunctionOMP(const tetgenmesh::point cur
     pass_time_sum_ += pass_time;
 
     double volume_sum = arma::accu(nn_volume_vec_);
-    if(volume_sum > 1e-20)
+    if(volume_sum > 1e-16)
     {
         return arma::dot(nn_dist_vec_, nn_volume_vec_) / volume_sum;
-    }
+    } 
+    // else {
+    //     return arma::accu(dummy_vals) / double(nn_num);
+    // }
     return 0;
 }
 

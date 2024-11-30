@@ -143,7 +143,9 @@ class VoronoiGen{
         std::vector<double> tet_center_pts_;
         std::unordered_map<int, tetgenmesh::tetrahedron*> tc_pt_tet_map_;
         std::vector<tetgenmesh::point> points_;
-        std::unordered_set<tetgenmesh::point> insert_boundary_pts_;
+        // std::unordered_set<tetgenmesh::point> insert_boundary_pts_;
+        std::vector<tetgenmesh::point> insert_boundary_pts_;
+        std::unordered_map<tetgenmesh::point, double> dummy_pt_dist_vals_map_;
 
         // std::unordered_map<int, double> vcell_pt_sign_values_;
         std::vector<double> vpt_sign_vals_;

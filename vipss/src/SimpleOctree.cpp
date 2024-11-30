@@ -242,7 +242,7 @@ void SimpleOctree::DivideNode(std::shared_ptr<TreeNode> node, const std::vector<
                 child_pids.push_back(pid);
             } 
         }
-        if(node->childNodes[i]->depth_ == max_depth_ || child_pids.empty())
+        if(node->childNodes[i]->depth_ == max_depth_ || (!sample_dummy_pts_ && child_pids.empty()))
         {
             node->childNodes[i]->is_leaf_ = true;
             leaf_pids_[node->childNodes[i]] = child_pids;

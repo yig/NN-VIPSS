@@ -99,7 +99,7 @@ void VoronoiGen::InsertSphereBoundryPts()
         {
             // printf(" %ld insertion succeeded ! \n", i);
         }
-        insert_boundary_pts_.insert(newpt);
+        insert_boundary_pts_.push_back(newpt);
     }
 
 }
@@ -212,7 +212,7 @@ if(pt_num > 8)
         {
             
         }
-        insert_boundary_pts_.insert(newpt);
+        insert_boundary_pts_.push_back(newpt);
     }
 }
 
@@ -241,7 +241,7 @@ void VoronoiGen::InsertPts(const std::vector<std::array<double,3>>& insert_pts)
         {
             
         }
-        insert_boundary_pts_.insert(newpt);
+        insert_boundary_pts_.push_back(newpt);
     }
 }
 
@@ -251,7 +251,7 @@ void VoronoiGen::SetInsertBoundaryPtsToUnused()
     {
         tetMesh_.setpointtype(pt, tetgenmesh::UNUSEDVERTEX);
     }
-    insert_boundary_pts_.clear();
+    // insert_boundary_pts_.clear();
 }
 
 void VoronoiGen::Tetrahedralize()
