@@ -1582,7 +1582,8 @@ void WriteStatsTimeCSV(const std::string& path, const VP_STATS& vp_stats)
     if(csv_file)
     {
         csv_file << "pt num, " << vp_stats.pt_num_ << std::endl;
-        csv_file << "ave neig num, " << vp_stats.average_neighbor_num_ << std::endl;
+        csv_file << "ave evaluate nn num, " << vp_stats.average_neighbor_num_ << std::endl;
+        csv_file << "ave cluster size, " << vp_stats.average_cluster_size_ << std::endl;
         csv_file << "tetgen triangulation, " << vp_stats.tetgen_triangulation_time_ << std::endl;
         csv_file << "init normal, " << vp_stats.init_normal_total_time_ << std::endl;
         // csv_file << " cal cluster scores time : " << vp_stats.cal_cluster_neigbor_scores_time_ << std::endl;

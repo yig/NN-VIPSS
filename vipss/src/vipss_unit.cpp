@@ -610,7 +610,7 @@ void VIPSSUnit::BuildNNHRBFFunctions()
     auto t003 = Clock::now();
     // double build_nn_rbf_time  
     G_VP_stats.build_nn_rbf_time_ = std::chrono::nanoseconds(t003 - t001).count() / 1e9;
-    G_VP_stats.average_neighbor_num_ = local_vipss_.voro_gen_.average_neighbor_num_;
+    G_VP_stats.average_cluster_size_ = local_vipss_.voro_gen_.average_neighbor_num_;
     G_VP_stats.pt_num_ = local_vipss_.points_.size();
 }
 
@@ -652,6 +652,7 @@ void VIPSSUnit::ReconSurface()
         G_VP_stats.cal_nn_coordinate_and_hbrf_time_ += local_vipss_.pass_time_sum_;
         G_VP_stats.voxel_cal_num += LocalVipss::DistCallNum;
         G_VP_stats.nn_evaluate_count_ = LocalVipss::DistCallNum;
+        G_VP_stats.average_neighbor_num_ = LocalVipss::ave_voxel_nn_pt_num_ / LocalVipss::DistCallNum;
         // G_VP_stats.surface_total_time_ += total_surface_time;
         G_VP_stats.surface_total_time_ = total_surface_time;
 

@@ -32,6 +32,7 @@ struct VP_STATS {
     double tetgen_triangulation_time_ = 0;
     int pt_num_ = 0;
     int average_neighbor_num_ = 0;
+    int average_cluster_size_ = 0;
 };
 
 extern VP_STATS G_VP_stats; 
