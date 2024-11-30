@@ -2,6 +2,7 @@
 
 void PicoTree::Init(const std::vector<double>& in_pts)
 {
+    points_.clear();
     for(size_t i = 0; i < in_pts.size()/3; ++i)
     {
         std::array<data_type, 3> pt{in_pts[3*i], in_pts[3*i + 1], in_pts[3*i + 2]};

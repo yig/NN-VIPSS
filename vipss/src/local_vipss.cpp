@@ -591,7 +591,6 @@ void LocalVipss::BuildHRBFPerNode()
 {
     auto t00 = Clock::now(); 
 // if(0)
-    
     size_t npt = this->points_.size();
     printf("cluster num : %lu \n", npt);
     size_t cluster_num = cluster_cores_mat_.n_cols;
@@ -599,7 +598,6 @@ void LocalVipss::BuildHRBFPerNode()
     node_rbf_vec_.resize(cluster_num);
     bool use_partial_vipss = false;
     vipss_api_.user_lambda_ = user_lambda_;
-
     // printf("cluster num : %lu \n", cluster_num);
 #pragma omp parallel for 
     for(int i =0; i < cluster_num; ++i)
@@ -622,7 +620,6 @@ void LocalVipss::BuildHRBFPerNode()
         node_rbf_vec_[i] = std::make_shared<RBF_Core>();
         vipss_api_.build_cluster_hrbf(cluster_pt_vec, cluster_nl_vec, cluster_sv_vec, node_rbf_vec_[i]);
     }
-
     auto t11 = Clock::now();
     double build_HRBF_time_total = std::chrono::nanoseconds(t11 - t00).count()/1e9;
     printf("--- build_HRBF_time_total sum  time : %f \n", build_HRBF_time_total);
@@ -720,11 +717,16 @@ double LocalVipss::NatureNeighborDistanceFunctionOMP(const tetgenmesh::point cur
         if(VoronoiGen::point_id_map_.find(nn_pt) != VoronoiGen::point_id_map_.end())
         {
             size_t pid = VoronoiGen::point_id_map_[nn_pt];
+            // std::cout << " n id 1111  " << pid << std::endl;
             const arma::vec& a = node_rbf_vec_[pid]->a;
             const arma::vec& b = node_rbf_vec_[pid]->b;
             const std::vector<size_t>& cluster_pids = VoronoiGen::cluster_init_pids_[pid];
-            // std::cout << " n id " << pid << std::endl;
+            // std::cout << " n id 2222  " << pid << std::endl;
+
+            // std::cout << " cluster_pids size  " << cluster_pids.size() << std::endl;
+            // std::cout << " all_pts size  " << all_pts.size() << std::endl;
             nn_dist_vec_[i] = HRBF_Dist_Alone(cur_pt,  a, b, cluster_pids, all_pts);
+            // std::cout << " n id dist   " << nn_dist_vec_[i] << std::endl;
             // nn_dist_vec_[i] = 1;
             // nn_dist_vec_[i] = node_rbf_vec_[pid]->Dist_Function(cur_pt);
             int thread_id = omp_get_thread_num();

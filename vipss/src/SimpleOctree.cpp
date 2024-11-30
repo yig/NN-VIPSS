@@ -179,7 +179,6 @@ void OctBBox::GetCornersFromPts(const Point& p1,const Point& p2)
     max_pt_[2] = p1[2] > p2[2] ? p1[2] : p2[2];
 }
 
-
 std::array<double,3> TreeNode::GetCenter() const
 {
     std::array<double,3> center;

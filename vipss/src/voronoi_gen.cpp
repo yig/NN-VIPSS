@@ -251,6 +251,7 @@ void VoronoiGen::SetInsertBoundaryPtsToUnused()
     {
         tetMesh_.setpointtype(pt, tetgenmesh::UNUSEDVERTEX);
     }
+    insert_boundary_pts_.clear();
 }
 
 void VoronoiGen::Tetrahedralize()
@@ -1216,6 +1217,8 @@ void VoronoiGen::BuildTetMeshTetCenterMap()
     tetface.tet = tetMesh_.alltetrahedrontraverse();
     size_t tet_count = 0;
     tetgenmesh::point torg, tdest, tapex, toppo;
+    tet_center_pts_.clear();
+    tc_pt_tet_map_.clear();
     while(tetface.tet != (tetgenmesh::tetrahedron*)(NULL))
     {
         torg = tetMesh_.org(tetface);

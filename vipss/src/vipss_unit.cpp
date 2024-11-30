@@ -470,13 +470,15 @@ void VIPSSUnit::OptUnitVipssNormal(){
 void VIPSSUnit::BuildNNHRBFFunctions()
 {
     auto t000 = Clock::now();
+    std::vector<std::array<double,3>> octree_sample_pts;
     if(make_nn_const_neighbor_num_)
     {
         SimOctree::SimpleOctree octree;
         // std::cout << " start to init octree " << std::endl;
-        octree.InitOctTree(local_vipss_.origin_in_pts_, 2);
+        octree.InitOctTree(local_vipss_.origin_in_pts_, 3);
         std::cout << " insert octree center pts num : " << octree.octree_centers_.size() << std::endl; 
-        local_vipss_.voro_gen_.InsertPts(octree.octree_centers_);
+        octree_sample_pts = octree.octree_centers_;
+        // local_vipss_.voro_gen_.InsertPts(octree.octree_centers_);
     }
     local_vipss_.voro_gen_.GenerateVoroData();
     local_vipss_.voro_gen_.SetInsertBoundaryPtsToUnused();
@@ -492,6 +494,119 @@ void VIPSSUnit::BuildNNHRBFFunctions()
     local_vipss_.user_lambda_ = user_lambda_;
     local_vipss_.BuildHRBFPerNode();
     local_vipss_.SetThis(); 
+    make_nn_const_neighbor_num_ = true;
+    if(make_nn_const_neighbor_num_)
+    {
+        std::vector<double> insert_pt_func_vals;
+        std::vector<double> insert_pt_func_gradients;
+        std::vector<std::array<double,3>> valid_pts;
+        for(auto pt : octree_sample_pts)
+        {
+            double dist_val = LocalVipss::NNDistFunction(R3Pt(pt[0], pt[1], pt[2]));
+            if(abs(dist_val) < 0.25) continue;
+            valid_pts.push_back(pt);
+
+            // std::cout << " dist val  : " << dist_val << std::endl;
+            local_vipss_.s_vals_.push_back(dist_val);
+            double gradient[3];
+            local_vipss_.NatureNeighborGradientOMP(&pt[0], gradient);
+            // std::cout << " gradient val  : " << gradient[0] << " " << gradient[1] << " " << gradient[2] << std::endl;
+            // double step = 1e-8;
+            // double val_x_p = LocalVipss::NNDistFunction(R3Pt(pt[0] + step, pt[1], pt[2]));
+            // double val_x_n = LocalVipss::NNDistFunction(R3Pt(pt[0] - step, pt[1], pt[2]));
+            // double dx = (val_x_p - val_x_n) / (2.0 * step);
+            // double val_y_p = LocalVipss::NNDistFunction(R3Pt(pt[0], pt[1] + step, pt[2]));
+            // double val_y_n = LocalVipss::NNDistFunction(R3Pt(pt[0], pt[1] - step, pt[2]));
+            // double dy = (val_y_p - val_y_n) / (2.0 * step);
+            // double val_z_p = LocalVipss::NNDistFunction(R3Pt(pt[0], pt[1], pt[2] + step));
+            // double val_z_n = LocalVipss::NNDistFunction(R3Pt(pt[0], pt[1], pt[2] - step));
+            // double dz = (val_z_p - val_z_n) / (2.0 * step);
+            // double len = sqrt(gradient[0] * gradient[0] + gradient[1] * gradient[1] + gradient[2] * gradient[2]);
+            local_vipss_.normals_.push_back(gradient[0] );
+            local_vipss_.normals_.push_back(gradient[1] );
+            local_vipss_.normals_.push_back(gradient[2] );
+        }
+        local_vipss_.voro_gen_.InsertPts(valid_pts);
+        local_vipss_.voro_gen_.SetInsertBoundaryPtsToUnused();
+        local_vipss_.voro_gen_.BuildTetMeshTetCenterMap();
+        // std::cout << "finish BuildTetMeshTetCenterMap " << std::endl;
+        local_vipss_.voro_gen_.BuildPicoTree();
+        local_vipss_.voro_gen_.voronoi_data_.clean_memory();
+        local_vipss_.voro_gen_.tetMesh_.generate_voronoi_cell(&(local_vipss_.voro_gen_.voronoi_data_));
+
+
+    if(0)
+    {
+        const auto& insert_pts = local_vipss_.voro_gen_.insert_boundary_pts_;
+        std::vector<tetgenmesh::point> octree_insert_pts;
+        for(auto pt : insert_pts)
+        {
+            int new_pid = local_vipss_.points_.size();
+            local_vipss_.points_.push_back(pt);
+            local_vipss_.voro_gen_.point_id_map_[pt] = new_pid;
+            octree_insert_pts.push_back(pt);
+        }
+        std::cout << "octree_insert_pts size : " << octree_insert_pts.size() << std::endl;
+        // for(auto pt : local_vipss_.voro_gen_.insert_boundary_pts_)
+        int cluster_sum = 0;
+        local_vipss_.voro_gen_.cluster_init_pids_.clear();
+        local_vipss_.node_rbf_vec_.clear();
+        // local_vipss_.node_rbf_vec_.resize(local_vipss_.points_.size());
+        for(int i =0; i < local_vipss_.points_.size(); ++i)
+        {
+            // std::cout << " re build nn id " << i << std::endl;
+            auto cur_pt = local_vipss_.points_[i];
+            std::set<tetgenmesh::point> candidate_pts;
+            local_vipss_.voro_gen_.GetVertexStar(cur_pt, candidate_pts, 1);
+            std::vector<size_t> cluster_pt_ids;
+            cluster_pt_ids.push_back(local_vipss_.voro_gen_.point_id_map_[cur_pt]);
+            // std::vector<double> cluster_nl_vec;
+            // std::vector<double> cluster_sv_vec;
+            std::vector<double> cluster_pt_vec;
+            cluster_pt_vec.push_back(cur_pt[0]);
+            cluster_pt_vec.push_back(cur_pt[1]);
+            cluster_pt_vec.push_back(cur_pt[2]);
+            for(auto nn_pt : candidate_pts)
+            {
+                if( nn_pt == cur_pt) continue;
+                cluster_pt_ids.push_back(local_vipss_.voro_gen_.point_id_map_[nn_pt]);
+                cluster_pt_vec.push_back(nn_pt[0]);
+                cluster_pt_vec.push_back(nn_pt[1]);
+                cluster_pt_vec.push_back(nn_pt[2]);
+            }
+            cluster_sum += cluster_pt_ids.size();
+            // std::vector<size_t> cluster_pids_vec(cluster_pt_ids.begin(), cluster_pt_ids.end()); 
+            local_vipss_.voro_gen_.cluster_init_pids_.push_back(cluster_pt_ids);
+            auto cluster_nl_vec = local_vipss_.GetClusterNormalsFromIds(cluster_pt_ids, local_vipss_.normals_);
+            auto cluster_sv_vec = local_vipss_.GetClusterSvalsFromIds(cluster_pt_ids, local_vipss_.s_vals_);            
+            auto new_rbf = std::make_shared<RBF_Core>();
+            local_vipss_.node_rbf_vec_.push_back(new_rbf);
+            local_vipss_.vipss_api_.build_cluster_hrbf(cluster_pt_vec, cluster_nl_vec, cluster_sv_vec, new_rbf);
+        }
+        int ave_cluster_size = int(double(cluster_sum) / double(local_vipss_.points_.size()));
+
+        std::cout << " ------ ave cluster size " << ave_cluster_size << std::endl;
+
+        local_vipss_.voro_gen_.BuildTetMeshTetCenterMap();
+        // std::cout << "finish BuildTetMeshTetCenterMap " << std::endl;
+        local_vipss_.voro_gen_.BuildPicoTree();
+        // std::cout << "finish BuildPicoTree " << std::endl;
+        local_vipss_.voro_gen_.voronoi_data_.clean_memory();
+        // std::cout << "start to generate_voronoi_cell " << std::endl;
+        // local_vipss_.voro_gen_.tetMesh_.generate_voronoi_cell(&(local_vipss_.voro_gen_.voronoi_data_));
+        // local_vipss_.voro_gen_.voronoi_data_ = std::make_shared<tetgenio>(); 
+        local_vipss_.voro_gen_.tetMesh_.generate_voronoi_cell(&(local_vipss_.voro_gen_.voronoi_data_));
+
+        std::cout << "start to evaluate insert pt dist func vals " << std::endl;
+        for(int i = 0; i < octree_sample_pts.size(); ++i)
+        {
+            R3Pt cur_pt(octree_sample_pts[i][0], octree_sample_pts[i][1], octree_sample_pts[i][2]);
+            double dist_val = LocalVipss::NNDistFunction(cur_pt);
+            std::cout << " dist val  : " << dist_val << std::endl;
+        }
+    }
+
+    }
     auto t003 = Clock::now();
     // double build_nn_rbf_time  
     G_VP_stats.build_nn_rbf_time_ = std::chrono::nanoseconds(t003 - t001).count() / 1e9;

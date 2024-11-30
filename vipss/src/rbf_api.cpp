@@ -343,18 +343,29 @@ double HRBF_Dist_Alone(const double* in_pt, const arma::vec& a, const arma::vec&
     int key_npt = npt;
     double G[3];
     arma::vec kern(npt + 3 * key_npt);
+    // std::cout << "  start dist pt size  " << npt << std::endl;
     for(int i=0;i<npt;++i) kern(i) = VIPSSKernel::XCube_Kernel_2p(all_pts[cluster_pids[i]], in_pt);
+    // std::cout << "  XCube_Kernel_2p " << std::endl;
     for(int i=0;i<key_npt;++i){
         VIPSSKernel::XCube_Gradient_Kernel_2p(in_pt, all_pts[cluster_pids[i]],G);
         for(int j=0;j<3;++j)kern(npt+i+j*key_npt) = G[j];
     }
+    // kern.save("kern.txt", arma::arma_ascii);
+    // a.save("a.txt",  arma::arma_ascii);
+    // std::cout << " a vec size " << a.size() << std::endl; 
+    // std::cout << " kern vec size " << kern.size() << std::endl; 
+    // std::cout << "  XCube_Gradient_Kernel_2p " << std::endl;
+    
     double loc_part = arma::dot(kern,a);
+
+    // std::cout << "  loc_part " << loc_part << std::endl;
     arma::vec kb(4);
     for(int i=0;i<3;++i) {
         kb(i+1) = in_pt[i];
     }
     kb(0) = 1;
     double poly_part = arma::dot(kb,b);
+    // std::cout << "  poly_part " << poly_part << std::endl;
     double re = loc_part + poly_part;
     return re;
 }
