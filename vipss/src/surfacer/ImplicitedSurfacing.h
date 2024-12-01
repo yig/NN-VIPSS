@@ -20,6 +20,7 @@ public:
    std::vector<uint>all_fv;
 
    R3Pt st;
+   R3Pt center;
    double dSize;
    int iBound;
 

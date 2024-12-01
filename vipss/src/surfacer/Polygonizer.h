@@ -28,6 +28,7 @@ bool polygonize (
    double size,
 	int bounds,
    const R3Pt &in_ptStart,
+   const R3Pt &volume_center,
 	int (*triproc)(int i1, int i2, int i3, VERTICES vertices),
 	void (*vertproc)(VERTICES vertices)	
 	);

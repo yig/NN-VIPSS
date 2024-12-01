@@ -54,10 +54,11 @@ void Surfacer::CalSurfacingPara(vector<double>&Vs, int nvoxels){
 
    }else{
        for(int j=0;j<3;++j){
-           st[j] = midpoint[j];
-         //   st[j] = Vs[j];
+         //   st[j] = midpoint[j];
+           st[j] = Vs[j];
+           center[j] = midpoint[j];
        }
-       iBound = (int) (width / dSize / 2. * 1.5);
+       iBound = (int) (width / dSize / 2. * 1.2);
 
    }
 
@@ -70,23 +71,14 @@ double Surfacer::Surfacing_Implicit(vector<double>&Vs,int n_voxels, bool ischeck
 
    p_ImplicitSurfacer = this;
    ClearBuffer();
-
    CalSurfacingPara(Vs, n_voxels);
-
-
    //polygonize(function, size, bounds, st, triproc, vertproc);
    double thresDist = 1e-3;
-
    double re_time;
    cout<<"Implicit Surfacing: "<<endl;
-
    auto t1 = Clock::now();
-
-
-
-
    if(!ischeckall){
-       polygonize(function, dSize, iBound, st, TriProc, VertProc);
+       polygonize(function, dSize, iBound, st, center, TriProc, VertProc);
        GetCurSurface(all_v,all_fv);
    }else{
        cout << "Deprecated, Please seek to CGAL implicit surfacer for surfaces with multiple connected components" <<endl;

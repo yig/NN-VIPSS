@@ -123,11 +123,13 @@ typedef struct intlists {          /* list of list of integers */
 typedef struct process {           /* parameters, function, storage */
    double (*function)
      (const R3Pt &in_pt);         /* implicit surface function */
+    //  double (*function) (const R3Pt &in_pt);         /* implicit surface function */
    int (*triproc)(int i1, int i2,
      int i3, VERTICES vertices);  /* triangle output function */
    double size, delta;             /* cube size, normal delta */
    int bounds;                    /* cube range within lattice */
    R3Pt start;                   /* start point on surface */
+   R3Pt volume_center;
    CUBES *cubes;                  /* active cubes */
    VERTICES vertices;             /* surface vertices */
    CENTERLIST **centers;          /* cube center hash table */
@@ -474,6 +476,7 @@ bool polygonize (
    double size,
    int bounds,
    const R3Pt &in_pt,
+   const R3Pt &volume_center,
    int (*triproc)(int i1, int i2, int i3, VERTICES vertices),
 	void (*vertproc)(VERTICES vertices))
    {
@@ -486,6 +489,7 @@ bool polygonize (
    p.size = size;
    p.bounds = bounds;
    p.delta = size/(double)(RES*RES);
+   p.volume_center = volume_center;
 
    /* allocate hash tables: */
    p.centers = (CENTERLIST **) mycalloc(HSIZE, sizeof(CENTERLIST *));
@@ -510,15 +514,26 @@ bool polygonize (
 
    /* push initial cube on stack: */
    p.cubes = (CUBES *) mycalloc(1, sizeof(CUBES)); /* list of 1 */
-   p.cubes->cube.i = p.cubes->cube.j = p.cubes->cube.k = 0;
+   p.cubes->cube.i = ceil((in_pt[0] - volume_center[0]) / size );   
+   p.cubes->cube.j = ceil ((in_pt[1] - volume_center[1]) / size ); 
+   p.cubes->cube.k = ceil ((in_pt[2] - volume_center[2]) / size ); 
+   std::cout << "voxel len  " << size << std::endl;
+
+   std::cout << "index : " << p.cubes->cube.i << " " 
+                            << p.cubes->cube.j << " "
+                            << p.cubes->cube.k << std::endl;
    p.cubes->next = NULL;
+    // std::cout << "center " << volume_center[0] << " " << volume_center[1] << " " << volume_center[2] << std::endl;
+    // std::cout << "start " << in_pt[0] << " " << in_pt[1] << " " << in_pt[2] << std::endl;
 
    /* set corners of initial cube: */
    for (n = 0; n < 8; n++)
        p.cubes->cube.corners[n] = \
-           setcorner(&p, BIT(n,2), BIT(n,1), BIT(n,0));
+           setcorner(&p, BIT(n,2) + p.cubes->cube.i, BIT(n,1) + p.cubes->cube.j, BIT(n,0) + p.cubes->cube.k);
 
-   setcenter(p.centers, 0, 0, 0);
+    // return false;
+//    setcenter(p.centers, p.cubes->cube.i, p.cubes->cube.j, p.cubes->cube.k);
+    setcenter(p.centers, 0, 0, 0);
 
    while (p.cubes != NULL) { /* process active cubes till none left */
        CUBE c;
@@ -608,11 +623,19 @@ void testface (
    /* test if  no surface crossing, cube out of bounds, or prev. visited? */
    if ((old->corners[c2]->value > 0) == pos &&
        (old->corners[c3]->value > 0) == pos &&
-       (old->corners[c4]->value > 0) == pos) return;
+       (old->corners[c4]->value > 0) == pos) 
+    {
+        // std::cout << " check test face sign not failed and return 000" << std::endl;
+        return;
+    }
    if (abs(i) > p->bounds || abs(j) > p->bounds || abs(k) > p->bounds)
-       return;
+   {
+    //  std::cout << " check test face sign not failed and return " << std::endl;
+     return;
+   }
+       
    if (setcenter(p->centers, i, j, k)) return;
-
+//    std::cout << " check test face sign not failed and return " << std::endl;
    /* create new cube: */
    cubeNew.i = i;
    cubeNew.j = j;
@@ -636,11 +659,11 @@ void testface (
 /* setpoint: set point location given lattice location */
 
 void setpoint (R3Pt &out_pt, int i, int j, int k, PROCESS *p) 
-
 {
-   out_pt[0] = p->start[0]+((double)i-0.5) * p->size;
-   out_pt[1] = p->start[1]+((double)j-0.5) * p->size;
-   out_pt[2] = p->start[2]+((double)k-0.5) * p->size;
+    // std::cout << " set pt id : " <<i <<" " << j << " " << k << std::endl;
+   out_pt[0] = p->volume_center[0]+((double)i-0.5) * p->size;
+   out_pt[1] = p->volume_center[1]+((double)j-0.5) * p->size;
+   out_pt[2] = p->volume_center[2]+((double)k-0.5) * p->size;
 }
 
 
@@ -659,7 +682,9 @@ CORNERLIST *setcorner (PROCESS *p, int i, int j, int k) {
    setpoint (pt, i, j, k, p);
    l = (CORNERLIST *) mycalloc(1, sizeof(CORNERLIST));
    l->i = i; l->j = j; l->k = k;
+//    std::cout << " corner pt : " << pt[0] << " " << pt[1] << " " << pt[2] << std::endl;
    l->value = p->function(pt);
+//    std::cout << " corner dist val : " << l->value << std::endl;
    l->next = p->corners[index];
    p->corners[index] = l;
    return l;
@@ -756,7 +781,6 @@ char *mycalloc (int nitems, int nbytes) {
 
 /* setcenter: set (i,j,k) entry of table[]
 * return 1 if already set; otherwise, set and return 0 */
-
 int setcenter(CENTERLIST *table[], int i, int j, int k) {
    int index = HASH(i, j, k);
    CENTERLIST *centerListNew, *l, *q = table[index];
