@@ -681,15 +681,15 @@ void LocalVipss::BuildHRBFPerCluster()
     printf("average cluster core pt num : %d \n", valid_core_pt_count/int(valid_cluster_num));
 }
 
-double LocalVipss::NodeDistanceFunction(const tetgenmesh::point nn_pt, const tetgenmesh::point cur_pt) const
-{
-    if(voro_gen_.point_id_map_.find(nn_pt) != voro_gen_.point_id_map_.end())
-    {
-        size_t pid = voro_gen_.point_id_map_[nn_pt];
-        return node_rbf_vec_[pid]->Dist_Function(cur_pt);
-    } 
-    return 0;
-}
+// double LocalVipss::NodeDistanceFunction(const tetgenmesh::point nn_pt, const tetgenmesh::point cur_pt) const
+// {
+//     if(voro_gen_.point_id_map_.find(nn_pt) != voro_gen_.point_id_map_.end())
+//     {
+//         size_t pid = voro_gen_.point_id_map_[nn_pt];
+//         return node_rbf_vec_[pid]->Dist_Function(cur_pt);
+//     } 
+//     return 0;
+// }
 
 double LocalVipss::NatureNeighborDistanceFunctionOMP(const tetgenmesh::point cur_pt) const
 {
@@ -734,12 +734,13 @@ double LocalVipss::NatureNeighborDistanceFunctionOMP(const tetgenmesh::point cur
             int thread_id = omp_get_thread_num();
             // nn_volume_vec_[i] = 1.0;
             nn_volume_vec_[i] = voro_gen_.CalTruncatedCellVolumePassOMP(cur_pt, nn_pt, thread_id); 
-        } else {
-            if(voro_gen_.dummy_pt_dist_vals_map_.find(nn_pt) != voro_gen_.dummy_pt_dist_vals_map_.end())
-            {
-                dummy_vals[i] =  voro_gen_.dummy_pt_dist_vals_map_[nn_pt];
-            }
-        }
+        } 
+        // else {
+        //     if(voro_gen_.dummy_pt_dist_vals_map_.find(nn_pt) != voro_gen_.dummy_pt_dist_vals_map_.end())
+        //     {
+        //         dummy_vals[i] =  voro_gen_.dummy_pt_dist_vals_map_[nn_pt];
+        //     }
+        // }
     }
     auto t1 = Clock::now();
     double pass_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
@@ -779,7 +780,8 @@ double LocalVipss::NatureNeighborGradientOMP(const tetgenmesh::point cur_pt, dou
     ave_voxel_nn_pt_num_ += nn_num;
     const std::vector<double*>& all_pts = points_;
 
-#pragma omp parallel for shared(node_rbf_vec_, voro_gen_, VoronoiGen::point_id_map_, nei_pts, cur_pt, nn_dist_vec_, nn_volume_vec_) private(i)
+#pragma omp parallel for
+//  shared(node_rbf_vec_, voro_gen_, VoronoiGen::point_id_map_, nei_pts, cur_pt, nn_dist_vec_, nn_volume_vec_) private(i)
     for( i = 0; i < nn_num; ++i)
     {
         auto nn_pt = nei_pts[i];
@@ -866,7 +868,8 @@ void LocalVipss::InitNormalWithVipss()
     cluster_normal_y_.resize(npt, npt);
     cluster_normal_z_.resize(npt, npt);
     
-#pragma omp parallel for shared(VoronoiGen::cluster_init_pts_, VoronoiGen::cluster_init_pids_, VoronoiGen::cluster_accum_size_vec_)
+#pragma omp parallel for 
+// shared(VoronoiGen::cluster_init_pts_, VoronoiGen::cluster_init_pids_, VoronoiGen::cluster_accum_size_vec_)
     for(int i =0; i < int(cluster_num); ++i)
     {
         auto vts = VoronoiGen::cluster_init_pts_[i];

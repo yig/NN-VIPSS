@@ -6,6 +6,8 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++2a -O3")
 
 find_package (Eigen3 REQUIRED)
 find_package(NLopt REQUIRED)
+find_package(PicoTree REQUIRED)
+find_package(CLI11)
 # set(NLopt_LIB_DIR "")
 # set(NLopt_LIB ${NLOPT_LIBRARIES})
 # add_definitions(-w)

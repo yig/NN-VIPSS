@@ -572,7 +572,7 @@ bool polygonize (
    //Write();
    freeprocess(&p);
 
-   return NULL;
+   return true;
 }
 
 /* freeprocess: free all allocated memory */

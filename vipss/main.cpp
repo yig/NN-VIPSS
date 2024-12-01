@@ -112,6 +112,7 @@ int main(int argc, char** argv)
     } else {
         std::cout << "There is no valid input point path !" << std::endl;
     }
+    std::cout << "Success !" << std::endl;
     return 0;
 }
 

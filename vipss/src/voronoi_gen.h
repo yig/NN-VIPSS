@@ -157,7 +157,7 @@ class VoronoiGen{
         double truncated_face_center_[3];
 
         static const int MAX_ELEMENT_ = 1000;
-        static const int MAX_THREAD_NUM_ = 24;
+        static const int MAX_THREAD_NUM_ = 32;
         double* truncated_tets_omp_[MAX_THREAD_NUM_][MAX_ELEMENT_*2];
         double truncated_centers_omp_[MAX_THREAD_NUM_][3];
         double intersect_pts_omp_[MAX_THREAD_NUM_][MAX_ELEMENT_];
