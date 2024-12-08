@@ -18,6 +18,13 @@ typedef std::chrono::high_resolution_clock Clock;
 REAL cps = (REAL) CLOCKS_PER_SEC;
 // double M_PI  = 2*acos(0.0);
 
+const int MAX_ELEMENT_ = 1000;
+const int MAX_THREAD_NUM_ = 32;
+double* truncated_tets_omp_[MAX_THREAD_NUM_][MAX_ELEMENT_*2];
+double truncated_centers_omp_[MAX_THREAD_NUM_][3];
+double intersect_pts_omp_[MAX_THREAD_NUM_][MAX_ELEMENT_];
+int face_tet_count_omp_[MAX_THREAD_NUM_][MAX_ELEMENT_];
+
 void VoronoiGen::loadData(const std::string& path )
 {
 
@@ -128,6 +135,10 @@ void VoronoiGen::InsertBoundryPts()
 
     bbox_min_ = {min_x, min_y, min_z};
     bbox_max_ = {max_x, max_y, max_z};
+
+    dummy_sign_pt_[0] = (max_x + min_x) / 2.0 + (max_x - min_x) / 2.0 * (1 + 0.2);
+    dummy_sign_pt_[1] = (max_y + min_y) / 2.0 + (max_y - min_y) / 2.0 * (1 + 0.2);
+    dummy_sign_pt_[2] = (max_z + min_z) / 2.0 + (max_z - min_z) / 2.0 * (1 + 0.2);
 
     // bbox final_scale = scale + 1 
     double scale = 0.5;
@@ -251,7 +262,7 @@ void VoronoiGen::SetInsertBoundaryPtsToUnused()
     {
         tetMesh_.setpointtype(pt, tetgenmesh::UNUSEDVERTEX);
     }
-    // insert_boundary_pts_.clear();
+    insert_boundary_pts_.clear();
 }
 
 void VoronoiGen::Tetrahedralize()
@@ -304,7 +315,7 @@ void VoronoiGen::GenerateVoroData()
     // InsertBoundryPts();
 // 
     auto t0 = Clock::now();
-    InsertSphereBoundryPts();
+    // InsertSphereBoundryPts();
     InsertBoundryPts();
     
 

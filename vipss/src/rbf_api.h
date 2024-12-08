@@ -55,3 +55,6 @@ void InitNormalPartialVipss(std::vector<double> &Vs, size_t key_ptn, std::shared
 double HRBF_Dist_Alone(const double* in_pt, const arma::vec& a, const arma::vec& b, 
                 const std::vector<size_t>& cluster_pids, 
                 const std::vector<double*>& all_pts);
+
+double VIPSS_HRBF_Dist_Alone(const double* in_pt, const arma::vec& a, const arma::vec& b, 
+                                const std::vector<std::array<double,3>>& all_pts);

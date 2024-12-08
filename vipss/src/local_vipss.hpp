@@ -33,6 +33,12 @@ struct SP_BBOX{
     double max_corner[3];
 };
 
+// inline std::vector<double> GetClusterSvalsFromIds(const std::vector<size_t>& pt_ids, 
+//                         const std::vector<double>& all_svals);
+
+// inline std::vector<double> GetClusterNormalsFromIds
+//                             (const std::vector<size_t>& pt_ids, const std::vector<double>& all_normals); 
+         
 class LocalVipss {
 
     typedef tetgenmesh::point P3tr;
@@ -49,11 +55,11 @@ class LocalVipss {
         void Init(const std::vector<double>& in_pts);
 
         void BuildHRBFPerNode();
-        inline std::vector<double> GetClusterNormalsFromIds
-                            (const std::vector<size_t>& pt_ids, const std::vector<double>& all_normals) const;
+        // inline std::vector<double> GetClusterNormalsFromIds
+        //                     (const std::vector<size_t>& pt_ids, const std::vector<double>& all_normals) const;
 
-        inline std::vector<double> GetClusterSvalsFromIds(const std::vector<size_t>& pt_ids, 
-                        const std::vector<double>& all_svals) const; 
+        // inline std::vector<double> GetClusterSvalsFromIds(const std::vector<size_t>& pt_ids, 
+        //                 const std::vector<double>& all_svals) const; 
         inline std::vector<size_t> GetClusterCoreIds(size_t cluster_id) const;
         void InitNormalWithVipss();
 
@@ -224,4 +230,5 @@ class LocalVipss {
         int octree_sample_depth_ = 7;
         double tet_gen_triangulation_time_;
         double tet_build_adj_mat_time_;
+        double dummy_sign_ = 0;
 };

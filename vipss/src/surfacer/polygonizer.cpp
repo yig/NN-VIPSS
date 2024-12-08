@@ -619,15 +619,24 @@ void testface (
    static int facebit[6] = {2, 2, 1, 1, 0, 0};
    int n, pos = old->corners[c1]->value > 0.0 ? 1 : 0;
    int bit = facebit[face];
+   double dist_threshold = 0.005; 
+   
 
-   /* test if  no surface crossing, cube out of bounds, or prev. visited? */
-   if ((old->corners[c2]->value > 0) == pos &&
-       (old->corners[c3]->value > 0) == pos &&
-       (old->corners[c4]->value > 0) == pos) 
+        /* test if  no surface crossing, cube out of bounds, or prev. visited? */
+    if ((old->corners[c2]->value > 0) == pos &&
+        (old->corners[c3]->value > 0) == pos &&
+        (old->corners[c4]->value > 0) == pos) 
     {
-        // std::cout << " check test face sign not failed and return 000" << std::endl;
-        return;
+        if(abs(old->corners[c1]->value) > dist_threshold && abs(old->corners[c2]->value) > dist_threshold 
+        && abs(old->corners[c3]->value) > dist_threshold && abs(old->corners[c4]->value) > dist_threshold)
+        {
+            // std::cout << " check test face sign not failed and return 000" << std::endl;
+            return;
+        }
     }
+    
+
+   
    if (abs(i) > p->bounds || abs(j) > p->bounds || abs(k) > p->bounds)
    {
     //  std::cout << " check test face sign not failed and return " << std::endl;
@@ -675,7 +684,6 @@ CORNERLIST *setcorner (PROCESS *p, int i, int j, int k) {
    int index = HASH(i, j, k);
    CORNERLIST *l = p->corners[index];
    R3Pt pt;
-   
    for (; l != NULL; l = l->next)
        if (l->i == i && l->j == j && l->k == k) return l;
            
@@ -700,12 +708,8 @@ TEST find (int sign, PROCESS *p, const R3Pt &in_pt)
    double range = p->size;
    test.ok = 1;
    for (i = 0; i < 10000; i++) {
-
        const R3Vec vec(range*(RAND()-0.5), range*(RAND()-0.5), range*(RAND()-0.5));
-
        test.p = in_pt + vec;
-
-
        test.value = p->function(test.p);
        if (sign == (test.value > 0.0)) return test;
        range = range*1.0005; /* slowly expand search outwards */

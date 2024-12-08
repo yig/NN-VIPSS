@@ -31,9 +31,10 @@ struct VP_STATS {
     int nn_evaluate_count_ = 0;
     double tetgen_triangulation_time_ = 0;
     int pt_num_ = 0;
-    int average_neighbor_num_ = 0;
-    int average_cluster_size_ = 0;
+    double average_neighbor_num_ = 0;
+    double average_cluster_size_ = 0;
     int octree_dummy_pt_num_ = 0;
+    double octree_pt_gradient_cal_time_ = 0; 
 };
 
 extern VP_STATS G_VP_stats; 

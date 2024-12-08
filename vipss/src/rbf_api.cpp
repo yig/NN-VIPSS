@@ -356,7 +356,59 @@ double HRBF_Dist_Alone(const double* in_pt, const arma::vec& a, const arma::vec&
     // std::cout << " kern vec size " << kern.size() << std::endl; 
     // std::cout << "  XCube_Gradient_Kernel_2p " << std::endl;
     
-    double loc_part = arma::dot(kern,a);
+    // double loc_part = arma::dot(kern,a);
+    double loc_part = 0;
+    for(int i=0;i<npt * 4;++i)
+    {
+        loc_part += kern[i] * a[i];
+    }
+
+    // std::cout << "  loc_part " << loc_part << std::endl;
+    arma::vec kb(4);
+    for(int i=0;i<3;++i) {
+        kb(i+1) = in_pt[i];
+    }
+    kb(0) = 1;
+    double poly_part = 0;
+    // double poly_part = arma::dot(kb,b);
+    for(int i=0;i< 4;++i)
+    {
+        poly_part += kb[i] * b[i];
+    }
+    // std::cout << "  poly_part " << poly_part << std::endl;
+    double re = loc_part + poly_part;
+    return re;
+}
+
+
+
+double VIPSS_HRBF_Dist_Alone(const double* in_pt, const arma::vec& a, const arma::vec& b, 
+                                const std::vector<std::array<double,3>>& all_pts)
+{
+    int npt = all_pts.size();
+    int key_npt = npt;
+    double G[3];
+    arma::vec kern(npt + 3 * key_npt);
+    // std::cout << "  start dist pt size  " << npt << std::endl;
+    for(int i=0;i<npt;++i) kern(i) = VIPSSKernel::XCube_Kernel_2p(&(all_pts[i][0]), in_pt);
+    // std::cout << "  XCube_Kernel_2p " << std::endl;
+    for(int i=0;i<key_npt;++i){
+        VIPSSKernel::XCube_Gradient_Kernel_2p(in_pt, &(all_pts[i][0]), G);
+        for(int j=0;j<3;++j)kern(npt+i+j*key_npt) = G[j];
+    }
+    // kern.save("kern.txt", arma::arma_ascii);
+    // a.save("a.txt",  arma::arma_ascii);
+    // std::cout << " a vec size " << a.size() << std::endl; 
+    // std::cout << " kern vec size " << kern.size() << std::endl; 
+    // std::cout << "  XCube_Gradient_Kernel_2p " << std::endl;
+    
+    // double loc_part = arma::dot(kern,a);
+
+    double loc_part = 0;
+    for(int i=0;i<npt * 4;++i)
+    {
+        loc_part += kern[i] * a[i];
+    }
 
     // std::cout << "  loc_part " << loc_part << std::endl;
     arma::vec kb(4);

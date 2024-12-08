@@ -227,8 +227,8 @@ void SimpleOctree::DivideNode(std::shared_ptr<TreeNode> node, const std::vector<
         node->childNodes[i]->parentNode = node;
         node->childNodes[i]->depth_ = node->depth_ + 1;
         node->childNodes[i]->bbox_ = child_boxes[i]; 
-        auto node_center = node->childNodes[i]->GetCenter();
-        octree_centers_.push_back(node_center);
+        // auto node_center = node->childNodes[i]->GetCenter();
+        // octree_centers_.push_back(node_center);
         // octree_centers_.push_back(node_center[0]);
         // octree_centers_.push_back(node_center[1]);
         // octree_centers_.push_back(node_center[2]);
@@ -242,8 +242,13 @@ void SimpleOctree::DivideNode(std::shared_ptr<TreeNode> node, const std::vector<
                 child_pids.push_back(pid);
             } 
         }
-        if(node->childNodes[i]->depth_ == max_depth_ || (!sample_dummy_pts_ && child_pids.empty()))
+        if(node->childNodes[i]->depth_ == max_depth_ || child_pids.empty())
         {
+            if(child_pids.empty())
+            {
+                auto node_center = node->childNodes[i]->GetCenter();
+                octree_centers_.push_back(node_center);
+            }
             node->childNodes[i]->is_leaf_ = true;
             leaf_pids_[node->childNodes[i]] = child_pids;
             continue;

@@ -156,12 +156,12 @@ class VoronoiGen{
         double truncated_cell_center_[3];
         double truncated_face_center_[3];
 
-        static const int MAX_ELEMENT_ = 1000;
-        static const int MAX_THREAD_NUM_ = 32;
-        double* truncated_tets_omp_[MAX_THREAD_NUM_][MAX_ELEMENT_*2];
-        double truncated_centers_omp_[MAX_THREAD_NUM_][3];
-        double intersect_pts_omp_[MAX_THREAD_NUM_][MAX_ELEMENT_];
-        int face_tet_count_omp_[MAX_THREAD_NUM_][MAX_ELEMENT_];
+        // static const int MAX_ELEMENT_ = 1000;
+        // static const int MAX_THREAD_NUM_ = 32;
+        // double* truncated_tets_omp_[MAX_THREAD_NUM_][MAX_ELEMENT_*2];
+        // double truncated_centers_omp_[MAX_THREAD_NUM_][3];
+        // double intersect_pts_omp_[MAX_THREAD_NUM_][MAX_ELEMENT_];
+        // int face_tet_count_omp_[MAX_THREAD_NUM_][MAX_ELEMENT_];
         // double* truncated_tets_[MAX_THREAD_NUM_][MAX_ELEMENT_*4];
 
         RBF_API vipss_api_;
@@ -189,6 +189,7 @@ class VoronoiGen{
         std::array<double, 3> bbox_min_;
         std::array<double, 3> bbox_max_;
         size_t average_neighbor_num_ = 0;
+        std::array<double,3> dummy_sign_pt_;
 
         
     private:

@@ -560,22 +560,23 @@ void LocalVipss::BuildMatrixH()
 
 }
 
-inline std::vector<double> LocalVipss::GetClusterNormalsFromIds
-                            (const std::vector<size_t>& pt_ids, const std::vector<double>& all_normals) const
+inline std::vector<double> GetClusterNormalsFromIds
+                            (const std::vector<size_t>& pt_ids, const std::vector<double>& all_normals) 
 {
-    std::vector<double> normals;
-    for(size_t id : pt_ids)
+    std::vector<double> normals(pt_ids.size() * 3);
+    for(int i = 0; i < pt_ids.size(); ++i) 
     {
         // auto &pt = points_[id];
-        normals.push_back(all_normals[3 * id]);
-        normals.push_back(all_normals[3 * id + 1]);
-        normals.push_back(all_normals[3 * id + 2]);
+        auto id = pt_ids[i];
+        normals[3*i] = (all_normals[3 * id]);
+        normals[3*i + 1] = (all_normals[3 * id + 1]);
+        normals[3*i + 2] = (all_normals[3 * id + 2]);
     }
     return normals;
 }
 
-inline std::vector<double> LocalVipss::GetClusterSvalsFromIds(const std::vector<size_t>& pt_ids, 
-                        const std::vector<double>& all_svals) const
+inline std::vector<double> GetClusterSvalsFromIds(const std::vector<size_t>& pt_ids, 
+                        const std::vector<double>& all_svals) 
 {
     std::vector<double> svals;
     for(size_t id : pt_ids)
@@ -584,6 +585,7 @@ inline std::vector<double> LocalVipss::GetClusterSvalsFromIds(const std::vector<
     }
     return svals;
 }
+
 std::vector<std::shared_ptr<RBF_Core>> LocalVipss::node_rbf_vec_;
 VoronoiGen LocalVipss::voro_gen_;
 
@@ -708,15 +710,12 @@ double LocalVipss::NatureNeighborDistanceFunctionOMP(const tetgenmesh::point cur
     arma::vec nn_volume_vec_(nn_num);
     ave_voxel_nn_pt_num_ += nn_num;
     const std::vector<double*>& all_pts = points_;
-    arma::vec dummy_vals(nn_num);
-
-#pragma omp parallel for 
-// shared(node_rbf_vec_, voro_gen_, VoronoiGen::point_id_map_, nei_pts, cur_pt, nn_dist_vec_, nn_volume_vec_) private(i)    
+    // arma::vec dummy_vals(nn_num);
+#pragma omp parallel for shared(nei_pts, cur_pt, nn_dist_vec_, nn_volume_vec_) private(i)    
     for( i = 0; i < nn_num; ++i)
     {
         auto nn_pt = nei_pts[i];
-
-        if(VoronoiGen::point_id_map_.find(nn_pt) != VoronoiGen::point_id_map_.end())
+        // if(VoronoiGen::point_id_map_.find(nn_pt) != VoronoiGen::point_id_map_.end())
         {
             size_t pid = VoronoiGen::point_id_map_[nn_pt];
             // std::cout << " n id 1111  " << pid << std::endl;
@@ -724,23 +723,13 @@ double LocalVipss::NatureNeighborDistanceFunctionOMP(const tetgenmesh::point cur
             const arma::vec& b = node_rbf_vec_[pid]->b;
             const std::vector<size_t>& cluster_pids = VoronoiGen::cluster_init_pids_[pid];
             // std::cout << " n id 2222  " << pid << std::endl;
-
             // std::cout << " cluster_pids size  " << cluster_pids.size() << std::endl;
             // std::cout << " all_pts size  " << all_pts.size() << std::endl;
             nn_dist_vec_[i] = HRBF_Dist_Alone(cur_pt,  a, b, cluster_pids, all_pts);
-            // std::cout << " n id dist   " << nn_dist_vec_[i] << std::endl;
-            // nn_dist_vec_[i] = 1;
-            // nn_dist_vec_[i] = node_rbf_vec_[pid]->Dist_Function(cur_pt);
             int thread_id = omp_get_thread_num();
             // nn_volume_vec_[i] = 1.0;
             nn_volume_vec_[i] = voro_gen_.CalTruncatedCellVolumePassOMP(cur_pt, nn_pt, thread_id); 
         } 
-        // else {
-        //     if(voro_gen_.dummy_pt_dist_vals_map_.find(nn_pt) != voro_gen_.dummy_pt_dist_vals_map_.end())
-        //     {
-        //         dummy_vals[i] =  voro_gen_.dummy_pt_dist_vals_map_[nn_pt];
-        //     }
-        // }
     }
     auto t1 = Clock::now();
     double pass_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
@@ -751,9 +740,7 @@ double LocalVipss::NatureNeighborDistanceFunctionOMP(const tetgenmesh::point cur
     {
         return arma::dot(nn_dist_vec_, nn_volume_vec_) / volume_sum;
     } 
-    // else {
-    //     return arma::accu(dummy_vals) / double(nn_num);
-    // }
+    // return dummy_sign_;;
     return 0;
 }
 
