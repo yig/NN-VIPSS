@@ -712,7 +712,7 @@ double LocalVipss::NatureNeighborDistanceFunctionOMP(const tetgenmesh::point cur
     ave_voxel_nn_pt_num_ += nn_num;
     const std::vector<double*>& all_pts = points_;
     // arma::vec dummy_vals(nn_num);
-// #pragma omp parallel for 
+#pragma omp parallel for 
 // #pragma omp parallel for shared(nei_pts, cur_pt, nn_dist_vec_, nn_volume_vec_) private(i)    
     for( i = 0; i < nn_num; ++i)
     {

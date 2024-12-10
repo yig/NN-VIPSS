@@ -136,7 +136,7 @@ void GenerateAdaptiveGridOut(const std::array<size_t, 3>& resolution,
 
     std::array<double, 3> new_bbox_min;
 
-    int vol_dim = 3;
+    size_t vol_dim = 3;
     dx = expand_bbox_max[0] - expand_bbox_min[0];
     dy = expand_bbox_max[1] - expand_bbox_min[1];
     dz = expand_bbox_max[2] - expand_bbox_min[2];
@@ -451,10 +451,7 @@ void GenerateAdaptiveGridOut(const std::array<size_t, 3>& resolution,
                         //
                         fout << jOut << std::endl;
                         fout.close();
-                    }
-                    {
-                        using json = nlohmann::json;
-                        std::string filePath = "flip_tets_parent.json";
+                    }GenerateAdaptiveGridOutparent.json";
                         //                        if (std::filesystem::exists(filePath)) {
                         //                            std::filesystem::remove(filePath);
                         //                        }
@@ -624,7 +621,8 @@ void GenerateAdaptiveGridOut(const std::array<size_t, 3>& resolution,
     // save the mesh output for isosurfacing tool
     save_function_json(outfile + "_function_value_" + str_th + ".json", mesh, vertex_func_grad_map, funcNum);
     // //write mesh and active tets
-    mtet::save_mesh(outfile + "_tet_mesh_" + str_th + ".msh", mesh);
-    mtet::save_mesh(outfile + "_active_tets_" + str_th + ".msh", mesh, std::span<mtet::TetId>(activeTetId));
+    // std::cout << "save tet mesh path : " << outfile + "_tet_mesh_" + str_th + ".msh" << std::endl;
+    // mtet::save_mesh(outfile + "_tet_mesh_" + str_th + ".msh", mesh);
+    // mtet::save_mesh(outfile + "_active_tets_" + str_th + ".msh", mesh, std::span<mtet::TetId>(activeTetId));
     
 }

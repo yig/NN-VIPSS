@@ -198,7 +198,7 @@ MTetMesh load_mesh(std::string filename)
         }
     }
 
-    mesh.initialize_connectivity();
+    // mesh.initialize_connectivity();
     return mesh;
 }
 

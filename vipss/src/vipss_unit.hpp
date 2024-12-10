@@ -104,5 +104,4 @@ class VIPSSUnit {
         bool make_nn_const_neighbor_num_ = true; 
          
 
-
 };

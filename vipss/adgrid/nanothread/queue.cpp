@@ -11,6 +11,7 @@
 #include <cstdio>
 #include <ctime>
 #include <stdatomic.h>
+#include <iostream>
 
 #if defined(_WIN32)
 #  include <windows.h>
@@ -45,7 +46,14 @@ static bool cas(Task::Ptr &ptr, Task::Ptr &expected, Task::Ptr desired) {
             (__int64) desired.task, (__int64 *) &expected);
     #endif
 #else
-    return __atomic_compare_exchange_n((__int64_t volatile *)&ptr, &expected, &desired, true,
+
+    // return __atomic_compare_exchange((__int128_t volatile *)&(ptr), (__int128_t *)&(expected), (__int128_t *)&(desired), true,
+    //                                     __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST );
+    // return __atomic_compare_exchange((__int128_t volatile *)&(ptr), (__int128_t *)&(expected), (__int128_t *)&(desired), true,
+    //                                     __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST );
+    // return __atomic_compare_exchange_n((__int64_t volatile *)&ptr, &expected, &desired, true,
+    //                                  __ATOMIC_RELEASE, __ATOMIC_RELAXED);
+    return __atomic_compare_exchange(&ptr, &expected, &desired, true,
                                      __ATOMIC_RELEASE, __ATOMIC_RELAXED);
 
 #endif
@@ -53,6 +61,7 @@ static bool cas(Task::Ptr &ptr, Task::Ptr &expected, Task::Ptr desired) {
 
 // *Non-atomic* 16 byte load, acquire barrier on ARM
 static Task::Ptr ldar(Task::Ptr &source) {
+    // std::cout << "_MSC_VER " << std::endl;
 #if defined(_MSC_VER)
     using P = unsigned __int64 volatile *;
     #if defined(_M_ARM64)

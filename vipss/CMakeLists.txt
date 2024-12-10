@@ -1,31 +1,27 @@
 
 cmake_minimum_required(VERSION 3.10)
 project(vipss)
-
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++2a -O3 ")
 
-
-
 # check_library_exists(atomic __atomic_compare_exchange_16 "" NEEDS_LIBATOMIC)
-find_package (Eigen3 REQUIRED)
+find_package(Eigen3 REQUIRED)
 find_package(NLopt REQUIRED)
 find_package(PicoTree REQUIRED)
 find_package(CLI11)
+
 # set(NLopt_LIB_DIR "")
 # set(NLopt_LIB ${NLOPT_LIBRARIES})
 # add_definitions(-w)
-
 find_package(OpenMP REQUIRED)
 find_package(Armadillo REQUIRED)
 find_package(OpenBLAS )
 # set(ARMADILLO_LIB_DIRS "")
 set(ARMADILLO_LIB ${ARMADILLO_LIBRARIES})
-include_directories( ${EIGEN3_INCLUDE_DIR} )
+include_directories( ${EIGEN3_INCLUDE_DIR})
 
 
 find_package(nlohmann_json 3.2.0 REQUIRED)
 # find_library(ATOMIC_OPS_LIB atomic_ops REQUIRED)
-
 # aux_source_directory(./adgrid ADGRID_LIST)
 # aux_source_directory(./adgrid/nanothread NANOTHREAD_LIST)
 # aux_source_directory(./adgrid/mshio MSHIO_LIST)
@@ -36,10 +32,8 @@ file(GLOB MSHIO_LIST ./adgrid/mshio/*.c*)
 file(GLOB PREDICATES_LIST ./adgrid/predicates/predicates.c)
 # set(PREDICATES_LIST ./adgrid/predicates/predicates.c)
 
-
 include_directories(./adgrid/include )
 include_directories(./adgrid/include/mshio )
-
 
 find_library(ATOMIC_LIB atomic_ops REQUIRED)
 message(STATUS "MY_VAR is: ${ATOMIC_LIB}")
@@ -47,7 +41,7 @@ message(STATUS "MY_VAR is: ${ATOMIC_LIB}")
 
 add_library(adgrid ${ADGRID_LIST}  ${NANOTHREAD_LIST} ${MSHIO_LIST} ${PREDICATES_LIST} )
 
-target_link_libraries(adgrid  nlohmann_json::nlohmann_json atomic_ops)
+target_link_libraries(adgrid  nlohmann_json::nlohmann_json atomic)
 
 # set(PicoTree_INCLUDE_DIR "/usr/local/include/pico_tree")
 # include(CMakePrintHelpers)

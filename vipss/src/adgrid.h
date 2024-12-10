@@ -41,18 +41,27 @@ public:
         gz = gradient[2];
 
         // std::cout << "analytic dist_val : " << dist_val << std::endl;
-        // dist_val = LocalVipss::NNDistFunction(newPt);
+        // double dist_val = LocalVipss::NNDistFunction(newPt);
         // // std::cout << "numerical dist_val : " << dist_val << std::endl;
         // double delt = 1e-12; 
-        // R3Pt newPt_x(x + delt, y, z);
-        // double dist_x = LocalVipss::NNDistFunction(newPt_x);
-        // R3Pt newPt_y(x, y + delt, z);
-        // double dist_y = LocalVipss::NNDistFunction(newPt_y);
-        // R3Pt newPt_z(x, y, z + delt);
-        // double dist_z = LocalVipss::NNDistFunction(newPt_z);
-        // double n_gx = (dist_x - dist_val) / delt;
-        // double n_gy = (dist_y - dist_val) / delt;
-        // double n_gz = (dist_z - dist_val) / delt;
+        // R3Pt newPt_xp(x + delt, y, z);
+        // double dist_xp = LocalVipss::NNDistFunction(newPt_xp);
+        // R3Pt newPt_xn(x - delt, y, z);
+        // double dist_xn = LocalVipss::NNDistFunction(newPt_xn);
+
+        // R3Pt newPt_yp(x, y + delt, z);
+        // double dist_yp = LocalVipss::NNDistFunction(newPt_yp);
+        // R3Pt newPt_yn(x, y - delt, z);
+        // double dist_yn = LocalVipss::NNDistFunction(newPt_yn);
+
+        // R3Pt newPt_zp(x, y, z + delt);
+        // double dist_zp = LocalVipss::NNDistFunction(newPt_zp);
+        // R3Pt newPt_zn(x, y, z - delt);
+        // double dist_zn = LocalVipss::NNDistFunction(newPt_zn);
+
+        // gx = (dist_xp - dist_xn) / (2 *delt);
+        // gy = (dist_yp - dist_yn) / (2 *delt);
+        // gz = (dist_zp - dist_zn) / (2 *delt);
 
         // std::cout << "n grad : " << n_gx << " " << n_gy << " " << n_gz << std::endl;
         // std::cout << "analytic grad : " << gx << " " << gy << " " << gz << std::endl;

@@ -476,7 +476,7 @@ void VIPSSUnit::BuildNNHRBFFunctions()
     {
         SimOctree::SimpleOctree octree;
         // std::cout << " start to init octree " << std::endl;
-        octree.InitOctTree(local_vipss_.origin_in_pts_, 4);
+        octree.InitOctTree(local_vipss_.origin_in_pts_, 5);
         std::cout << " insert octree center pts num : " << octree.octree_centers_.size() << std::endl; 
         octree_sample_pts = octree.octree_centers_;
     }
@@ -490,7 +490,6 @@ void VIPSSUnit::BuildNNHRBFFunctions()
     auto t001 = Clock::now();
     G_VP_stats.generate_voro_data_time_ = std::chrono::nanoseconds(t001 - t000).count() / 1e9;
     // G_VP_stats.generate_voro_data_time_ = generate_voro_data_time
-    
     // auto t002 = Clock::now();
     // double generate_voro_data_time = std::chrono::nanoseconds(t002 - t001).count() / 1e9;
     local_vipss_.normals_ = newnormals_;
