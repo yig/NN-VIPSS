@@ -476,19 +476,21 @@ void VIPSSUnit::BuildNNHRBFFunctions()
     {
         SimOctree::SimpleOctree octree;
         // std::cout << " start to init octree " << std::endl;
-        octree.InitOctTree(local_vipss_.origin_in_pts_, 3);
+        octree.InitOctTree(local_vipss_.origin_in_pts_, 4);
         std::cout << " insert octree center pts num : " << octree.octree_centers_.size() << std::endl; 
         octree_sample_pts = octree.octree_centers_;
     }
+
     local_vipss_.voro_gen_.GenerateVoroData();
     local_vipss_.voro_gen_.SetInsertBoundaryPtsToUnused();
+    local_vipss_.voro_gen_.BuildTetMeshTetCenterMap();
+    local_vipss_.voro_gen_.BuildPicoTree();
     // auto boundary_pts = local_vipss_.voro_gen_.insert_boundary_pts_;
-    // local_vipss_.voro_gen_.insert_boundary_pts_.clear();
+    local_vipss_.voro_gen_.insert_boundary_pts_.clear();
     auto t001 = Clock::now();
     G_VP_stats.generate_voro_data_time_ = std::chrono::nanoseconds(t001 - t000).count() / 1e9;
     // G_VP_stats.generate_voro_data_time_ = generate_voro_data_time
-    local_vipss_.voro_gen_.BuildTetMeshTetCenterMap();
-    local_vipss_.voro_gen_.BuildPicoTree();
+    
     // auto t002 = Clock::now();
     // double generate_voro_data_time = std::chrono::nanoseconds(t002 - t001).count() / 1e9;
     local_vipss_.normals_ = newnormals_;
@@ -505,7 +507,7 @@ void VIPSSUnit::BuildNNHRBFFunctions()
     }
     std::cout << " ********** dummy pt sign val : " << local_vipss_.dummy_sign_ << std::endl;
 
-   
+    
     if(make_nn_const_neighbor_num_)
     {
         std::vector<double> insert_pt_func_vals;
@@ -515,6 +517,8 @@ void VIPSSUnit::BuildNNHRBFFunctions()
         auto t001 = Clock::now();
         // std::string octree_sample_path = out_dir_ + file_name_ + "octree_sample.xyz";
         // std::ofstream octree_file(octree_sample_path);
+    if(0)
+    {
         for(auto pt : octree_sample_pts)
         {
             double gradient[3];
@@ -526,6 +530,7 @@ void VIPSSUnit::BuildNNHRBFFunctions()
             // octree_file << pt[0] << " " << pt[1] << " " << pt[2] << " ";
             // octree_file << gradient[0] << " " << gradient[1] << " " << gradient[2] << std::endl;
         }
+    }
         auto t0022 = Clock::now();
         G_VP_stats.octree_pt_gradient_cal_time_ = std::chrono::nanoseconds(t0022 - t001).count() / 1e9;
         std::cout << "evaluate octree sample time : " << G_VP_stats.octree_pt_gradient_cal_time_ << std::endl;
@@ -536,12 +541,12 @@ void VIPSSUnit::BuildNNHRBFFunctions()
         local_vipss_.voro_gen_.BuildPicoTree();
         local_vipss_.voro_gen_.voronoi_data_.clean_memory();
         local_vipss_.voro_gen_.tetMesh_.generate_voronoi_cell(&(local_vipss_.voro_gen_.voronoi_data_));
-        // local_vipss_.voro_gen_.SetInsertBoundaryPtsToUnused();
+        local_vipss_.voro_gen_.SetInsertBoundaryPtsToUnused();
         auto t0033 = Clock::now();
         double rebuild_pico_and_voro_time = std::chrono::nanoseconds(t0033 - t0022).count() / 1e9;
         std::cout << "rebuild_pico_and_voro_time : " << rebuild_pico_and_voro_time << std::endl;
 
-    if(1)
+    if(0)
     {
         const auto& insert_pts = local_vipss_.voro_gen_.insert_boundary_pts_;
         int input_pt_size = local_vipss_.points_.size();
@@ -560,48 +565,94 @@ void VIPSSUnit::BuildNNHRBFFunctions()
         // local_vipss_.node_rbf_vec_.clear();
         local_vipss_.node_rbf_vec_.resize(all_valid_pt_size);
 
+        auto t0041 = Clock::now();
+        VoronoiGen::cluster_init_pts_.resize(all_valid_pt_size);
+        std::vector<std::vector<double>> cluster_sv_vecs(all_valid_pt_size); 
+        std::vector<std::vector<double>> cluster_pt_vecs(all_valid_pt_size);
+        std::vector<std::vector<double>> cluster_nl_vecs(all_valid_pt_size);
+
+        int max_cluster_size = 0;
         for(int i =0; i < all_valid_pt_size; ++i)
         {
             auto cur_pt = local_vipss_.points_[i];
             std::set<tetgenmesh::point> candidate_pts;
             local_vipss_.voro_gen_.GetVertexStar(cur_pt, candidate_pts, 1);
             std::vector<size_t> cluster_pt_ids;
-            cluster_pt_ids.push_back(local_vipss_.voro_gen_.point_id_map_[cur_pt]);
-            std::vector<double> cluster_nl_vec;
+            // cluster_pt_ids.push_back(local_vipss_.voro_gen_.point_id_map_[cur_pt]);
+            // std::vector<double> cluster_nl_vec;
             auto cur_pid = local_vipss_.voro_gen_.point_id_map_[cur_pt];
+            std::vector<double> cluster_nl_vec;
+            std::vector<double> cluster_sv_vec; 
+            std::vector<double> cluster_pt_vec;
             for(auto nn_pt : candidate_pts)
             {
-                if( nn_pt == cur_pt) continue;
+                // if( nn_pt == cur_pt) continue;
                 auto pid = local_vipss_.voro_gen_.point_id_map_[nn_pt];
                 cluster_pt_ids.push_back(pid);
+                cluster_pt_vec.push_back(nn_pt[0]);
+                cluster_pt_vec.push_back(nn_pt[1]);
+                cluster_pt_vec.push_back(nn_pt[2]);
+                // cluster_sv_vec.push_back(local_vipss_.s_vals_[pid]);
+                // cluster_nl_vec.push_back(local_vipss_.normals_[3*pid]);
+                // cluster_nl_vec.push_back(local_vipss_.normals_[3*pid + 1]);
+                // cluster_nl_vec.push_back(local_vipss_.normals_[3*pid + 2]);
             }
+            max_cluster_size = max_cluster_size > cluster_pt_ids.size() ? max_cluster_size : cluster_pt_ids.size();
             cluster_sum += cluster_pt_ids.size();
             local_vipss_.voro_gen_.cluster_init_pids_[i] = cluster_pt_ids;
+            VoronoiGen::cluster_init_pts_[i] = cluster_pt_vec;
+            // cluster_sv_vecs[i] = cluster_sv_vec;
+            // cluster_pt_vecs[i] = cluster_pt_vec; 
+            // cluster_nl_vecs[i] = cluster_nl_vec;
         }
-#pragma omp parallel for 
+        std::cout << " max_cluster_size : " << max_cluster_size << std::endl;
+        auto t0042 = Clock::now();
+        double get_pt_neigbor_time = std::chrono::nanoseconds(t0042 - t0041).count() / 1e9;
+        std::cout << "get_pt_neigbor_time : " << get_pt_neigbor_time << std::endl;
+        local_vipss_.BuildHRBFPerNode();
+        local_vipss_.SetThis();
+
+        auto t0043 = Clock::now();
+        double rebuild_neigbor_time = std::chrono::nanoseconds(t0043 - t0042).count() / 1e9;
+        std::cout << "rebuild_NN HRBF time : " << rebuild_neigbor_time << std::endl;
+
+    if(0)
+    {
+        #pragma omp parallel for 
         for(int i =0; i < all_valid_pt_size; ++i)
         {
             // auto cur_pt = local_vipss_.points_;
-            const auto& cluster_pt_ids = local_vipss_.voro_gen_.cluster_init_pids_[i]; 
-            int cluster_size = cluster_pt_ids.size();
-            std::vector<double> cluster_nl_vec(cluster_size * 3);
-            std::vector<double> cluster_sv_vec(cluster_size); 
-            std::vector<double> cluster_pt_vec(cluster_size * 3);
-            for(int j = 0; j < cluster_pt_ids.size(); ++j)
+            // const auto& cluster_pt_ids = local_vipss_.voro_gen_.cluster_init_pids_[i]; 
+            // int cluster_size = cluster_pt_ids.size();
+            auto& cluster_nl_vec = cluster_nl_vecs[i];
+            auto& cluster_sv_vec = cluster_sv_vecs[i]; 
+            auto& cluster_pt_vec = cluster_pt_vecs[i];
+            // std::vector<double> cluster_nl_vec (cluster_size * 3);
+            // std::vector<double> cluster_sv_vec(cluster_size); 
+            // std::vector<double> cluster_pt_vec(cluster_size * 3);
+            // for(int j = 0; j < cluster_pt_ids.size(); ++j)
             {
-                auto pid = cluster_pt_ids[j];
-                cluster_pt_vec[3*j]     = local_vipss_.points_[pid][0];
-                cluster_pt_vec[3*j + 1] = local_vipss_.points_[pid][1];
-                cluster_pt_vec[3*j + 2] = local_vipss_.points_[pid][2];
-                cluster_sv_vec[j]       = local_vipss_.s_vals_[pid];
-                cluster_nl_vec[3*j]     = local_vipss_.normals_[3*pid];
-                cluster_nl_vec[3*j + 1] = local_vipss_.normals_[3*pid + 1];
-                cluster_nl_vec[3*j + 2] = local_vipss_.normals_[3*pid + 2];
+                // auto pid = cluster_pt_ids[j];
+                // cluster_pt_vec[3*j]     = local_vipss_.points_[pid][0];
+                // cluster_pt_vec[3*j + 1] = local_vipss_.points_[pid][1];
+                // cluster_pt_vec[3*j + 2] = local_vipss_.points_[pid][2];
+                // cluster_sv_vec[j]       = local_vipss_.s_vals_[pid];
+                // cluster_nl_vec[3*j]     = local_vipss_.normals_[3*pid];
+                // cluster_nl_vec[3*j + 1] = local_vipss_.normals_[3*pid + 1];
+                // cluster_nl_vec[3*j + 2] = local_vipss_.normals_[3*pid + 2];
+                // cluster_pt_vec.push_back(local_vipss_.points_[pid][0]);
+                // cluster_pt_vec.push_back(local_vipss_.points_[pid][1]);
+                // cluster_pt_vec.push_back(local_vipss_.points_[pid][2]);
+                // cluster_sv_vec.push_back(local_vipss_.s_vals_[pid]);
+                // cluster_nl_vec.push_back(local_vipss_.normals_[3*pid]);
+                // cluster_nl_vec.push_back(local_vipss_.normals_[3*pid + 1]);
+                // cluster_nl_vec.push_back(local_vipss_.normals_[3*pid + 2]);
             }
-                       
             local_vipss_.node_rbf_vec_[i] = std::make_shared<RBF_Core>();
             local_vipss_.vipss_api_.build_cluster_hrbf(cluster_pt_vec, cluster_nl_vec, cluster_sv_vec, local_vipss_.node_rbf_vec_[i]);
         }
+    }
+    
         int ave_cluster_size = int(double(cluster_sum) / double(local_vipss_.points_.size()));
         std::cout << " ------ ave cluster size " << ave_cluster_size << std::endl;
     }
@@ -689,8 +740,8 @@ void VIPSSUnit::GenerateAdaptiveGrid()
     auto t000 = Clock::now();   
     // std::cout << " test val " << test_val << std::endl;
     std::array<size_t,3> resolution = {3, 3, 3};
-    // GenerateAdaptiveGridOut(resolution, local_vipss_.voro_gen_.bbox_min_, 
-    //                         local_vipss_.voro_gen_.bbox_max_, out_dir_,  file_name_, adgrid_threshold_);
+    GenerateAdaptiveGridOut(resolution, local_vipss_.voro_gen_.bbox_min_, 
+                            local_vipss_.voro_gen_.bbox_max_, out_dir_,  file_name_, adgrid_threshold_);
     auto t001 = Clock::now();
     double adgrid_gen_time = std::chrono::nanoseconds(t001 - t000).count() / 1e9;
     printf("adaptive grid generation time : %f ! \n", adgrid_gen_time);
@@ -800,6 +851,7 @@ void VIPSSUnit::Run()
         // if(make_nn_const_neighbor_num_)
         // local_vipss_.voro_gen_.SetInsertBoundaryPtsToUnused();
     }
+    
     // test_vipss_timing::test_local_vipss(input_data_path_);
     // test_vipss_timing::visual_distval_pt(input_data_path_, 200);
     

@@ -262,7 +262,16 @@ void VoronoiGen::SetInsertBoundaryPtsToUnused()
     {
         tetMesh_.setpointtype(pt, tetgenmesh::UNUSEDVERTEX);
     }
-    insert_boundary_pts_.clear();
+    // insert_boundary_pts_.clear();
+}
+
+void VoronoiGen::SetInsertBoundaryPtsToUsed()
+{
+    for(auto pt : insert_boundary_pts_)
+    {
+        tetMesh_.setpointtype(pt, tetgenmesh::VOLVERTEX);
+    }
+    // insert_boundary_pts_.clear();
 }
 
 void VoronoiGen::Tetrahedralize()
@@ -1302,7 +1311,12 @@ void VoronoiGen::BuildTetMeshTetCenterMap()
 tetgenmesh::tetrahedron* VoronoiGen::GetClosetTet(double x, double y, double z)
 {
     size_t tet_id = pTree_.SearchNearestPt(x, y, z);
+    // std::cout << " nearest tet id : " << tet_id << std::endl;
     // size_t tet_id = 0;
+    // double dx = tet_center_pts_[tet_id * 3]     - x;
+    // double dy = tet_center_pts_[tet_id * 3 + 1] - y;
+    // double dz = tet_center_pts_[tet_id * 3 + 2] - z;
+    // std::cout << "mini dist : " << sqrt(dx * dx + dy * dy + dz * dz) << std::endl;
     return tc_pt_tet_map_[tet_id];
 }
 

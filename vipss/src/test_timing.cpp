@@ -184,7 +184,7 @@ void visual_distval_pt(const std::string& in_path, int volume_res )
     //          << " " <<  max_corner[2]  << std::endl ;
     // box_file.close();
 
-    std::string planck_grid_path = "../../out/planck_layer_grid.obj";
+    std::string planck_grid_path = "../../out/kitten_0.001_layer_grid.obj";
     auto grid_pts = generate_grid_pts(min_corner, max_corner, 0);
     visual_grid_pts(planck_grid_path, grid_pts, LocalVipss::NNDistFunction);
 

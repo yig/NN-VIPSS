@@ -11,7 +11,7 @@ class PicoTree {
     using data_type = double;
     using Space = std::vector<std::array<data_type, 3>>;
     using Nn = pico_tree::Neighbor<int, data_type>;
-    int max_leaf_size = 12;
+    int max_leaf_size = 8;
 
 public:
     PicoTree(){};

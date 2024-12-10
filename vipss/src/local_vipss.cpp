@@ -595,7 +595,8 @@ void LocalVipss::BuildHRBFPerNode()
 // if(0)
     size_t npt = this->points_.size();
     printf("cluster num : %lu \n", npt);
-    size_t cluster_num = cluster_cores_mat_.n_cols;
+    // size_t cluster_num = cluster_cores_mat_.n_cols;
+    size_t cluster_num = points_.size();
     double time_sum = 0;
     node_rbf_vec_.resize(cluster_num);
     bool use_partial_vipss = false;
@@ -711,11 +712,12 @@ double LocalVipss::NatureNeighborDistanceFunctionOMP(const tetgenmesh::point cur
     ave_voxel_nn_pt_num_ += nn_num;
     const std::vector<double*>& all_pts = points_;
     // arma::vec dummy_vals(nn_num);
-#pragma omp parallel for shared(nei_pts, cur_pt, nn_dist_vec_, nn_volume_vec_) private(i)    
+// #pragma omp parallel for 
+// #pragma omp parallel for shared(nei_pts, cur_pt, nn_dist_vec_, nn_volume_vec_) private(i)    
     for( i = 0; i < nn_num; ++i)
     {
         auto nn_pt = nei_pts[i];
-        // if(VoronoiGen::point_id_map_.find(nn_pt) != VoronoiGen::point_id_map_.end())
+        if(VoronoiGen::point_id_map_.find(nn_pt) != VoronoiGen::point_id_map_.end())
         {
             size_t pid = VoronoiGen::point_id_map_[nn_pt];
             // std::cout << " n id 1111  " << pid << std::endl;

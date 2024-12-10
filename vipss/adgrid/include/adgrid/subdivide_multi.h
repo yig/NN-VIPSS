@@ -324,7 +324,7 @@ bool subTet(std::array<std::array<double, 3>,4> &pts,
                     rhs = numeric_limits<double>::infinity() * dot(gradList[funcIter], gradList[funcIter]);
                 }
 #ifdef Non_Robust_Test
-                std::cout << norm(gradList[funcIter])/std::abs(D) << std::endl;
+                // std::cout << norm(gradList[funcIter])/std::abs(D) << std::endl;
                 lhs = errorList[funcIter] / (norm(gradList[funcIter])/std::abs(D));
                 rhs = threshold;
 #endif

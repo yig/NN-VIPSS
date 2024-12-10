@@ -2,6 +2,7 @@
 
 #include <string>
 #include <Eigen/Core>
+#include <memory>
 #include "ImplicitFunction.h"
 
 bool load_functions(const std::string &filename,

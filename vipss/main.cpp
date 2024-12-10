@@ -19,6 +19,8 @@ using namespace std;
 void SplitPath(const std::string& fullfilename,std::string &filepath);
 void SplitFileName (const std::string& fullfilename,std::string &filepath,std::string &filename,std::string &extname);
 
+
+
 int main(int argc, char** argv)
 {
     VIPSSUnit vipss_unit;
@@ -38,6 +40,7 @@ int main(int argc, char** argv)
         double adgrid_threshold = 0.001;
         bool use_adgrid = true;
         bool octree_sample = false;
+        bool hrbf_sample = false;
     }args;
     
     // gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -45,7 +48,7 @@ int main(int argc, char** argv)
     app.add_option("-i, --input ", args.input, "input file")->required();
     app.add_option("-o, --output ", args.output, "output file, if not given , output will be saved in same folder as input");
     app.add_option("-l, --lambda ", args.lambda, "lambda value");
-    app.add_option("-s, --volume_size ", args.volumeDim, "surface volumeDim");
+    app.add_option("-v, --volume_size ", args.volumeDim, "surface volumeDim");
     app.add_option("-P, --initPV", args.initPV, "enable or disable partial vipss for normal initialization");
     app.add_option("-S, --surfacing", args.surfacing, "reconstruct surface or not");
     app.add_option("-H, --hardConstraints", args.hardConstraints, "use hard constraints for energy optimization");
@@ -54,6 +57,7 @@ int main(int argc, char** argv)
     app.add_option("-a, --adgrid_threshold",args.adgrid_threshold, "adptive gird generation threshold");
     app.add_option("-A, --use_adgrid",args.use_adgrid, "use adptive gird to generate mesh");
     app.add_option("-O, --octree_sample",args.octree_sample, "use adptive gird to generate mesh");
+    app.add_option("-G, --HRBF_sample",args.hrbf_sample, "insert octree sample pts to build new HRBF");
 
     
     CLI11_PARSE(app, argc, argv);
@@ -76,9 +80,8 @@ int main(int argc, char** argv)
         vipss_unit.is_surfacing_ = args.surfacing;
         vipss_unit.adgrid_threshold_ = args.adgrid_threshold;
         vipss_unit.use_adgrid_ = args.use_adgrid;
-        
+        vipss_unit.make_nn_const_neighbor_num_ = args.hrbf_sample;
 
-        
         if(args.output.size() > 0)
         {
             std::string out_path, out_filename, out_extname;

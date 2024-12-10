@@ -355,7 +355,6 @@ double HRBF_Dist_Alone(const double* in_pt, const arma::vec& a, const arma::vec&
     // std::cout << " a vec size " << a.size() << std::endl; 
     // std::cout << " kern vec size " << kern.size() << std::endl; 
     // std::cout << "  XCube_Gradient_Kernel_2p " << std::endl;
-    
     // double loc_part = arma::dot(kern,a);
     double loc_part = 0;
     for(int i=0;i<npt * 4;++i)

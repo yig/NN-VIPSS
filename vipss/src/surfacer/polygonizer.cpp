@@ -619,9 +619,8 @@ void testface (
    static int facebit[6] = {2, 2, 1, 1, 0, 0};
    int n, pos = old->corners[c1]->value > 0.0 ? 1 : 0;
    int bit = facebit[face];
-   double dist_threshold = 0.005; 
+   double dist_threshold = 0.01; 
    
-
         /* test if  no surface crossing, cube out of bounds, or prev. visited? */
     if ((old->corners[c2]->value > 0) == pos &&
         (old->corners[c3]->value > 0) == pos &&

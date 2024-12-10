@@ -259,7 +259,7 @@ extern NANOTHREAD_EXPORT void task_release(Task *task);
  * \param task
  *     The task in question. When equal to \c nullptr, the operation is a no-op.
  */
-extern NANOTHREAD_EXPORT void task_wait(Task *task) NANOTHREAD_THROW;
+extern  void task_wait(Task *task) NANOTHREAD_THROW;
 
 /*
  * \brief Wait for the completion of the specified task and release its handle
@@ -276,7 +276,7 @@ extern NANOTHREAD_EXPORT void task_wait(Task *task) NANOTHREAD_THROW;
  * \param task
  *     The task in question. When equal to \c nullptr, the operation is a no-op.
  */
-extern NANOTHREAD_EXPORT void task_wait_and_release(Task *task) NANOTHREAD_THROW;
+extern  void task_wait_and_release(Task *task) NANOTHREAD_THROW;
 
 /**
  * \brief Return the time consumed by the task in milliseconds
@@ -284,7 +284,7 @@ extern NANOTHREAD_EXPORT void task_wait_and_release(Task *task) NANOTHREAD_THROW
  * To use this function, you must first enable time profiling via \ref
  * pool_set_profile() before launching tasks.
  */
-extern NANOTHREAD_EXPORT float task_time(Task *task) NANOTHREAD_THROW;
+extern  float task_time(Task *task) NANOTHREAD_THROW;
 
 /*
  * \brief Increase the reference count of a task
@@ -298,7 +298,7 @@ extern NANOTHREAD_EXPORT float task_time(Task *task) NANOTHREAD_THROW;
  * \param task
  *     The task in question. When equal to \c nullptr, the operation is a no-op.
  */
-extern NANOTHREAD_EXPORT void task_retain(Task *task);
+extern  void task_retain(Task *task);
 
 /// Convenience wrapper around task_submit_dep(), but without dependencies
 static inline
