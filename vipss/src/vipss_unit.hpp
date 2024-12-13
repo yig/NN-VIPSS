@@ -102,6 +102,7 @@ class VIPSSUnit {
         bool use_adgrid_ = true;
         double distfunc_threshold_ = 0.3;
         bool make_nn_const_neighbor_num_ = true; 
+        bool use_global_hrbf_ = false;
          
 
 };

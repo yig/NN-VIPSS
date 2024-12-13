@@ -1600,5 +1600,7 @@ void WriteStatsTimeCSV(const std::string& path, const VP_STATS& vp_stats)
         // csv_file << "natural jm, " << vp_stats.neighbor_search_time_ << std::endl;
         csv_file << "evaluate count, " << vp_stats.nn_evaluate_count_ << std::endl;
         csv_file << "NN surface,  " << vp_stats.surface_total_time_ << std::endl;
+        csv_file << "adgrid generation,  " << vp_stats.adgrid_gen_time_ << std::endl;
+        csv_file << "global HRBF coefficient, " << vp_stats.hrbf_coefficient_time_ << std::endl;
     } 
 }

@@ -505,8 +505,8 @@ void VIPSSUnit::BuildNNHRBFFunctions()
         local_vipss_.dummy_sign_ = local_vipss_.dummy_sign_ / abs(local_vipss_.dummy_sign_);
     }
     std::cout << " ********** dummy pt sign val : " << local_vipss_.dummy_sign_ << std::endl;
+                                                        
 
-    
     if(make_nn_const_neighbor_num_)
     {
         std::vector<double> insert_pt_func_vals;
@@ -533,7 +533,6 @@ void VIPSSUnit::BuildNNHRBFFunctions()
         auto t0022 = Clock::now();
         G_VP_stats.octree_pt_gradient_cal_time_ = std::chrono::nanoseconds(t0022 - t001).count() / 1e9;
         std::cout << "evaluate octree sample time : " << G_VP_stats.octree_pt_gradient_cal_time_ << std::endl;
-
         G_VP_stats.octree_dummy_pt_num_ = octree_sample_pts.size();
         local_vipss_.voro_gen_.InsertPts(octree_sample_pts);
         local_vipss_.voro_gen_.BuildTetMeshTetCenterMap();
@@ -615,43 +614,6 @@ void VIPSSUnit::BuildNNHRBFFunctions()
         double rebuild_neigbor_time = std::chrono::nanoseconds(t0043 - t0042).count() / 1e9;
         std::cout << "rebuild_NN HRBF time : " << rebuild_neigbor_time << std::endl;
 
-    if(0)
-    {
-        #pragma omp parallel for 
-        for(int i =0; i < all_valid_pt_size; ++i)
-        {
-            // auto cur_pt = local_vipss_.points_;
-            // const auto& cluster_pt_ids = local_vipss_.voro_gen_.cluster_init_pids_[i]; 
-            // int cluster_size = cluster_pt_ids.size();
-            auto& cluster_nl_vec = cluster_nl_vecs[i];
-            auto& cluster_sv_vec = cluster_sv_vecs[i]; 
-            auto& cluster_pt_vec = cluster_pt_vecs[i];
-            // std::vector<double> cluster_nl_vec (cluster_size * 3);
-            // std::vector<double> cluster_sv_vec(cluster_size); 
-            // std::vector<double> cluster_pt_vec(cluster_size * 3);
-            // for(int j = 0; j < cluster_pt_ids.size(); ++j)
-            {
-                // auto pid = cluster_pt_ids[j];
-                // cluster_pt_vec[3*j]     = local_vipss_.points_[pid][0];
-                // cluster_pt_vec[3*j + 1] = local_vipss_.points_[pid][1];
-                // cluster_pt_vec[3*j + 2] = local_vipss_.points_[pid][2];
-                // cluster_sv_vec[j]       = local_vipss_.s_vals_[pid];
-                // cluster_nl_vec[3*j]     = local_vipss_.normals_[3*pid];
-                // cluster_nl_vec[3*j + 1] = local_vipss_.normals_[3*pid + 1];
-                // cluster_nl_vec[3*j + 2] = local_vipss_.normals_[3*pid + 2];
-                // cluster_pt_vec.push_back(local_vipss_.points_[pid][0]);
-                // cluster_pt_vec.push_back(local_vipss_.points_[pid][1]);
-                // cluster_pt_vec.push_back(local_vipss_.points_[pid][2]);
-                // cluster_sv_vec.push_back(local_vipss_.s_vals_[pid]);
-                // cluster_nl_vec.push_back(local_vipss_.normals_[3*pid]);
-                // cluster_nl_vec.push_back(local_vipss_.normals_[3*pid + 1]);
-                // cluster_nl_vec.push_back(local_vipss_.normals_[3*pid + 2]);
-            }
-            local_vipss_.node_rbf_vec_[i] = std::make_shared<RBF_Core>();
-            local_vipss_.vipss_api_.build_cluster_hrbf(cluster_pt_vec, cluster_nl_vec, cluster_sv_vec, local_vipss_.node_rbf_vec_[i]);
-        }
-    }
-    
         int ave_cluster_size = int(double(cluster_sum) / double(local_vipss_.points_.size()));
         std::cout << " ------ ave cluster size " << ave_cluster_size << std::endl;
     }
@@ -683,9 +645,6 @@ void VIPSSUnit::ReconSurface()
     if(LOCAL_HRBF_NN == hrbf_type_)
     {
         auto t000 = Clock::now();
-        // double build_HRBF_time = std::chrono::nanoseconds(t003 - t002).count() / 1e9;
-        // G_VP_stats.build_per_cluster_hrbf_total_time_ += build_HRBF_time;     
-        // printf(" start set local vipss static ptr \n");
         // local_vipss_.SetThis();
         size_t n_voxels_1d = volume_dim_;
         Surfacer sf;
@@ -721,6 +680,7 @@ void VIPSSUnit::ReconSurface()
         rbf_api_.run_vipss(local_vipss_.out_pts_, newnormals_, s_func_vals_);
     }
 
+
     // if(use_hrbf_surface_)
     // {
     //     rbf_api_.user_lambda_ = user_lambda_;
@@ -736,14 +696,55 @@ void VIPSSUnit::ReconSurface()
 
 void VIPSSUnit::GenerateAdaptiveGrid()
 {
-    auto t000 = Clock::now();   
+    
     // std::cout << " test val " << test_val << std::endl;
     std::array<size_t,3> resolution = {3, 3, 3};
+    std::vector<shared_ptr<ImplicitFunction<double>>> functions;
+    // load_functions(args.function_file, functions);
+    if(use_global_hrbf_)
+    {
+        auto g_t0 = Clock::now();
+        using Vec3 = Eigen::Matrix<double, 3, 1>;
+        using Vec4 = Eigen::Matrix<double, 4, 1>;
+        auto g_hrbf = std::make_shared<RBF_Core>();
+        // local_vipss_.out_pts_
+        local_vipss_.vipss_api_.build_cluster_hrbf(local_vipss_.out_pts_, newnormals_, s_func_vals_,g_hrbf);
+        std::vector<Vec3> in_points(local_vipss_.out_pts_.size()/3);
+        for(int i = 0; i < local_vipss_.out_pts_.size()/3; ++i)
+        {
+            in_points[i] =  {local_vipss_.out_pts_[3*i], local_vipss_.out_pts_[3*i +1], local_vipss_.out_pts_[3*i +2]};
+        }
+        Eigen::VectorXd hrbf_a;
+        hrbf_a.resize(g_hrbf->a.size());
+        for(int i = 0; i < g_hrbf->a.size(); ++i)
+        {
+            hrbf_a[i] = g_hrbf->a[i];
+        }
+        Vec4 hrbf_b;
+        for(int i =0; i < 4; ++i)
+        {
+            hrbf_b[i] = g_hrbf->b[i];
+        }
+        std::shared_ptr<ImplicitFunction<double>> hrbf_func = std::make_shared<Hermite_RBF<double>>(in_points, hrbf_a, hrbf_b);
+        functions.push_back(hrbf_func);
+        auto g_t1 = Clock::now();
+        G_VP_stats.hrbf_coefficient_time_ = std::chrono::nanoseconds(g_t1 - g_t0).count() / 1e9;
+        
+    } else {
+
+        std::shared_ptr<ImplicitFunction<double>> hrbf_func = std::make_shared<HRBFDistanceFunction>();
+        functions.push_back(hrbf_func);
+
+    }
+
+    auto t000 = Clock::now();   
     GenerateAdaptiveGridOut(resolution, local_vipss_.voro_gen_.bbox_min_, 
-                            local_vipss_.voro_gen_.bbox_max_, out_dir_,  file_name_, adgrid_threshold_);
+                            local_vipss_.voro_gen_.bbox_max_, out_dir_,  
+                            file_name_,  functions, adgrid_threshold_);
     auto t001 = Clock::now();
-    double adgrid_gen_time = std::chrono::nanoseconds(t001 - t000).count() / 1e9;
-    printf("adaptive grid generation time : %f ! \n", adgrid_gen_time);
+    G_VP_stats.adgrid_gen_time_ = std::chrono::nanoseconds(t001 - t000).count() / 1e9;
+
+    printf("adaptive grid generation time : %f ! \n", G_VP_stats.adgrid_gen_time_);
 }
 
 void VIPSSUnit::SolveOptimizaiton()
@@ -804,7 +805,10 @@ void VIPSSUnit::Run()
     rbf_api_.Set_RBF_PARA();
     InitPtNormalWithLocalVipss();
     SolveOptimizaiton();
-    BuildNNHRBFFunctions();
+    if(! use_global_hrbf_)
+    {
+        BuildNNHRBFFunctions();
+    }
     auto new_pts = local_vipss_.octree_leaf_pts_;
     if(LocalVipss::use_octree_sample_)
     {

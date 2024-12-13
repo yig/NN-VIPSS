@@ -35,6 +35,8 @@ struct VP_STATS {
     double average_cluster_size_ = 0;
     int octree_dummy_pt_num_ = 0;
     double octree_pt_gradient_cal_time_ = 0; 
+    double hrbf_coefficient_time_ = 0;
+    double adgrid_gen_time_ = 0;
 };
 
 extern VP_STATS G_VP_stats; 

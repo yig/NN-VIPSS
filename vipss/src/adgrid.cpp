@@ -100,6 +100,7 @@ void GenerateAdaptiveGridOut(const std::array<size_t, 3>& resolution,
                              const std::array<double, 3>& bbox_max,
                              const std::string& outdir,
                              const std::string& filename,
+                             std::vector<shared_ptr<ImplicitFunction<double>>>& functions,
                              double in_threshold)
 {
     struct
@@ -171,10 +172,10 @@ void GenerateAdaptiveGridOut(const std::array<size_t, 3>& resolution,
 
 
     // Read implicit function
-    vector<shared_ptr<HRBFDistanceFunction>> functions;
+    // vector<shared_ptr<HRBFDistanceFunction>> functions;
     // load_functions(args.function_file, functions);
-    std::shared_ptr<HRBFDistanceFunction> hrbf_func = std::make_shared<HRBFDistanceFunction>();
-    functions.push_back(hrbf_func);
+    // std::shared_ptr<HRBFDistanceFunction> hrbf_func = std::make_shared<HRBFDistanceFunction>();
+    // functions.push_back(hrbf_func);
     size_t funcNum = functions.size();
     // Read options
     if (args.max_elements < 0)
