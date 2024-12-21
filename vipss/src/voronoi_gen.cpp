@@ -324,7 +324,7 @@ void VoronoiGen::GenerateVoroData()
     // InsertBoundryPts();
 // 
     auto t0 = Clock::now();
-    // InsertSphereBoundryPts();
+    InsertSphereBoundryPts();
     InsertBoundryPts();
     
 
@@ -1241,7 +1241,7 @@ void VoronoiGen::BuildTetMeshTetCenterMap()
     tc_pt_tet_map_.clear();
     while(tetface.tet != (tetgenmesh::tetrahedron*)(NULL))
     {
-        torg = tetMesh_.org(tetface);
+        torg  = tetMesh_.org(tetface);
         tdest = tetMesh_.dest(tetface);
         tapex = tetMesh_.apex(tetface);
         toppo = tetMesh_.oppo(tetface);

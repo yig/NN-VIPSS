@@ -41,6 +41,7 @@ int main(int argc, char** argv)
         bool use_adgrid = true;
         bool octree_sample = false;
         bool hrbf_sample = false;
+        bool use_global_hrbf = false;
     }args;
     
     // gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -56,15 +57,12 @@ int main(int argc, char** argv)
     app.add_option("-t, --opt_threshold",args.opt_threshold, "use simplified rbf base");
     app.add_option("-a, --adgrid_threshold",args.adgrid_threshold, "adptive gird generation threshold");
     app.add_option("-A, --use_adgrid",args.use_adgrid, "use adptive gird to generate mesh");
-    app.add_option("-O, --octree_sample",args.octree_sample, "use adptive gird to generate mesh");
-    app.add_option("-G, --HRBF_sample",args.hrbf_sample, "insert octree sample pts to build new HRBF");
+    app.add_option("-O, --octree_sample",args.octree_sample, "add insert octree pt to generate mesh");
+    app.add_option("-G, --use_ghrbf",args.use_global_hrbf, "insert octree sample pts to build new HRBF");
 
-    
     CLI11_PARSE(app, argc, argv);
     LocalVipss::use_octree_sample_ = args.octree_sample;
-
     // std::cout << "LocalVipss::feature_preserve_sample_ " <<  LocalVipss::feature_preserve_sample_ << std::endl;
-
     vipss_unit.hard_constraints_ = args.hardConstraints;
     if(args.input.size() > 0)
     {
@@ -81,6 +79,7 @@ int main(int argc, char** argv)
         vipss_unit.adgrid_threshold_ = args.adgrid_threshold;
         vipss_unit.use_adgrid_ = args.use_adgrid;
         vipss_unit.make_nn_const_neighbor_num_ = args.hrbf_sample;
+        vipss_unit.use_global_hrbf_ = args.use_global_hrbf;
 
         if(args.output.size() > 0)
         {

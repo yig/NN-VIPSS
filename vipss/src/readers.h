@@ -104,5 +104,5 @@ void output_opt_pts_with_color(const std::vector<double>& pts, const std::vector
 
 void WriteStatsLog(const std::string& path, const VP_STATS& vp_stats);
 void WriteStatsTimeCSV(const std::string& path, const VP_STATS& vp_stats);
-
+std::vector<double> ReadVectorFromFile(const std::string& filename) ;
 #endif // READERS_H

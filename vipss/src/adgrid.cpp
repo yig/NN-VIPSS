@@ -127,13 +127,27 @@ void GenerateAdaptiveGridOut(const std::array<size_t, 3>& resolution,
     double dx = bbox_max[0] - bbox_min[0];
     double dy = bbox_max[1] - bbox_min[1];
     double dz = bbox_max[2] - bbox_min[2];
+    double max_len = std::max(dx, std::max(dy, dz));
+    
+    double max_scale = 5.0;
+    double expand_scale_x = 0.2 * std::max(1.0, std::min(max_scale, max_len / dx));
+    double expand_scale_y = 0.2 * std::max(1.0, std::min(max_scale, max_len / dy));
+    double expand_scale_z = 0.2 * std::max(1.0, std::min(max_scale, max_len / dz));
 
-    std::array<double, 3> expand_bbox_min = {bbox_min[0] - expand_scale * dx, 
-                                            bbox_min[1] - expand_scale * dy,
-                                            bbox_min[2] - expand_scale * dz};
-    std::array<double, 3> expand_bbox_max = {bbox_max[0] + expand_scale * dx, 
-                                            bbox_max[1] + expand_scale * dy,
-                                            bbox_max[2] + expand_scale * dz};
+    // double expand_scale_x = 0.2 ;
+    // double expand_scale_y = 0.2 ;
+    // double expand_scale_z = 0.2 ;
+
+    // double cx = (bbox_max[0] + bbox_min[0]) / 2.0;
+    // double cy = (bbox_max[1] + bbox_min[1]) / 2.0;
+    // double cz = (bbox_max[2] + bbox_min[2]) / 2.0;
+
+    std::array<double, 3> expand_bbox_min = {bbox_min[0] - expand_scale_x * dx, 
+                                            bbox_min[1]  - expand_scale_y * dy,
+                                            bbox_min[2]  - expand_scale_z * dz };
+    std::array<double, 3> expand_bbox_max = {bbox_max[0] + expand_scale_x * dx, 
+                                            bbox_max[1]  + expand_scale_y * dy,
+                                            bbox_max[2]  + expand_scale_z * dz};
 
     std::array<double, 3> new_bbox_min;
 
@@ -142,7 +156,15 @@ void GenerateAdaptiveGridOut(const std::array<size_t, 3>& resolution,
     dy = expand_bbox_max[1] - expand_bbox_min[1];
     dz = expand_bbox_max[2] - expand_bbox_min[2];
 
-    double max_len = std::max(dx, std::max(dy, dz));
+    
+    // expand_bbox_min[0] = cx - max_len;
+    // expand_bbox_min[1] = cy - max_len;
+    // expand_bbox_min[2] = cz - max_len;
+
+    // expand_bbox_max[0] = cx + max_len;
+    // expand_bbox_max[1] = cy + max_len;
+    // expand_bbox_max[2] = cz + max_len;
+
     // double voxel_len = max_len / double(vol_dim);
     // int dimx = std::max(int(dx / voxel_len), 1);
     // int dimy = std::max(int(dy / voxel_len), 1);

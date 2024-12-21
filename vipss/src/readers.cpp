@@ -1604,3 +1604,25 @@ void WriteStatsTimeCSV(const std::string& path, const VP_STATS& vp_stats)
         csv_file << "global HRBF coefficient, " << vp_stats.hrbf_coefficient_time_ << std::endl;
     } 
 }
+
+
+std::vector<double> ReadVectorFromFile(const std::string& filename) {
+    std::ifstream inFile(filename);
+    if (!inFile) {
+        std::cerr << "Error opening file for reading: " << filename << std::endl;
+        return {};
+    }
+
+    std::vector<double> vec;
+    std::string line;
+    while (std::getline(inFile, line)) {
+        std::istringstream iss(line);
+        double value;
+        if (iss >> value) {
+            vec.push_back(value);
+        }
+    }
+
+    inFile.close();
+    return vec;
+}

@@ -760,13 +760,15 @@ void RBF_Core::Solve_RBFCoefWithOptNormalAndSval(const std::vector<double>& Vn,
 
     size_t mat_mem_size = bigM.n_elem * sizeof(double) / (1024 * 1024 );
     // printf("------mat_mem_size %llu MB\n", mat_mem_size);
-    auto t0 = Clock::now();
-    arma::mat X2 = arma::solve(bigM, y, arma::solve_opts::fast);
+    // auto t0 = Clock::now();
+    // arma::mat X2 = arma::solve(bigM, y, arma::solve_opts::fast);
+
+    arma::mat X2 = arma::solve(bigM, y, arma::solve_opts::likely_sympd);
 
     // arma::mat X2 = arma::inv(bigM) * y;
 
-    auto t1 = Clock::now();
-    double t_time =  std::chrono::nanoseconds(t1 - t0).count()/1e9;
+    // auto t1 = Clock::now();
+    // double t_time =  std::chrono::nanoseconds(t1 - t0).count()/1e9;
     // printf("pure solve linear system size %llu and time: %f \n", m_dim, t_time);
     // X2 = X2 * y;
     a = X2(0, 0, arma::size(npt + 3 * key_npt, 1));

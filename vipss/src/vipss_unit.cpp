@@ -4,6 +4,7 @@
 #include "adgrid.h"
 #include "SimpleOctree.h"
 #include "test_timing.h"
+#include "color.h"
 
 typedef std::chrono::high_resolution_clock Clock;
 
@@ -40,6 +41,7 @@ void VIPSSUnit::InitPtNormalWithLocalVipss()
     // printf("adaptive grid generation time : %f ! \n", adgrid_gen_time);
     auto t3 = Clock::now();
     local_vipss_.ClearPartialMemory();
+    std::cout << "free init normal allocated memory !" << std::endl;
     local_vipss_.BuildMatrixH();
     if(user_lambda_ < 1e-10)
     {
@@ -707,8 +709,20 @@ void VIPSSUnit::GenerateAdaptiveGrid()
         using Vec3 = Eigen::Matrix<double, 3, 1>;
         using Vec4 = Eigen::Matrix<double, 4, 1>;
         auto g_hrbf = std::make_shared<RBF_Core>();
-        // local_vipss_.out_pts_
-        local_vipss_.vipss_api_.build_cluster_hrbf(local_vipss_.out_pts_, newnormals_, s_func_vals_,g_hrbf);
+        
+        // std::string vipss_pt_path = "/home/jjxia/Documents/prejects/VIPSS/data/noise_kitten/kitten_h004.001/input_normal_0.001.ply";
+        // std::string vipss_s_val_path = "/home/jjxia/Documents/prejects/VIPSS/data/noise_kitten/kitten_h004.001/s_val_0.001.txt";
+
+        // std::vector<double> v_pts;
+        // std::vector<double> v_normals;
+        // readPLYFile(vipss_pt_path, v_pts, v_normals);
+        // std::vector<double> s_vals = ReadVectorFromFile(vipss_s_val_path);
+        // local_vipss_.vipss_api_.build_cluster_hrbf(v_pts, v_normals, s_vals, g_hrbf);
+   
+        local_vipss_.vipss_api_.build_cluster_hrbf(local_vipss_.out_pts_, newnormals_, s_func_vals_, g_hrbf);
+
+        // CompareMeshDiff(g_hrbf);
+
         std::vector<Vec3> in_points(local_vipss_.out_pts_.size()/3);
         for(int i = 0; i < local_vipss_.out_pts_.size()/3; ++i)
         {
@@ -805,7 +819,30 @@ void VIPSSUnit::Run()
     rbf_api_.Set_RBF_PARA();
     InitPtNormalWithLocalVipss();
     SolveOptimizaiton();
-    if(! use_global_hrbf_)
+
+    // std::string vipss_pt_path = "/home/jjxia/Documents/prejects/VIPSS/data/noise_kitten/kitten_h004.001/input_normal_0.01.ply";
+    // std::string vipss_s_val_path = "/home/jjxia/Documents/prejects/VIPSS/data/noise_kitten/kitten_h004.001/s_val_0.01.txt";
+    // std::string vipss_pt_path = "/home/jjxia/Documents/prejects/VIPSS/data/wireframes/doghead/input_normal.ply";
+    // std::string vipss_pt_path = "../../data/thin_plate/plate_comb_500n2_normal.ply";
+    std::string vipss_pt_path = "../../data/torus/torus_two_parts_normal.ply";
+
+    if(0)
+    {   
+        std::vector<double> v_pts;
+        std::vector<double> v_normals;
+        readPLYFile(vipss_pt_path, v_pts, v_normals);
+        local_vipss_.normals_ = v_normals;
+        
+        // std::vector<double> s_vals = ReadVectorFromFile(vipss_s_val_path);
+        std::vector<double> s_vals(v_pts.size()/3, 0);
+        local_vipss_.s_vals_ = s_vals;
+        newnormals_ = v_normals;
+        s_func_vals_ = s_vals;
+        local_vipss_.out_pts_ = v_pts;
+    }
+    
+    
+    // if(! use_global_hrbf_)
     {
         BuildNNHRBFFunctions();
     }
@@ -854,10 +891,8 @@ void VIPSSUnit::Run()
         // if(make_nn_const_neighbor_num_)
         // local_vipss_.voro_gen_.SetInsertBoundaryPtsToUnused();
     }
-    
     // test_vipss_timing::test_local_vipss(input_data_path_);
     // test_vipss_timing::visual_distval_pt(input_data_path_, 200);
-    
     std::string out_csv_file = out_dir_ + file_name_ + "_time_stats.txt";
     WriteStatsTimeCSV(out_csv_file, G_VP_stats);
 }
@@ -868,7 +903,6 @@ void VIPSSUnit::CalEnergyWithGtNormal()
     std::vector<double> vertices;
     std::vector<double> normals;
     readPLYFile(norm_path, vertices, normals);
-
     if(user_lambda_ <= 1e-12)
     {
         size_t n = vertices.size()/3;
@@ -879,7 +913,6 @@ void VIPSSUnit::CalEnergyWithGtNormal()
             arma_x(i+n)   = normals[3*i + 1];
             arma_x(i+n*2) = normals[3*i + 2];
         }
-
         Eigen::VectorXd a2 = (arma_x.transpose() * local_vipss_.final_h_eigen_).transpose();
         double re = arma_x.dot(a2);
         std::cout << "final residual val : " << re << std::endl;
@@ -898,6 +931,36 @@ void VIPSSUnit::CalEnergyWithGtNormal()
         double re = arma_x.dot(a2);
         std::cout << "final residual val : " << re << std::endl;
     }
-    
+}
+
+void VIPSSUnit::CompareMeshDiff(std::shared_ptr<RBF_Core> rbf_func)
+{
+    std::string mesh_path = "../../out/test/kitten_h004_0.01_mesh_lv.obj";
+    std::vector<double> vertices;
+    std::vector<unsigned int> faces;
+    std::vector<double> normals;
+    readObjFile(mesh_path, vertices, faces, normals);
+    double max_dist = 0.01;
+    std::vector<std::array<double, 3>> vts;
+    std::vector<std::array<double, 3>> colors;
+    std::vector<std::vector<size_t>> out_faces;
+
+    std::cout << " input vertices size : " << vertices.size()/3 << std::endl;
+    for(int i = 0; i < vertices.size()/3; ++i)
+    {
+        double dist = rbf_func->Dist_Function(R3Pt(vertices[3*i], vertices[3*i + 1], vertices[3*i + 2]));
+        double t = min(max_dist, abs(dist)) / max_dist;
+        RGBColor color = ErrorColorBlend(t);
+        vts.push_back({vertices[3*i], vertices[3*i + 1], vertices[3*i + 2]});
+        colors.push_back({color.r, color.g, color.b});
+    }
+    for(int i = 0; i < faces.size()/3; ++i)
+    {
+        out_faces.push_back({faces[3*i], faces[3*i +1], faces[3*i + 2]});
+    }
+
+    std::string out_path = "../../out/test/kitten_h004_0.01_mesh_lv_color.obj";
+    std::cout << "output mesh path : " << out_path << std::endl;
+    writePlyMeshWithColor(out_path, vts, colors, out_faces);
 
 }

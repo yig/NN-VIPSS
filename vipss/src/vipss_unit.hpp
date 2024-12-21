@@ -42,10 +42,9 @@ class VIPSSUnit {
 
         void SolveOptimizaiton();
         void BuildNNHRBFFunctions();
-
+        void CompareMeshDiff( std::shared_ptr<RBF_Core> rbf_func);
 
     public:
-
         std::string file_name_;
         std::string data_dir_; 
         std::string out_dir_;
@@ -103,6 +102,6 @@ class VIPSSUnit {
         double distfunc_threshold_ = 0.3;
         bool make_nn_const_neighbor_num_ = true; 
         bool use_global_hrbf_ = false;
-         
-
+        
+        
 };
