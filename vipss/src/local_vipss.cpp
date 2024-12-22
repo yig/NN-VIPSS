@@ -500,9 +500,9 @@ void LocalVipss::BuildHRBFPerNode()
         std::vector<double> cluster_nl_vec;
         if(use_partial_vipss) 
         {
-            cluster_nl_vec = {normals_[3*i], normals_[3*i + 1], normals_[3*i + 2]};
+            cluster_nl_vec = {out_normals_[3*i], out_normals_[3*i + 1], out_normals_[3*i + 2]};
         } else {
-            cluster_nl_vec = GetClusterNormalsFromIds(cluster_pt_ids, normals_);
+            cluster_nl_vec = GetClusterNormalsFromIds(cluster_pt_ids, out_normals_);
         }
         auto cluster_sv_vec = GetClusterSvalsFromIds(cluster_pt_ids, s_vals_);
 
@@ -549,9 +549,9 @@ void LocalVipss::BuildHRBFPerCluster()
             cluster_pt_vec.push_back(points_[pid][0]);
             cluster_pt_vec.push_back(points_[pid][1]);
             cluster_pt_vec.push_back(points_[pid][2]);
-            cluster_nl_vec.push_back(normals_[3*pid]);
-            cluster_nl_vec.push_back(normals_[3*pid + 1]);
-            cluster_nl_vec.push_back(normals_[3*pid + 2]);
+            cluster_nl_vec.push_back(out_normals_[3*pid]);
+            cluster_nl_vec.push_back(out_normals_[3*pid + 1]);
+            cluster_nl_vec.push_back(out_normals_[3*pid + 2]);
             cluster_sv_vec.push_back(s_vals_[pid]);
         }
         valid_pt_count += c_pids.size();

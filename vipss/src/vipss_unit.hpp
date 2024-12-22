@@ -72,7 +72,7 @@ class VIPSSUnit {
         arma::sp_mat Final_H_;
         size_t npt_; 
         Solution_Struct solver_;
-        std::vector<double> initnormals_;
+        // std::vector<double> initnormals_;
         std::vector<double> newnormals_;
         std::vector<double> s_func_vals_;
         const double M_PI_ = 3.14159265358979323846;

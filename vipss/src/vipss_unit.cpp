@@ -37,7 +37,7 @@ void VIPSSUnit::InitPtNormalWithLocalVipss()
     G_VP_stats.init_normal_total_time_ = std::chrono::nanoseconds(t2 - t1).count() / 1e9;
     G_VP_stats.tetgen_triangulation_time_ = local_vipss_.tet_gen_triangulation_time_;
     npt_ = local_vipss_.points_.size();
-    initnormals_ = local_vipss_.out_normals_;
+    // local_vipss_.out_normals_ = local_vipss_.out_normals_;
     // printf("adaptive grid generation time : %f ! \n", adgrid_gen_time);
     auto t3 = Clock::now();
     local_vipss_.ClearPartialMemory();
@@ -268,7 +268,7 @@ void VIPSSUnit::OptUnitVipssNormalSimple(){
     solver_.solveval.resize(npt_ * 2);
 
     for(size_t i=0;i<npt_;++i){
-        double *veccc = initnormals_.data()+i*3;
+        double *veccc = local_vipss_.out_normals_.data()+i*3;
         {
             if(axi_plane_ == AXI_PlANE::XYZ)
             {
@@ -339,7 +339,7 @@ void VIPSSUnit::OptUnitVipssNormalDirectSimple(){
     solver_.solveval.resize(npt_ * 3);
 
     for(size_t i=0;i<npt_;++i){
-        double *veccc = initnormals_.data()+i*3;
+        double *veccc = local_vipss_.out_normals_.data()+i*3;
         {
             solver_.solveval[i*3] =veccc[0];
             solver_.solveval[i*3 + 1] = veccc[1];
@@ -384,7 +384,7 @@ void VIPSSUnit::OptUnitVipssNormalDirect(){
     solver_.solveval.resize(npt_ * u_size);
 
     for(size_t i=0;i<npt_;++i){
-        double *veccc = initnormals_.data()+i*3;
+        double *veccc = local_vipss_.out_normals_.data()+i*3;
         {
             solver_.solveval[i*u_size]     = 0;
             solver_.solveval[i*u_size + 1] = veccc[0];
@@ -428,7 +428,7 @@ void VIPSSUnit::OptUnitVipssNormal(){
     solver_.solveval.resize(npt_ * 3);
 
     for(size_t i=0;i<npt_;++i){
-        double *veccc = initnormals_.data()+i*3;
+        double *veccc = local_vipss_.out_normals_.data()+i*3;
         {
             solver_.solveval[i*3] = 0.0;
             solver_.solveval[i*3 + 1] = atan2(sqrt(veccc[0]*veccc[0]+veccc[1]*veccc[1]),veccc[2] );
@@ -494,7 +494,7 @@ void VIPSSUnit::BuildNNHRBFFunctions()
     // G_VP_stats.generate_voro_data_time_ = generate_voro_data_time
     // auto t002 = Clock::now();
     // double generate_voro_data_time = std::chrono::nanoseconds(t002 - t001).count() / 1e9;
-    local_vipss_.normals_ = newnormals_;
+    local_vipss_.out_normals_ = newnormals_;
     local_vipss_.s_vals_ = s_func_vals_;
     local_vipss_.user_lambda_ = user_lambda_;
     local_vipss_.BuildHRBFPerNode();
@@ -518,20 +518,20 @@ void VIPSSUnit::BuildNNHRBFFunctions()
         auto t001 = Clock::now();
         // std::string octree_sample_path = out_dir_ + file_name_ + "octree_sample.xyz";
         // std::ofstream octree_file(octree_sample_path);
-    if(0)
-    {
-        for(auto pt : octree_sample_pts)
-        {
-            double gradient[3];
-            double dist_val = local_vipss_.NatureNeighborGradientOMP(&pt[0], gradient);
-            local_vipss_.s_vals_.push_back(dist_val);
-            local_vipss_.normals_.push_back(-1.0 * gradient[0] );
-            local_vipss_.normals_.push_back(-1.0 * gradient[1] );
-            local_vipss_.normals_.push_back(-1.0 * gradient[2] );
-            // octree_file << pt[0] << " " << pt[1] << " " << pt[2] << " ";
-            // octree_file << gradient[0] << " " << gradient[1] << " " << gradient[2] << std::endl;
-        }
-    }
+    // if(0)
+    // {
+    //     for(auto pt : octree_sample_pts)
+    //     {
+    //         double gradient[3];
+    //         double dist_val = local_vipss_.NatureNeighborGradientOMP(&pt[0], gradient);
+    //         local_vipss_.s_vals_.push_back(dist_val);
+    //         local_vipss_.normals_.push_back(-1.0 * gradient[0] );
+    //         local_vipss_.normals_.push_back(-1.0 * gradient[1] );
+    //         local_vipss_.normals_.push_back(-1.0 * gradient[2] );
+    //         // octree_file << pt[0] << " " << pt[1] << " " << pt[2] << " ";
+    //         // octree_file << gradient[0] << " " << gradient[1] << " " << gradient[2] << std::endl;
+    //     }
+    // }
         auto t0022 = Clock::now();
         G_VP_stats.octree_pt_gradient_cal_time_ = std::chrono::nanoseconds(t0022 - t001).count() / 1e9;
         std::cout << "evaluate octree sample time : " << G_VP_stats.octree_pt_gradient_cal_time_ << std::endl;
@@ -831,7 +831,7 @@ void VIPSSUnit::Run()
         std::vector<double> v_pts;
         std::vector<double> v_normals;
         readPLYFile(vipss_pt_path, v_pts, v_normals);
-        local_vipss_.normals_ = v_normals;
+        local_vipss_.out_normals_ = v_normals;
         
         // std::vector<double> s_vals = ReadVectorFromFile(vipss_s_val_path);
         std::vector<double> s_vals(v_pts.size()/3, 0);
