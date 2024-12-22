@@ -61,7 +61,7 @@ class VIPSSUnit {
         //VoronoiGen voro_gen_;
         LocalVipss local_vipss_;
         RBF_API rbf_api_;
-        arma::sp_imat adjacent_mat_;
+        // arma::sp_imat adjacent_mat_;
         arma::vec sg_;
         
         // std::vector<arma::mat> local_M_vec_;

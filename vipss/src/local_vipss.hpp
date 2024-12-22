@@ -111,13 +111,13 @@ class LocalVipss {
         
         
 
-        void GroupClustersWithDegree();
+        // void GroupClustersWithDegree();
         void SaveGroupPtsWithColor(const std::string& path);
         void PtPCA(std::vector<double>& pts);
-        void OptimizeAdjacentMat();
+        // void OptimizeAdjacentMat();
 
         void InitAdjacentData();
-        void MergeHRBFClustersWithMap();
+        // void MergeHRBFClustersWithMap();
         void BuildHRBFPerCluster();
 
         void ClearPartialMemory();
@@ -135,7 +135,7 @@ class LocalVipss {
         std::vector<std::unordered_set<size_t>> cluster_adjacent_ids_;
         std::vector<std::unordered_set<size_t>> cluster_pt_ids_;
         std::vector<std::vector<size_t> > cluster_core_pt_ids_vec_; 
-        arma::uvec cluster_core_pt_nums_;
+        // arma::uvec cluster_core_pt_nums_;
         arma::vec cluster_volume_vals_;
         std::vector<size_t> cluster_id_map_;
         std::vector<size_t> valid_cluster_dist_map_;
@@ -144,11 +144,10 @@ class LocalVipss {
         SpiMat cluster_pt_emat_;
         SpiMat cluster_cores_emat_;
 
-        arma::sp_umat adjacent_mat_;
+        // arma::sp_umat adjacent_mat_;
         arma::sp_umat cluster_cores_mat_;
-        arma::sp_umat cluster_adjacent_mat_;
-        
-        arma::sp_umat cluster_adjacent_mat_opt_;
+        // arma::sp_umat cluster_adjacent_mat_;
+        // arma::sp_umat cluster_adjacent_mat_opt_;
         // arma::sp_umat cluster_MST_mat_;
         // arma::sp_mat cluster_scores_mat_;
         // arma::sp_umat cluster_adjacent_pt_mat_;
