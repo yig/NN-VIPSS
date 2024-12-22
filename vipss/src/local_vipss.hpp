@@ -62,9 +62,8 @@ class LocalVipss {
         //                 const std::vector<double>& all_svals) const; 
         inline std::vector<size_t> GetClusterCoreIds(size_t cluster_id) const;
         void InitNormalWithVipss();
-
         inline double CalculateClusterPairScore(size_t c_a, size_t c_b, bool& flip) const;
-        void BuildClusterAdjacentMat();
+        // void BuildClusterAdjacentMat();
         void CalculateClusterNeiScores(bool is_init = false);
 
         void OuputPtN(const std::string& out_path, bool orient_normal = false);
@@ -87,7 +86,6 @@ class LocalVipss {
 
     public:
         void BuidClusterCoresPtIds();
-        void UpdateClusterCoresPtIds();
 
         inline double CalculateScores(const std::vector<arma::vec3>& a_normals, const std::vector<arma::vec3>& b_normals) const;
         inline double CalculateScores(const arma::mat& a_normals, const arma::mat& b_normals) const;
@@ -132,20 +130,20 @@ class LocalVipss {
         static VoronoiGen voro_gen_;
         RBF_API vipss_api_;
 
-        std::vector<std::unordered_set<size_t>> cluster_adjacent_ids_;
+        // std::vector<std::unordered_set<size_t>> cluster_adjacent_ids_;
         std::vector<std::unordered_set<size_t>> cluster_pt_ids_;
-        std::vector<std::vector<size_t> > cluster_core_pt_ids_vec_; 
+        // std::vector<std::vector<size_t> > cluster_core_pt_ids_vec_; 
         // arma::uvec cluster_core_pt_nums_;
         arma::vec cluster_volume_vals_;
-        std::vector<size_t> cluster_id_map_;
+        // std::vector<size_t> cluster_id_map_;
         std::vector<size_t> valid_cluster_dist_map_;
 
-        SpiMat cluster_adjacent_emat_;
-        SpiMat cluster_pt_emat_;
-        SpiMat cluster_cores_emat_;
+        // SpiMat cluster_adjacent_emat_;
+        // SpiMat cluster_pt_emat_;
+        // SpiMat cluster_cores_emat_;
 
         // arma::sp_umat adjacent_mat_;
-        arma::sp_umat cluster_cores_mat_;
+        // arma::sp_umat cluster_cores_mat_;
         // arma::sp_umat cluster_adjacent_mat_;
         // arma::sp_umat cluster_adjacent_mat_opt_;
         // arma::sp_umat cluster_MST_mat_;
@@ -167,20 +165,20 @@ class LocalVipss {
         static std::vector<tetgenmesh::point> points_; 
         std::vector<double> normals_;
         std::vector<double> s_vals_;
-        std::vector<std::vector<size_t>> cluster_core_pt_ids_;
+        // std::vector<std::vector<size_t>> cluster_core_pt_ids_;
         // static std::vector<std::vector<size_t>> cluster_all_pt_ids_;
         std::vector<tetgenmesh::point> cluster_centers_;
         size_t pt_num_;
-        std::vector<std::pair<int, double>> cluster_id_scores_;
-        std::set<size_t> update_score_cluster_ids_;
+        // std::vector<std::pair<int, double>> cluster_id_scores_;
+        // std::set<size_t> update_score_cluster_ids_;
         std::vector<double> out_pts_;
         std::vector<double> out_normals_;
         std::vector<std::pair<size_t, double>> vipss_time_stats_;
         std::vector<std::vector<std::pair<size_t, double>>> cluster_ptn_vipss_time_stats_;
 
-        std::vector<arma::sp_mat> cluster_pt_mat_vec_; 
-        std::vector<arma::mat> cluster_J_mat_vec_;
-        std::vector<arma::sp_mat> temp_H_vec_;
+        // std::vector<arma::sp_mat> cluster_pt_mat_vec_; 
+        // std::vector<arma::mat> cluster_J_mat_vec_;
+        // std::vector<arma::sp_mat> temp_H_vec_;
         const size_t temp_H_max_num_ = 2048;
         SpMat final_h_eigen_;
         std::vector<Triplet> h_ele_triplets_;
