@@ -566,7 +566,7 @@ void VIPSSUnit::BuildNNHRBFFunctions()
         local_vipss_.node_rbf_vec_.resize(all_valid_pt_size);
 
         auto t0041 = Clock::now();
-        VoronoiGen::cluster_init_pts_.resize(all_valid_pt_size);
+        // VoronoiGen::cluster_init_pts_.resize(all_valid_pt_size);
         std::vector<std::vector<double>> cluster_sv_vecs(all_valid_pt_size); 
         std::vector<std::vector<double>> cluster_pt_vecs(all_valid_pt_size);
         std::vector<std::vector<double>> cluster_nl_vecs(all_valid_pt_size);
@@ -583,15 +583,15 @@ void VIPSSUnit::BuildNNHRBFFunctions()
             auto cur_pid = local_vipss_.voro_gen_.point_id_map_[cur_pt];
             std::vector<double> cluster_nl_vec;
             std::vector<double> cluster_sv_vec; 
-            std::vector<double> cluster_pt_vec;
+            // std::vector<double> cluster_pt_vec;
             for(auto nn_pt : candidate_pts)
             {
                 // if( nn_pt == cur_pt) continue;
                 auto pid = local_vipss_.voro_gen_.point_id_map_[nn_pt];
                 cluster_pt_ids.push_back(pid);
-                cluster_pt_vec.push_back(nn_pt[0]);
-                cluster_pt_vec.push_back(nn_pt[1]);
-                cluster_pt_vec.push_back(nn_pt[2]);
+                // cluster_pt_vec.push_back(nn_pt[0]);
+                // cluster_pt_vec.push_back(nn_pt[1]);
+                // cluster_pt_vec.push_back(nn_pt[2]);
                 // cluster_sv_vec.push_back(local_vipss_.s_vals_[pid]);
                 // cluster_nl_vec.push_back(local_vipss_.normals_[3*pid]);
                 // cluster_nl_vec.push_back(local_vipss_.normals_[3*pid + 1]);
@@ -600,7 +600,7 @@ void VIPSSUnit::BuildNNHRBFFunctions()
             max_cluster_size = max_cluster_size > cluster_pt_ids.size() ? max_cluster_size : cluster_pt_ids.size();
             cluster_sum += cluster_pt_ids.size();
             local_vipss_.voro_gen_.cluster_init_pids_[i] = cluster_pt_ids;
-            VoronoiGen::cluster_init_pts_[i] = cluster_pt_vec;
+            // VoronoiGen::cluster_init_pts_[i] = cluster_pt_vec;
             // cluster_sv_vecs[i] = cluster_sv_vec;
             // cluster_pt_vecs[i] = cluster_pt_vec; 
             // cluster_nl_vecs[i] = cluster_nl_vec;

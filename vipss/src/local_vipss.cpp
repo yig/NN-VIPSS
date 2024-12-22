@@ -427,13 +427,12 @@ void LocalVipss::BuildMatrixH()
     // auto t6 = Clock::now();
     // double add_time = std::chrono::nanoseconds(t6 - t5).count()/1e9;
     // add_ele_to_vector_time += add_time;
-    
     auto t_h1 = Clock::now();
     // auto t_h111 = Clock::now();
     // double push_to_vec_time = std::chrono::nanoseconds(t_h111 - t_h1).count() / 1e9;
     // printf("--- push ele to vector  time : %f \n", push_to_vec_time);
-
     final_h_eigen_.setFromTriplets(h_ele_triplets_.begin(), h_ele_triplets_.end());
+    h_ele_triplets_.clear();
     auto t_h2 = Clock::now();
     double build_h_from_tris_time = std::chrono::nanoseconds(t_h2 - t_h1).count()/1e9;
     
@@ -495,8 +494,16 @@ void LocalVipss::BuildHRBFPerNode()
 #pragma omp parallel for 
     for(int i =0; i < cluster_num; ++i)
     {
-        std::vector<double> cluster_pt_vec = VoronoiGen::cluster_init_pts_[i];
+        // std::vector<double> cluster_pt_vec = VoronoiGen::cluster_init_pts_[i];
         const std::vector<size_t>& cluster_pt_ids = VoronoiGen::cluster_init_pids_[i];
+        std::vector<double> cluster_pt_vec(cluster_pt_ids.size() * 3);  
+        for(int j = 0; j < cluster_pt_ids.size(); ++j)
+        {
+            cluster_pt_vec[3*j]     = points_[cluster_pt_ids[j]][0];
+            cluster_pt_vec[3*j + 1] = points_[cluster_pt_ids[j]][1];
+            cluster_pt_vec[3*j + 2] = points_[cluster_pt_ids[j]][2];
+        }
+
         std::vector<double> cluster_nl_vec;
         if(use_partial_vipss) 
         {
@@ -738,8 +745,17 @@ void LocalVipss::InitNormalWithVipss()
 // shared(VoronoiGen::cluster_init_pts_, VoronoiGen::cluster_init_pids_, VoronoiGen::cluster_accum_size_vec_)
     for(int i =0; i < int(npt); ++i)
     {
-        auto vts = VoronoiGen::cluster_init_pts_[i];
+        // auto vts = VoronoiGen::cluster_init_pts_[i];
         const auto& p_ids = VoronoiGen::cluster_init_pids_[i];
+        std::vector<double> vts(p_ids.size() * 3, 0);
+        for(int j = 0; j < p_ids.size(); ++j)
+        {
+            vts[3*j]     = points_[p_ids[j]][0];
+            vts[3*j + 1] = points_[p_ids[j]][1];
+            vts[3*j + 2] = points_[p_ids[j]][2];
+        }
+
+
         // cluster_all_pt_ids_[i] = p_ids;
         // auto t1 = Clock::now();
         size_t unit_npt = p_ids.size(); 

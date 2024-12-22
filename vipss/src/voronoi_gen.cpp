@@ -1461,7 +1461,7 @@ void VoronoiGen::BuildAdjecentMat()
     // points_.clear()
     
     cluster_init_pids_.resize(point_id_map_.size());
-    cluster_init_pts_.resize(point_id_map_.size());
+    // cluster_init_pts_.resize(point_id_map_.size());
     cluster_size_vec_.resize(point_id_map_.size() + 1);
     cluster_size_vec_.zeros();
     for(auto ploop : points_)
@@ -1474,9 +1474,9 @@ void VoronoiGen::BuildAdjecentMat()
         cur_cluster_pids.push_back(cur_p_id);
         std::vector<double> cur_cluster_pts;
 
-        cur_cluster_pts.push_back(ploop[0]);
-        cur_cluster_pts.push_back(ploop[1]);
-        cur_cluster_pts.push_back(ploop[2]);
+        // cur_cluster_pts.push_back(ploop[0]);
+        // cur_cluster_pts.push_back(ploop[1]);
+        // cur_cluster_pts.push_back(ploop[2]);
 
         for(auto &pt : candidate_pts)
         {
@@ -1486,13 +1486,13 @@ void VoronoiGen::BuildAdjecentMat()
             pt_adjecent_mat_(cur_p_id, p_id) = 1;
             cur_cluster_pids.push_back(p_id);
 
-            cur_cluster_pts.push_back(pt[0]);
-            cur_cluster_pts.push_back(pt[1]);
-            cur_cluster_pts.push_back(pt[2]);
+            // cur_cluster_pts.push_back(pt[0]);
+            // cur_cluster_pts.push_back(pt[1]);
+            // cur_cluster_pts.push_back(pt[2]);
         }
         ploop = tetMesh_.pointtraverse();
         cluster_init_pids_[cur_p_id] = cur_cluster_pids;
-        cluster_init_pts_[cur_p_id]  = cur_cluster_pts;
+        // cluster_init_pts_[cur_p_id]  = cur_cluster_pts;
         cluster_size_vec_[cur_p_id + 1] = cur_cluster_pids.size();
         // printf("cur pt id 000 : %d \n", cur_p_id);
     }
@@ -1532,6 +1532,6 @@ void VoronoiGen::BuildPicoTree()
 
 std::unordered_map<tetgenmesh::point, size_t> VoronoiGen::point_id_map_;
 std::vector<std::vector<size_t>> VoronoiGen::cluster_init_pids_;
-std::vector<std::vector<double>> VoronoiGen::cluster_init_pts_;
+// std::vector<std::vector<double>> VoronoiGen::cluster_init_pts_;
 arma::ivec VoronoiGen::cluster_size_vec_; 
 arma::ivec VoronoiGen::cluster_accum_size_vec_;
