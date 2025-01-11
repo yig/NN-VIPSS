@@ -169,7 +169,7 @@ arma::mat BuildHrbfMat(std::vector<double>&pts){
     return Minv;
 }
 
-arma::mat BuildHrbfMat(const std::vector<tetgenmesh::point>&pts, const std::vector<size_t>&pids, bool use_rbf_base)
+arma::mat BuildHrbfMat(const std::vector<tetgenmesh::point>&pts, const std::vector<int>&pids, bool use_rbf_base)
 {
     int npt = int(pids.size());
     int key_npt = npt;

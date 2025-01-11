@@ -23,6 +23,7 @@ public:
    R3Pt center;
    double dSize;
    int iBound;
+   int closet_id;
 
 
    Surfacer(){}

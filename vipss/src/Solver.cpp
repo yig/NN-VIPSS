@@ -194,6 +194,8 @@ int Solver::nloptwrapper(vector<double>&lowerbound,
         //nlopt::opt myopt(nlopt::LD_CCSAQ,uint(numOfPara));
         //nlopt::opt myopt(nlopt::LD_SLSQP,uint(numOfPara));
         nlopt::opt myopt(nlopt::LD_LBFGS,uint(numOfPara));
+         
+        
         myopt.set_ftol_rel(tor);
         //myopt.set_ftol_abs(tor);
 
@@ -258,6 +260,9 @@ int Solver::nloptwrapperDirect(std::vector<double>&lowerbound,
         //nlopt::opt myopt(nlopt::LD_CCSAQ,uint(numOfPara));
         //nlopt::opt myopt(nlopt::LD_SLSQP,uint(numOfPara));
         nlopt::opt myopt(nlopt::LD_LBFGS,uint(numOfPara));
+        // nlopt::opt myopt(nlopt::LD_TNEWTON_PRECOND_RESTART,uint(numOfPara));
+        // std::cout << "solve method newtow!" << std::endl;
+        // nlopt::opt myopt(nlopt::LD_TNEWTON_PRECOND_RESTART,uint(numOfPara));
         // nlopt::opt myopt(nlopt::LD_AUGLAG_EQ,uint(numOfPara));
         // nlopt::opt myopt(nlopt::LD_AUGLAG,uint(numOfPara));
         myopt.set_ftol_rel(tor);

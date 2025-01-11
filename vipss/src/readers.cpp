@@ -1353,11 +1353,25 @@ bool readXYZ(string filename, vector<double>&v){
         cout << "Reading: "<<filename<<endl;
     }
     v.clear();
-    double val;
-    while(!reader.eof()){
-        reader>>val;
-        v.push_back(val);
+    std::string line;
+    while (std::getline(reader, line)) {
+        std::stringstream ss(line);
+        double x, y, z;
+        // Read the first three values as coordinates
+        if (ss >> x >> y >> z) {
+            v.push_back(x);
+            v.push_back(y);
+            v.push_back(z);
+
+        }
+        // Ignore the rest of the line (e.g., normals or other attributes)
     }
+    // double val;
+    // while(!reader.eof()){
+
+    //     reader>>val;
+    //     v.push_back(val);
+    // }
     reader.close();
     return true;
 }
@@ -1583,7 +1597,7 @@ void WriteStatsTimeCSV(const std::string& path, const VP_STATS& vp_stats)
     {
         csv_file << "pt num, " << vp_stats.pt_num_ << std::endl;
         csv_file << "ave evaluate nn num, " << vp_stats.average_neighbor_num_ << std::endl;
-        csv_file << "ave cluster size, " << vp_stats.average_cluster_size_ << std::endl;
+        // csv_file << "ave cluster size, " << vp_stats.average_cluster_size_ << std::endl;
         csv_file << "octree dummy pt num, " << vp_stats.octree_dummy_pt_num_ << std::endl;
         csv_file << "tetgen triangulation, " << vp_stats.tetgen_triangulation_time_ << std::endl;
         csv_file << "init normal, " << vp_stats.init_normal_total_time_ << std::endl;
@@ -1602,6 +1616,23 @@ void WriteStatsTimeCSV(const std::string& path, const VP_STATS& vp_stats)
         csv_file << "NN surface,  " << vp_stats.surface_total_time_ << std::endl;
         csv_file << "adgrid generation,  " << vp_stats.adgrid_gen_time_ << std::endl;
         csv_file << "global HRBF coefficient, " << vp_stats.hrbf_coefficient_time_ << std::endl;
+        csv_file << "max memory, " << vp_stats.possible_max_memory << std::endl;
+        csv_file << "final H memory, " << vp_stats.max_hmat_memory << std::endl;
+        csv_file << "ave cluster size, " << vp_stats.ave_cluster_size << std::endl;
+        csv_file << "cluster size std deviation, " << vp_stats.cluster_std_dev << std::endl;
+    } 
+}
+
+void WriteVectorValsToCSV(const std::string& path, const std::vector<double>& vector_vals)
+{
+    std::ofstream csv_file;
+    csv_file.open(path);
+    if(csv_file)
+    {
+        for(auto val : vector_vals)
+        {
+            csv_file << val << std::endl;
+        }
     } 
 }
 

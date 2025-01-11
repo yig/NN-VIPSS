@@ -1,5 +1,6 @@
 #include "Polygonizer.h"
-
+#include <cmath>
+#include <random>
 //<rts> #include <misc/Srf_Sweep.H>
 //#include <fitting/Fit_RBFHermite.H>
 
@@ -498,6 +499,8 @@ bool polygonize (
 
    p.vertices.count = p.vertices.max = 0; /* no vertices yet */
    p.vertices.ptr = NULL;
+
+    // std::cout << "start to search with converge! 0000 " << std::endl;
    
    /* find point on surface, beginning search at (x, y, z):  */
    srand(1);
@@ -510,6 +513,8 @@ bool polygonize (
        cerr << "ERR: polyganizer can't find starting point\n";
 		return false;
    }
+
+//    std::cout << "start to search with converge!  " << std::endl;
    converge(in.p, out.p, in.value, p.function, p.start);
 
    /* push initial cube on stack: */
@@ -619,9 +624,10 @@ void testface (
    static int facebit[6] = {2, 2, 1, 1, 0, 0};
    int n, pos = old->corners[c1]->value > 0.0 ? 1 : 0;
    int bit = facebit[face];
-   double dist_threshold = 0.01; 
+//    double dist_threshold = std::max(0.01, p->size/10.0); 
+    double dist_threshold = 0.05; 
    
-        /* test if  no surface crossing, cube out of bounds, or prev. visited? */
+    /* test if  no surface crossing, cube out of bounds, or prev. visited? */
     if ((old->corners[c2]->value > 0) == pos &&
         (old->corners[c3]->value > 0) == pos &&
         (old->corners[c4]->value > 0) == pos) 
@@ -697,6 +703,25 @@ CORNERLIST *setcorner (PROCESS *p, int i, int j, int k) {
    return l;
 }
 
+R3Vec generateRandomUnitVector(double scale) {
+    // Create a random device and Mersenne Twister generator
+    std::random_device rd;
+    std::mt19937 gen(rd());
+
+    // Uniform distribution for phi (0 to 2π)
+    std::uniform_real_distribution<double> phiDist(0.0, 2 * M_PI);
+
+    // Uniform distribution for cos(theta) (-1 to 1)
+    std::uniform_real_distribution<double> cosThetaDist(-1.0, 1.0);
+
+    // Generate random angles
+    double phi = phiDist(gen);
+    double cosTheta = cosThetaDist(gen);
+    double sinTheta = std::sqrt(1 - cosTheta * cosTheta);
+
+    // Convert spherical to Cartesian coordinates
+    return {sinTheta * std::cos(phi) * scale, sinTheta * std::sin(phi) * scale, cosTheta * scale};
+}
 
 /* find: search for point with value of given sign (0: neg, 1: pos) */
 
@@ -706,8 +731,18 @@ TEST find (int sign, PROCESS *p, const R3Pt &in_pt)
    TEST test;
    double range = p->size;
    test.ok = 1;
+//    test.p = in_pt;
+//    test.value = p->function(test.p);
+//    if (sign == (test.value > 0.0)) return test;
+    // sign = 1;
+    // if(p->function(test.p) > 0)
+    // {
+    //     sign = 0;
+    // }
    for (i = 0; i < 10000; i++) {
-       const R3Vec vec(range*(RAND()-0.5), range*(RAND()-0.5), range*(RAND()-0.5));
+    //    const R3Vec vec(range*(RAND()-0.5), range*(RAND()-0.5), range*(RAND()-0.5));
+        // const R3Vec vec(range*(sin(RAND()* 3.14159)), range*(sin(RAND()* 3.14159)), range*(RAND()-0.5));
+       R3Vec vec = generateRandomUnitVector(range);
        test.p = in_pt + vec;
        test.value = p->function(test.p);
        if (sign == (test.value > 0.0)) return test;

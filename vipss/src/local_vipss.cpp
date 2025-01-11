@@ -23,6 +23,18 @@ std::vector<tetgenmesh::point> LocalVipss::points_;
 // std::vector<std::vector<size_t>> LocalVipss::cluster_all_pt_ids_;
 
 
+double calculateMemoryUsageG(const SpMat& matrix) {
+    using Scalar = typename SpMat::Scalar;
+    using Index = typename SpMat::Index;
+
+    size_t valueSize = sizeof(Scalar) * matrix.nonZeros();
+    size_t innerIndexSize = sizeof(Index) * matrix.nonZeros();
+    size_t outerIndexSize = sizeof(Index) * (matrix.outerSize() + 1);
+
+    return double(valueSize + innerIndexSize + outerIndexSize) / (1024.0 * 1024.0 * 1024.0);
+}
+
+
 void LocalVipss::TestInsertPt()
 {
     // std::string in_pt_path = "/home/jjxia/Documents/projects/VIPSS_LOCAL/data/doghead_100/doghead_100.ply";
@@ -124,9 +136,48 @@ void LocalVipss::Init(const std::string & path, const std::string& ext)
     } else {
         readXYZ(path, in_pts);
     }
+    bool normalize_init_pts = true;
+
+    if(normalize_init_pts)
+    {
+        double min_x = std::numeric_limits<double>::max();
+        double min_y = std::numeric_limits<double>::max();
+        double min_z = std::numeric_limits<double>::max();
+
+        double max_x = std::numeric_limits<double>::min();
+        double max_y = std::numeric_limits<double>::min();
+        double max_z = std::numeric_limits<double>::min();
+
+        for(size_t i =0; i < in_pts.size()/3; ++i)
+        {
+            min_x = min_x < in_pts[3*i]     ? min_x : in_pts[3*i];
+            min_y = min_y < in_pts[3*i + 1] ? min_y : in_pts[3*i + 1];
+            min_z = min_z < in_pts[3*i + 2] ? min_z : in_pts[3*i + 2];
+
+            max_x = max_x > in_pts[3*i]     ? max_x : in_pts[3*i];
+            max_y = max_y > in_pts[3*i + 1] ? max_y : in_pts[3*i + 1];
+            max_z = max_z > in_pts[3*i + 2] ? max_z : in_pts[3*i + 2];
+        }
+        double cx = (min_x + max_x) / 2.0;
+        double cy = (min_y + max_y) / 2.0;
+        double cz = (min_z + max_z) / 2.0;
+        
+        double sx = (max_x - min_x) / 2.0 ;
+        double sy = (max_y - min_y) / 2.0 ;
+        double sz = (max_z - min_z) / 2.0 ;
+        double scale = std::max(sx, std::max(sy, sz));
+        for(size_t i =0; i < in_pts.size()/3; ++i)
+        {
+            in_pts[3*i] = (in_pts[3*i] - cx) / scale;
+            in_pts[3*i + 1] = (in_pts[3*i + 1] - cy) / scale;
+            in_pts[3*i + 2] = (in_pts[3*i + 2] - cz) / scale;
+        }
+        in_pt_center_ = {cx, cy, cz};
+        in_pt_scale_ = scale;
+    }
     // printf("load data file : %s \n", path.c_str());
     printf("read point size : %lu \n", in_pts.size()/3);
-    origin_in_pts_ = in_pts;
+    // origin_in_pts_ = in_pts;
     if(use_octree_sample_)
     {
         auto t0 = Clock::now();
@@ -149,7 +200,7 @@ void LocalVipss::Init(const std::vector<double>& in_pts)
     voro_gen_.InitMesh();
     auto t001 = Clock::now();
     tet_gen_triangulation_time_ = std::chrono::nanoseconds(t001 - t0).count()/1e9;
-    printf("finish triangulation \n");
+    printf("finish triangulation :%f s \n", tet_gen_triangulation_time_);
     voro_gen_.BuildAdjecentMat();
     auto t002 = Clock::now();
     tet_build_adj_mat_time_ = std::chrono::nanoseconds(t002 - t001).count()/1e9;
@@ -175,7 +226,7 @@ void LocalVipss::Init(const std::vector<double>& in_pts)
     cluster_scores_mat_.resize(pt_num_, pt_num_);
     auto t1 = Clock::now(); 
     double init_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
-    printf("build triangulation and initilization : %f s ! \n", init_time);
+    printf("build adj mat and initilization : %f s ! \n", init_time);
 }
 
 // inline std::vector<size_t> LocalVipss::GetClusterCoreIds(size_t cluster_id) const
@@ -220,48 +271,48 @@ inline arma::sp_mat BuildClusterPtIdMatrix(const std::vector<size_t>& p_ids, siz
     return unit_cluster_mat;
 }
 
-void LocalVipss::AddClusterHMatrix(const std::vector<size_t>& p_ids, const arma::mat& J_m, size_t npt)
+void LocalVipss::AddClusterHMatrix(const std::vector<int>& p_ids, const arma::mat& J_m, size_t npt)
 {
-    size_t unit_npt = p_ids.size();
-    size_t unit_key_npt = unit_npt;
-    std::vector<Triplet> coefficients;
-    for(size_t i = 0; i < unit_npt; ++i)
-    {
-        size_t pi = p_ids[i];
-        if(user_lambda_ > 1e-12)
-        {
-            for(size_t j = 0; j < unit_npt; ++j)
-            {
-                h_ele_triplets_.push_back(std::move(Triplet(pi, p_ids[j], J_m(i, j))));
-            }
-            for(size_t j = 0; j < unit_key_npt; ++j)
-            {
-                h_ele_triplets_.push_back(std::move(Triplet(pi, p_ids[j] + npt, J_m(i, j + unit_npt))));
-                h_ele_triplets_.push_back(std::move(Triplet(pi, p_ids[j] + npt*2, J_m(i, j + unit_npt + unit_key_npt)))); 
-                h_ele_triplets_.push_back(std::move(Triplet(pi, p_ids[j] + npt*3, J_m(i, j + unit_npt + unit_key_npt* 2))));   
-            }
-            for(size_t j = 0; j < unit_key_npt; ++j)
-            {
-                h_ele_triplets_.push_back(std::move(Triplet(p_ids[j] + npt,   pi, J_m(i, j + unit_npt))));
-                h_ele_triplets_.push_back(std::move(Triplet(p_ids[j] + npt*2, pi, J_m(i, j + unit_npt + unit_key_npt)))); 
-                h_ele_triplets_.push_back(std::move(Triplet(p_ids[j] + npt*3, pi, J_m(i, j + unit_npt + unit_key_npt* 2))));   
-            }
-        }
+    // size_t unit_npt = p_ids.size();
+    // size_t unit_key_npt = unit_npt;
+    // std::vector<Triplet> coefficients;
+    // for(size_t i = 0; i < unit_npt; ++i)
+    // {
+    //     size_t pi = p_ids[i];
+    //     if(user_lambda_ > 1e-12)
+    //     {
+    //         for(size_t j = 0; j < unit_npt; ++j)
+    //         {
+    //             h_ele_triplets_.push_back(std::move(Triplet(pi, p_ids[j], J_m(i, j))));
+    //         }
+    //         for(size_t j = 0; j < unit_key_npt; ++j)
+    //         {
+    //             h_ele_triplets_.push_back(std::move(Triplet(pi, p_ids[j] + npt, J_m(i, j + unit_npt))));
+    //             h_ele_triplets_.push_back(std::move(Triplet(pi, p_ids[j] + npt*2, J_m(i, j + unit_npt + unit_key_npt)))); 
+    //             h_ele_triplets_.push_back(std::move(Triplet(pi, p_ids[j] + npt*3, J_m(i, j + unit_npt + unit_key_npt* 2))));   
+    //         }
+    //         for(size_t j = 0; j < unit_key_npt; ++j)
+    //         {
+    //             h_ele_triplets_.push_back(std::move(Triplet(p_ids[j] + npt,   pi, J_m(i, j + unit_npt))));
+    //             h_ele_triplets_.push_back(std::move(Triplet(p_ids[j] + npt*2, pi, J_m(i, j + unit_npt + unit_key_npt)))); 
+    //             h_ele_triplets_.push_back(std::move(Triplet(p_ids[j] + npt*3, pi, J_m(i, j + unit_npt + unit_key_npt* 2))));   
+    //         }
+    //     }
         
-        if(i < unit_key_npt)
-        {
-            for(size_t step = 0; step < 3; ++step)
-            {
-                size_t row_i = npt + npt * step + pi;
-                size_t rowv_i = i + unit_npt + unit_key_npt * step;
-                for(size_t j = 0; j < unit_key_npt; ++j)
-                {
-                    h_ele_triplets_.push_back(std::move(Triplet(row_i, p_ids[j] + npt,     J_m( rowv_i, j + unit_npt))));
-                    h_ele_triplets_.push_back(std::move(Triplet(row_i, p_ids[j] + npt * 2, J_m( rowv_i, j + unit_npt + unit_key_npt))));
-                    h_ele_triplets_.push_back(std::move(Triplet(row_i, p_ids[j] + npt * 3, J_m( rowv_i, j + unit_npt + unit_key_npt * 2))));
-                }
-            }
-        }
+    //     if(i < unit_key_npt)
+    //     {
+    //         for(size_t step = 0; step < 3; ++step)
+    //         {
+    //             size_t row_i = npt + npt * step + pi;
+    //             size_t rowv_i = i + unit_npt + unit_key_npt * step;
+    //             for(size_t j = 0; j < unit_key_npt; ++j)
+    //             {
+    //                 h_ele_triplets_.push_back(std::move(Triplet(row_i, p_ids[j] + npt,     J_m( rowv_i, j + unit_npt))));
+    //                 h_ele_triplets_.push_back(std::move(Triplet(row_i, p_ids[j] + npt * 2, J_m( rowv_i, j + unit_npt + unit_key_npt))));
+    //                 h_ele_triplets_.push_back(std::move(Triplet(row_i, p_ids[j] + npt * 3, J_m( rowv_i, j + unit_npt + unit_key_npt * 2))));
+    //             }
+    //         }
+    //     }
 
         // for(size_t step = 0; step < 4; ++step)
         // {
@@ -282,11 +333,11 @@ void LocalVipss::AddClusterHMatrix(const std::vector<size_t>& p_ids, const arma:
         //         }    
         //     }
         // }
-    }
+    // }
 }
 
 
-void LocalVipss::AddClusterHMatrix(const std::vector<size_t>& p_ids, const arma::mat& J_m, size_t npt, std::vector<Triplet>& ele_vect )
+void LocalVipss::AddClusterHMatrix(const std::vector<int>& p_ids, const arma::mat& J_m, size_t npt, std::vector<Triplet>& ele_vect )
 {
     size_t unit_npt = p_ids.size();
     size_t unit_key_npt = unit_npt;
@@ -332,12 +383,12 @@ void LocalVipss::AddClusterHMatrix(const std::vector<size_t>& p_ids, const arma:
 }
 
 
-void LocalVipss::AddClusterHMatrix(const std::vector<size_t>& p_ids, const arma::mat& J_m, size_t npt, 
+void LocalVipss::AddClusterHMatrix(const std::vector<int>& p_ids, const arma::mat& J_m, size_t npt, 
                                     std::vector<Triplet>::iterator& ele_iter )
 {
     size_t unit_npt = p_ids.size();
     size_t unit_key_npt = unit_npt;
-    std::vector<Triplet> coefficients;
+    // std::vector<Triplet> coefficients;
     size_t iter_num = use_rbf_base_? 1 : unit_npt;
 
     for(size_t i = 0; i < iter_num; ++i)
@@ -381,6 +432,91 @@ void LocalVipss::AddClusterHMatrix(const std::vector<size_t>& p_ids, const arma:
 }
 
 
+
+void LocalVipss::AddHalfClusterHMatrix(const std::vector<int>& p_ids, const arma::mat& J_m, size_t npt, 
+                                    std::vector<Triplet>::iterator& ele_iter,  std::vector<Triplet>::iterator& diagonal_ele_iter)
+{
+    size_t unit_npt = p_ids.size();
+    size_t unit_key_npt = unit_npt;
+    // std::vector<Triplet> coefficients;
+
+    for(size_t i = 0; i < unit_npt; ++i)
+    {
+        size_t pi = p_ids[i];
+        if(user_lambda_ > 1e-12)
+        {
+            *(diagonal_ele_iter ++) =  Triplet(pi, pi, J_m(i, i));
+            for(size_t j = 0; j < unit_npt; ++j)
+            {
+                if(pi < p_ids[j])
+                *(ele_iter ++) =  Triplet(pi, p_ids[j], J_m(i, j));
+            }
+            for(size_t j = 0; j < unit_key_npt; ++j)
+            {
+                *(ele_iter ++) = Triplet(pi, p_ids[j] + npt,   J_m(i, j + unit_npt));
+                *(ele_iter ++) = Triplet(pi, p_ids[j] + npt*2, J_m(i, j + unit_npt*2)); 
+                *(ele_iter ++) = Triplet(pi, p_ids[j] + npt*3, J_m(i, j + unit_npt*3));   
+            }
+            // for(size_t j = i; j < unit_key_npt; ++j)
+            // {
+            //     *(ele_iter ++) = Triplet(p_ids[j] + npt,   pi, J_m(i, j + unit_npt));
+            //     *(ele_iter ++) = Triplet(p_ids[j] + npt*2, pi, J_m(i, j + unit_npt + unit_key_npt)); 
+            //     *(ele_iter ++) = Triplet(p_ids[j] + npt*3, pi, J_m(i, j + unit_npt + unit_key_npt* 2));   
+            // }
+        }
+        
+        size_t row_0 = npt  + pi;
+        size_t row_1 = npt * 2  + pi;
+        size_t row_2 = npt * 3  + pi;
+
+        size_t rowv_i0 = i + unit_npt;
+        size_t rowv_i1 = i + unit_npt * 2;
+        size_t rowv_i2 = i + unit_npt * 3;
+
+        *(diagonal_ele_iter ++) =  Triplet(row_0, row_0, J_m(rowv_i0, rowv_i0));
+        *(diagonal_ele_iter ++) =  Triplet(row_1, row_1, J_m(rowv_i1, rowv_i1));
+        *(diagonal_ele_iter ++) =  Triplet(row_2, row_2, J_m(rowv_i2, rowv_i2));
+
+        for(size_t step = 1; step <= 3; ++step)
+        {
+            size_t row_i = npt * step + pi;
+            size_t rowv_i = i + unit_npt * step;
+            for(size_t j = 0; j < unit_key_npt; ++j)
+            {
+                for(int k = 1; k <= 3; ++k)
+                {
+                    if(row_i < p_ids[j] + npt*k)
+                    {
+                        *(ele_iter ++) = Triplet(row_i, p_ids[j] + npt*k,     J_m( rowv_i, j + unit_npt*k));
+                    }
+                }
+            }
+        }
+        
+    }
+}
+
+void saveSparseMatrixToFile(const Eigen::SparseMatrix<double>& mat, const std::string& filename) {
+    std::ofstream file(filename);
+
+    if (!file.is_open()) {
+        std::cerr << "Error: Unable to open file " << filename << std::endl;
+        return;
+    }
+
+    // Save the matrix in a triplet format: row, col, value
+    for (int k = 0; k < mat.outerSize(); ++k) {
+        for (Eigen::SparseMatrix<double>::InnerIterator it(mat, k); it; ++it) {
+            // if(it.row() != it.col()) continue;
+            file << it.row() << " " << it.col() << " " << it.value() << "\n";
+        }
+    }
+
+    file.close();
+    std::cout << "Matrix saved to " << filename << "\n";
+}
+
+
 void LocalVipss::BuildMatrixH()
 {
     auto t00 = Clock::now(); 
@@ -391,16 +527,16 @@ void LocalVipss::BuildMatrixH()
     // int all_ele_num = arma::dot(VoronoiGen::cluster_size_vec_ , VoronoiGen::cluster_size_vec_) * 16;
     arma::ivec cluster_j_size_vec = VoronoiGen::cluster_size_vec_  % VoronoiGen::cluster_size_vec_ * 16; 
     int all_ele_num = arma::accu(cluster_j_size_vec);
-    h_ele_triplets_.resize(all_ele_num);
+    std::vector<Triplet> h_ele_triplets;
+    h_ele_triplets.resize(all_ele_num);
     printf("average cluster J ele num : %d \n", int(arma::mean(cluster_j_size_vec)));
 
     arma::ivec acc_j_size_vec = arma::cumsum(cluster_j_size_vec);
-    auto iter = h_ele_triplets_.begin();
-
-    //std::vector<std::vector<Triplet>> ele_vector(cluster_num);
+    auto iter = h_ele_triplets.begin();
     auto t5 = Clock::now();
     // VIPSSKernel::use_rbf_base = LocalVipss::use_rbf_base_;
 // #pragma omp parallel for shared(points_, VoronoiGen::cluster_init_pids_) 
+
 #pragma omp parallel for
     for(int i =0; i < npt; ++i)
     {
@@ -408,8 +544,6 @@ void LocalVipss::BuildMatrixH()
         auto Minv =  VIPSSKernel::BuildHrbfMat(points_, cluster_pt_ids, use_rbf_base_);
         size_t unit_npt = cluster_pt_ids.size();
         size_t j_ele_num = unit_npt * unit_npt * 16;
-
-        // cur_eles.reserve(j_ele_num);
         auto cur_iter = iter + acc_j_size_vec[i];
         if(user_lambda_ > 1e-10)
         {
@@ -424,25 +558,497 @@ void LocalVipss::BuildMatrixH()
             AddClusterHMatrix(cluster_pt_ids, Minv, npt, cur_iter);
         }
     }
-    // auto t6 = Clock::now();
-    // double add_time = std::chrono::nanoseconds(t6 - t5).count()/1e9;
-    // add_ele_to_vector_time += add_time;
+
     auto t_h1 = Clock::now();
-    // auto t_h111 = Clock::now();
-    // double push_to_vec_time = std::chrono::nanoseconds(t_h111 - t_h1).count() / 1e9;
-    // printf("--- push ele to vector  time : %f \n", push_to_vec_time);
-    final_h_eigen_.setFromTriplets(h_ele_triplets_.begin(), h_ele_triplets_.end());
-    h_ele_triplets_.clear();
+    final_h_eigen_.setFromTriplets(h_ele_triplets.begin(), h_ele_triplets.end());
+    // std::string hmat_txt_path = "./origin_hmat.txt";
+    // saveSparseMatrixToFile(final_h_eigen_, hmat_txt_path);
+
     auto t_h2 = Clock::now();
     double build_h_from_tris_time = std::chrono::nanoseconds(t_h2 - t_h1).count()/1e9;
     
+    auto t11 = Clock::now();
+    double build_H_time_total = std::chrono::nanoseconds(t11 - t00).count()/1e9;
+
+    printf("--- build_H_time_total sum  time : %f \n", build_H_time_total);
+}
+
+
+void LocalVipss::BuildMatrixHSparse()
+{
+    auto t00 = Clock::now(); 
+    int npt = this->points_.size();
+    // arma::ivec cluster_j_size_vec = VoronoiGen::cluster_size_vec_  % VoronoiGen::cluster_size_vec_ * 16; 
+    // size_t all_ele_num = arma::accu(cluster_j_size_vec);
+
+    // std::cout << " all elements number : " << all_ele_num << std::endl;
+
+    enum { IsRowMajor = SpMat::IsRowMajor };
+    typedef typename SpMat::Scalar Scalar;
+    typedef typename SpMat::StorageIndex StorageIndex;
+    // std::cout << " rows : " << mat.rows()  << " cols : " << mat.cols() << std::endl;
+//   SpMat trMat(mat.rows(),mat.cols());
+    // final_h_eigen_ = SpMat( 4* npt, 4* npt);
+    // auto mat_ptr = std::make_shared<SpMat>( 4* npt, 4* npt);
+    // auto& trMat = *mat_ptr;
+    // Eigen::SparseMatrix<Scalar,IsRowMajor?Eigen::ColMajor:Eigen::RowMajor, long> trMat( 4* npt, 4* npt);
+    Eigen::SparseMatrix<Scalar,IsRowMajor?Eigen::ColMajor:Eigen::RowMajor, long> diagMat( 4* npt, 4* npt);
+
+    std::cout << "IsRowMajor " << IsRowMajor << std::endl;
+    // final_h_eigen_.resize(4 * npt , 4 * npt);
+    // final_h_eigen_ = SpMat(4 * npt , 4 * npt);
+    double add_ele_to_vector_time = 0;
+    auto t5 = Clock::now();
+    // VIPSSKernel::use_rbf_base = LocalVipss::use_rbf_base_;
+// #pragma omp parallel for shared(points_, VoronoiGen::cluster_init_pids_) 
+printf("--- build Sparse H  matrix \n");
+// final_h_eigen_.reserve(npt * 40 * 4);
+    typename SpMat::IndexVector wi(4*npt);
+    typename SpMat::IndexVector di(4*npt);
+    
+    di.setZero();
+    Eigen::internal::scalar_sum_op<double, double> dup_func;
+    // for(auto it = in_tris.begin(); it != in_tris.end(); ++it)
+    for(int pid =0; pid < npt; ++pid)
+    {
+        const auto& p_ids = VoronoiGen::cluster_init_pids_[pid];
+        for(auto cur_i : p_ids)
+        {
+            for(int i =0; i < 4; ++i)
+            {
+                di(npt*i + cur_i) ++;
+            }
+        }
+    }
+    // std::cout << " all element size wi : " << wi.sum() << std::endl;
+    // trMat.reserve(wi);
+    diagMat.reserve(di);
+    std::cout << " finish reserve trMat "  << std::endl;
+    int batch_num = 4;
+    int batch_size = std::max(npt / batch_num + 1, 10000);
+    // batch_size = npt >= 100000 ? batch_size : npt;
+
+    std::unordered_set<MyTriplet, PairHash> seen;
+
+    for(int count = 0; count < npt; count += batch_size)
+    {
+        wi.setZero();
+        int cur_batch_size = std::min(batch_size, npt - count);
+        // #pragma omp parallel for
+        for(int pid =count; pid < count + cur_batch_size; ++pid)
+        {
+            const auto& p_ids = VoronoiGen::cluster_init_pids_[pid];
+            for(auto cur_i : p_ids)
+            {
+                for(auto cur_j : p_ids)
+                {
+                    if(cur_i < cur_j) 
+                    {
+                        // #pragma omp critical
+                        {
+                            wi(IsRowMajor ? cur_j: cur_i)++;
+                        }
+                    }
+                    // #pragma omp critical
+                    {
+                        wi(IsRowMajor ? cur_j + npt     : cur_i) ++;
+                        wi(IsRowMajor ? cur_j + npt * 2 : cur_i) ++;
+                        wi(IsRowMajor ? cur_j + npt * 3 : cur_i) ++;
+                    }
+                    
+                    for(int si = 1; si<=3; ++si)
+                    {
+                        for(int sj = 1; sj <=3; ++sj)
+                        {
+                            if(si * npt + cur_i < cur_j + sj* npt )
+                            {
+                                // #pragma omp critical
+                                {
+                                    wi(IsRowMajor ? cur_j + sj* npt : si * npt + cur_i)++;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Eigen::SparseMatrix<Scalar,IsRowMajor?Eigen::ColMajor:Eigen::RowMajor, long> trMat( 4* npt, 4* npt);
+
+        trMat.reserve(wi);
+        // std::cout << " all element size wi : " << wi.sum() << std::endl;
+
+        #pragma omp parallel for
+        for(int pid = count; pid < count + cur_batch_size; ++pid)
+        {
+            const auto& p_ids = VoronoiGen::cluster_init_pids_[pid];
+            auto Minv =  VIPSSKernel::BuildHrbfMat(points_, p_ids, use_rbf_base_);
+            size_t unit_npt = p_ids.size();
+            if(user_lambda_ > 1e-16)
+            {
+                arma::mat F(4 * unit_npt, 4 * unit_npt);
+                arma::mat E(unit_npt, unit_npt);
+                E.eye();
+                F(0, 0, arma::size(unit_npt, unit_npt)) = E;
+                double cur_lambda = user_lambda_;
+                Minv = (F + Minv * cur_lambda);
+            } 
+            // int top_count = 0;
+            // std::cout << "unit_npt : " << unit_npt << std::endl;
+            for(size_t i = 0; i < unit_npt; ++i)
+            {
+                size_t pi = p_ids[i];
+            
+                if(user_lambda_ > 1e-12)
+                {
+                    for(size_t j = 0; j < unit_npt; ++j)
+                    {
+                        // #pragma omp critical
+                        if(pi < p_ids[j])
+                        {
+                            #pragma omp critical
+                            {
+                                trMat.insertBackUncompressed(pi,p_ids[j]) = Minv(i, j);
+                            }
+                            
+                        } else if(pi == p_ids[j])
+                        {
+                            #pragma omp critical
+                            {
+                                diagMat.insertBackUncompressed(pi,p_ids[j]) = Minv(i, j);
+                                
+                                // Index p = m_outerIndex[outer] + m_innerNonZeros[outer]++;
+                                // m_data.index(p) = convert_index(inner);
+                                // return (m_data.value(p) = Scalar(0));
+                            }
+                        }
+                    }
+                    for(size_t j = 0; j < unit_npt; ++j)
+                    {
+                        for(int k = 1; k <= 3; ++k)
+                        {
+                            {
+                                #pragma omp critical
+                                {
+                                    trMat.insertBackUncompressed(pi,p_ids[j] + npt*k) =  Minv(i, j + unit_npt*k);
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                for(size_t step = 1; step <= 3; ++step)
+                {
+                    size_t row_i = npt * step + pi;
+                    size_t rowv_i = i + unit_npt * step;
+                    for(size_t j = 0; j < unit_npt; ++j)
+                    {
+                        for(int k = 1; k <= 3; ++k)
+                        {
+                            size_t col_id = p_ids[j] + npt * k;
+                            {
+                                if(row_i< col_id)
+                                {
+                                    #pragma omp critical
+                                    {
+                                        trMat.insertBackUncompressed(row_i, col_id) =  Minv(rowv_i, j + unit_npt*k);
+                                    }
+                                } else if(row_i == col_id)
+                                {
+                                    #pragma omp critical
+                                    {
+                                        diagMat.insertBackUncompressed(row_i, col_id) =  Minv(rowv_i, j + unit_npt*k);
+                                    }
+                                }
+                                
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // double cur_h_memory = calculateMemoryUsageG(final_h_eigen_);
+        // double cur_trMat_memory = calculateMemoryUsageG(trMat);
+        // std::cout << "----- current h memory G: " << cur_h_memory << std::endl;
+        // std::cout << "----- current tr Mat memory G: " << cur_trMat_memory << std::endl;
+        // std::cout << "----- current possible max memory G: " << cur_h_memory + cur_trMat_memory << std::endl;
+
+        trMat.collapseDuplicates(dup_func);
+        trMat.makeCompressed();
+        // std::cout << " makeCompressed nonzero count : " << trMat.nonZeros() << std::endl;
+        if(count == 0)
+        {
+            final_h_eigen_ = trMat;
+        } else {
+            SpMat tempmat = trMat;
+            // double cur_h_memory = calculateMemoryUsageG(final_h_eigen_);
+            // double compressed_trMat_memory = calculateMemoryUsageG(trMat);
+            // double compressed_tempmat_memory = calculateMemoryUsageG(tempmat);
+            // std::cout << "----- compressed_trMat_memory G: " << compressed_trMat_memory << std::endl;
+            // std::cout << "----- compressed_tempmat_memory G: " << compressed_tempmat_memory << std::endl;
+            // std::cout << "----- 2 current possible max memory G: " 
+            //           << cur_h_memory + compressed_trMat_memory + compressed_tempmat_memory << std::endl;
+            trMat.resize(0,0);
+            trMat.data().squeeze();
+            final_h_eigen_ += tempmat;
+            // final_h_eigen_.makeCompressed();
+        }
+        // std::cout << " final_h_eigen_ makeCompressed nonzero count : " << final_h_eigen_.nonZeros() << std::endl;
+
+    }
+
+    diagMat.collapseDuplicates(dup_func);
+    diagMat.makeCompressed();
+    // trMat.resize(0,0);
+    // trMat.data().squeeze();
+    SpMat temp_mat = final_h_eigen_.transpose();
+    final_h_eigen_ += temp_mat;
+    
+    double cur_h_memory = calculateMemoryUsageG(final_h_eigen_);
+    double temp_mat_memory = calculateMemoryUsageG(temp_mat);
+    double diag_memory = calculateMemoryUsageG(diagMat);
+    G_VP_stats.possible_max_memory = cur_h_memory + temp_mat_memory + diag_memory;
+
+
+    // std::cout << "----- final h memory G: " << cur_h_memory << std::endl;
+    // std::cout << "----- temp_mat memory G: " << temp_mat_memory << std::endl;
+    std::cout << "----- current possible max memory G: " 
+                << G_VP_stats.possible_max_memory << std::endl;
+
+    // final_h_eigen_.makeCompressed();
+    temp_mat.resize(0,0);
+    temp_mat.data().squeeze();
+    SpMat d_mat = diagMat;    
+    diagMat.resize(0,0);
+    diagMat.data().squeeze();
+    final_h_eigen_ += d_mat;
+    // double diag_memory = calculateMemoryUsageG(final_h_eigen_);
+    G_VP_stats.max_hmat_memory = calculateMemoryUsageG(final_h_eigen_);
+    
+    auto t11 = Clock::now();
+    double build_H_time_total = std::chrono::nanoseconds(t11 - t00).count()/1e9;
+    printf("--- build_H_time_total sum  time : %f \n", build_H_time_total);
+}
+
+
+void LocalVipss::BuildMatrixHBatches()
+{
+    auto t00 = Clock::now(); 
+    size_t npt = this->points_.size();
+    final_h_eigen_.resize(4 * npt , 4 * npt);
+    // int all_ele_num = arma::dot(VoronoiGen::cluster_size_vec_ , VoronoiGen::cluster_size_vec_) * 16;
+    
+    arma::ivec cluster_j_size_vec = VoronoiGen::cluster_size_vec_  % VoronoiGen::cluster_size_vec_ * 16; 
+    size_t all_ele_num = arma::accu(VoronoiGen::cluster_size_vec_);
+    VoronoiGen::cluster_size_vec_.clear();
+
+    double base = double(1024 * 1024 * 1024);
+
+    std::cout << " current cluster ids memory : " << double(sizeof(size_t)) * double(all_ele_num) / base << std::endl;
+    // std::vector<Triplet> h_ele_triplets;
+    // h_ele_triplets.resize(all_ele_num);
+    // printf("average cluster J ele num : %d \n", int(arma::mean(cluster_j_size_vec)));
+    // arma::ivec acc_j_size_vec = arma::cumsum(cluster_j_size_vec);
+    //std::vector<std::vector<Triplet>> ele_vector(cluster_num);
+    auto t5 = Clock::now();
+    size_t batch_size = npt / 4 + 1;
+    // size_t batch_size = npt;
+    std::vector<Triplet> h_ele_triplets;
+    for(int count = 0; count < npt; count += batch_size)
+    {
+        arma::ivec temp_vec = cluster_j_size_vec.subvec(count+1, std::min(npt-1, count+batch_size));
+        // std::cout << "temp_vec size : " << temp_vec.size() << std::endl;
+        // std::cout << "npt : " << npt << std::endl;
+        // std::cout << "cluster_j_size_vec size : " << cluster_j_size_vec.size() << std::endl;
+        int batch_ele_num = arma::accu(temp_vec);
+        h_ele_triplets.resize(batch_ele_num);
+        auto iter = h_ele_triplets.begin();
+        size_t cur_batch_size = std::min(batch_size, npt - count);
+        // std::cout << "cur count : " << count << std::endl;
+        // std::cout << "cur batch_ele_num : " << batch_ele_num << std::endl;
+        // std::cout << "cur batch_size : " << cur_batch_size << std::endl;
+        arma::ivec acc_j_size_vec = arma::cumsum(temp_vec);
+        temp_vec.clear();
+        #pragma omp parallel for
+        for(int i =0; i < cur_batch_size; ++i)
+        {
+            auto id = count + i;
+            const auto& cluster_pt_ids = VoronoiGen::cluster_init_pids_[id];
+            auto Minv =  VIPSSKernel::BuildHrbfMat(points_, cluster_pt_ids, use_rbf_base_);
+            size_t unit_npt = cluster_pt_ids.size();
+            int shift_size = 0;
+            if( i > 0)  shift_size =  acc_j_size_vec[i-1];
+            auto cur_iter = iter + shift_size;
+            // std::cout << "cur unit_npt : " << unit_npt << std::endl;
+            // std::cout << "cur i : " << i << std::endl;
+            if(user_lambda_ > 1e-10)
+            {
+                arma::mat F(4 * unit_npt, 4 * unit_npt);
+                arma::mat E(unit_npt, unit_npt);
+                E.eye();
+                F(0, 0, arma::size(unit_npt, unit_npt)) = E;
+                double cur_lambda = user_lambda_;
+                arma::mat K = (F + Minv * cur_lambda);
+                AddClusterHMatrix(cluster_pt_ids, K, npt, cur_iter);
+            } else {
+                AddClusterHMatrix(cluster_pt_ids, Minv, npt, cur_iter);
+            }
+        }
+        acc_j_size_vec.clear();
+        SpMat temp_mat(4 * npt , 4 * npt);
+        temp_mat.setFromTriplets(h_ele_triplets.begin(), h_ele_triplets.end());
+        auto cur_temp_me_size = calculateMemoryUsageG(temp_mat);
+        
+        auto vec_size = sizeof(Triplet) * h_ele_triplets.size();
+        auto cur_h_size = calculateMemoryUsageG(final_h_eigen_);
+
+        std::cout << " current vector memory size : " << double(vec_size) / base << std::endl;
+        std::cout << " current temp h memory size : " << double(cur_temp_me_size) / base << std::endl;
+        std::cout << " current final h memory size : " << double(cur_h_size) / base << std::endl;
+        std::cout << " current max  memory size total : " << double(cur_h_size + vec_size + cur_temp_me_size) / base << std::endl;
+        
+        h_ele_triplets.clear();
+        temp_mat.makeCompressed();
+        final_h_eigen_ += temp_mat; 
+        final_h_eigen_.makeCompressed();
+        auto temp_me_size = calculateMemoryUsageG(temp_mat);
+        auto max_h_size = calculateMemoryUsageG(final_h_eigen_);
+        auto max_size_total = double(temp_me_size + max_h_size) ;
+        std::cout << " current  batch id : " <<  count << " , memory size(G bytes) : " << max_size_total << std::endl;
+    }
+
+    auto max_h_size = calculateMemoryUsageG(final_h_eigen_);
+    auto max_size_total = double(max_h_size);
+    std::cout << "final h total memory size : "  << max_size_total << std::endl;
+    auto t11 = Clock::now();
+    double build_H_time_total = std::chrono::nanoseconds(t11 - t00).count()/1e9;
+
+    printf("--- build_H_time_total sum  time : %f \n", build_H_time_total);
+
+}
+
+
+void LocalVipss::BuildMatrixHMemoryOpt()
+{
+    auto t00 = Clock::now(); 
+    size_t npt = this->points_.size();
+    final_h_eigen_.resize(4 * npt , 4 * npt);
+    std::cout << " cluster size : " << npt << std::endl;
+    std::cout << " cluster size : " << VoronoiGen::cluster_size_vec_.size() << std::endl;
+    arma::ivec cluster_j_size_vec = VoronoiGen::cluster_size_vec_  % VoronoiGen::cluster_size_vec_ * 16;    
+    arma::ivec cluster_j_top_size_vec = (cluster_j_size_vec - VoronoiGen::cluster_size_vec_ * 4)/2;
+    auto t5 = Clock::now();
+    int min_batch_size = min_batch_size_;
+    int batch_num = 16;
+    int batch_size = std::max(int(npt/batch_num +1), min_batch_size);
+
+    SpMat diag_h(4* npt , 4 * npt);
+    std::vector<SpMat> diag_h_vec;
+    std::vector<SpMat> top_h_vec;
+    bool has_assigned_h= false;
+    
+    // int st_id = 0;
+    // int cur_batch_size = npt;
+    for(int st_id = 0; st_id < npt; st_id += batch_size)
+    {
+        // std::cout << " st id " << st_id << std::endl;
+        int cur_batch_size = std::min(int(npt - st_id), batch_size);
+        // if(0)
+        // std::cout << " cur_batch_size " << cur_batch_size << std::endl;
+        arma::ivec cur_j_top_size_vec = cluster_j_top_size_vec.subvec(st_id, st_id + cur_batch_size);
+        cur_j_top_size_vec[0] = 0;
+        arma::ivec cur_acc_j_size_vec = arma::cumsum(cur_j_top_size_vec);
+        arma::ivec cur_j_diag_size_vec = VoronoiGen::cluster_size_vec_.subvec(st_id, st_id + cur_batch_size) * 4;
+        cur_j_diag_size_vec[0] = 0;
+
+        // std::cout << " cur_batch_size 01" << cur_batch_size << std::endl;
+        size_t all_ele_num = arma::accu(cur_j_top_size_vec);
+        size_t diagonal_ele_num = arma::accu(cur_j_diag_size_vec);
+        cur_j_diag_size_vec =  arma::cumsum(cur_j_diag_size_vec);
+        std::vector<Triplet> h_ele_triplets;
+        std::vector<Triplet> h_diag_ele_triplets;
+        // std::cout << " cur_batch_size 02" << cur_batch_size << std::endl;
+        std::cout << " all_ele_num " << all_ele_num << std::endl;
+        std::cout << " diagonal_ele_num " << diagonal_ele_num << std::endl;
+
+        size_t memory_size = sizeof(Triplet) * all_ele_num / (1024 * 1024 * 1024);
+        std::cout << " allocate memory : " <<  memory_size << std::endl;
+        h_ele_triplets.resize(all_ele_num);
+        h_diag_ele_triplets.resize(diagonal_ele_num);
+
+        std::cout << " all_ele_num 0 " << all_ele_num << std::endl;
+        std::cout << " diagonal_ele_num 1 " << diagonal_ele_num << std::endl;
+
+
+
+        auto iter = h_ele_triplets.begin();
+        auto diag_iter = h_diag_ele_triplets.begin();
+        
+       
+        // arma::ivec acc_j_diag_size_vec = arma::cumsum(cluster_j_diag_size_vec);
+        
+        std::cout << " cur_batch_size 22 " << cur_batch_size << std::endl;
+        #pragma omp parallel for
+        for(int i = st_id; i < st_id + cur_batch_size; ++i)
+        {
+            // std::cout << " curr id " << i << std::endl;
+            const auto& cluster_pt_ids = VoronoiGen::cluster_init_pids_[i];
+            auto Minv =  VIPSSKernel::BuildHrbfMat(points_, cluster_pt_ids, use_rbf_base_);
+            size_t unit_npt = cluster_pt_ids.size();
+            // if(0)
+            
+            auto cur_iter = iter + cur_acc_j_size_vec[i - st_id];
+            auto cur_diag_iter = diag_iter + cur_j_diag_size_vec[i - st_id];
+            if(user_lambda_ > 1e-10)
+            {
+                arma::mat F(4 * unit_npt, 4 * unit_npt);
+                arma::mat E(unit_npt, unit_npt);
+                E.eye();
+                F(0, 0, arma::size(unit_npt, unit_npt)) = E;
+                double cur_lambda = user_lambda_;
+                arma::mat K = (F + Minv * cur_lambda);
+                AddHalfClusterHMatrix(cluster_pt_ids, K, npt, cur_iter, cur_diag_iter);
+            } else {
+                AddHalfClusterHMatrix(cluster_pt_ids, Minv, npt, cur_iter, cur_diag_iter);
+            }
+        }
+        std::cout << " finish retrive current batch" << std::endl;
+       
+        SpMat temp_diag(4 *npt, 4* npt);
+        temp_diag.setFromTriplets(h_diag_ele_triplets.begin(), h_diag_ele_triplets.end());
+        h_diag_ele_triplets.clear();
+        diag_h_vec.push_back(std::move(temp_diag));
+        
+        SpMat temp_top(4 *npt, 4* npt);
+        temp_top.setFromTriplets(h_ele_triplets.begin(), h_ele_triplets.end());
+        h_ele_triplets.clear();
+        top_h_vec.push_back(std::move(temp_top));
+    }
+  
+    if(top_h_vec.size() > 0)
+    {
+        addSparseMatrixParallel(top_h_vec, diag_h_vec);
+        final_h_eigen_ = top_h_vec[0];
+        top_h_vec.clear();
+        diag_h = diag_h_vec[0];
+        diag_h_vec.clear();
+    }
+    auto t_h1 = Clock::now();
+    printf("Finish push ele to vector \n");
+    
+    SpMat final_h_eigen_t =  final_h_eigen_.transpose();
+    final_h_eigen_ += final_h_eigen_t;
+    final_h_eigen_t.resize(0,0);
+    final_h_eigen_t.data().squeeze();
+    final_h_eigen_ += diag_h;
+    
+    // std::string hmat_txt_path = "./me_hmat.txt";
+    // saveSparseMatrixToFile(final_h_eigen_, hmat_txt_path);
     auto t11 = Clock::now();
     double build_H_time_total = std::chrono::nanoseconds(t11 - t00).count()/1e9;
     // printf("--- build vipss j total  time : %f \n", build_j_time_total_);
     // printf("--- add  J matrix to triplet vector time : %f \n", add_ele_to_vector_time);
     // printf("--- build final_h  from triplets vector time : %f \n", build_h_from_tris_time);
     printf("--- build_H_time_total sum  time : %f \n", build_H_time_total);
-
     // G_VP_stats.build_H_total_time_ += build_H_time_total;
     // G_VP_stats.cal_cluster_J_total_time_ += build_j_time_total_;
     // G_VP_stats.add_J_ele_to_triplet_vector_time_ += add_ele_to_vector_time;
@@ -451,7 +1057,7 @@ void LocalVipss::BuildMatrixH()
 }
 
 inline std::vector<double> GetClusterNormalsFromIds
-                            (const std::vector<size_t>& pt_ids, const std::vector<double>& all_normals) 
+                            (const std::vector<int>& pt_ids, const std::vector<double>& all_normals) 
 {
     std::vector<double> normals(pt_ids.size() * 3);
     for(int i = 0; i < pt_ids.size(); ++i) 
@@ -465,7 +1071,7 @@ inline std::vector<double> GetClusterNormalsFromIds
     return normals;
 }
 
-inline std::vector<double> GetClusterSvalsFromIds(const std::vector<size_t>& pt_ids, 
+inline std::vector<double> GetClusterSvalsFromIds(const std::vector<int>& pt_ids, 
                         const std::vector<double>& all_svals) 
 {
     std::vector<double> svals;
@@ -495,7 +1101,7 @@ void LocalVipss::BuildHRBFPerNode()
     for(int i =0; i < cluster_num; ++i)
     {
         // std::vector<double> cluster_pt_vec = VoronoiGen::cluster_init_pts_[i];
-        const std::vector<size_t>& cluster_pt_ids = VoronoiGen::cluster_init_pids_[i];
+        const auto& cluster_pt_ids = VoronoiGen::cluster_init_pids_[i];
         std::vector<double> cluster_pt_vec(cluster_pt_ids.size() * 3);  
         for(int j = 0; j < cluster_pt_ids.size(); ++j)
         {
@@ -503,14 +1109,8 @@ void LocalVipss::BuildHRBFPerNode()
             cluster_pt_vec[3*j + 1] = points_[cluster_pt_ids[j]][1];
             cluster_pt_vec[3*j + 2] = points_[cluster_pt_ids[j]][2];
         }
-
-        std::vector<double> cluster_nl_vec;
-        if(use_partial_vipss) 
-        {
-            cluster_nl_vec = {out_normals_[3*i], out_normals_[3*i + 1], out_normals_[3*i + 2]};
-        } else {
-            cluster_nl_vec = GetClusterNormalsFromIds(cluster_pt_ids, out_normals_);
-        }
+        
+        std::vector<double> cluster_nl_vec = GetClusterNormalsFromIds(cluster_pt_ids, out_normals_);
         auto cluster_sv_vec = GetClusterSvalsFromIds(cluster_pt_ids, s_vals_);
 
         // std::string cluster_pt_path = out_dir_ + "cluster_pts/" + std::to_string(i) + "_cluster_color"; 
@@ -520,59 +1120,15 @@ void LocalVipss::BuildHRBFPerNode()
         node_rbf_vec_[i] = std::make_shared<RBF_Core>();
         vipss_api_.build_cluster_hrbf(cluster_pt_vec, cluster_nl_vec, cluster_sv_vec, node_rbf_vec_[i]);
     }
+    s_vals_.clear();
+    out_normals_.clear();
+
     auto t11 = Clock::now();
     double build_HRBF_time_total = std::chrono::nanoseconds(t11 - t00).count()/1e9;
     printf("--- build_HRBF_time_total sum  time : %f \n", build_HRBF_time_total);
 }
 
 
-void LocalVipss::BuildHRBFPerCluster()
-{
-    auto t00 = Clock::now(); 
-    size_t npt = this->points_.size();
-    size_t cluster_num = points_.size();
-    double time_sum = 0;
-    node_rbf_vec_.resize(cluster_num);
-    cluster_volume_vals_.resize(cluster_num);
-    bool use_partial_vipss = false;
-    vipss_api_.user_lambda_ = user_lambda_;
-
-    // printf("cluster num : %lu \n", cluster_num);
-    size_t valid_cluster_num = arma::accu(cluster_valid_sign_vec_);
-    // valid_cluster_dist_map_.resize(valid_cluster_num);
-    int valid_pt_count =0;
-    int valid_core_pt_count =0;
-    for(size_t i =0; i < cluster_num; ++i)
-    {
-
-        if(!cluster_valid_sign_vec_[i]) continue;
-        const auto& c_pids = cluster_pt_ids_[i];
-        // printf("---- cur id : %ld group pt number : %ld \n", i, c_pids.size());
-        std::vector<double> cluster_pt_vec;
-        std::vector<double> cluster_nl_vec;
-        std::vector<double> cluster_sv_vec;
-        for(const auto pid : c_pids)
-        {
-            cluster_pt_vec.push_back(points_[pid][0]);
-            cluster_pt_vec.push_back(points_[pid][1]);
-            cluster_pt_vec.push_back(points_[pid][2]);
-            cluster_nl_vec.push_back(out_normals_[3*pid]);
-            cluster_nl_vec.push_back(out_normals_[3*pid + 1]);
-            cluster_nl_vec.push_back(out_normals_[3*pid + 2]);
-            cluster_sv_vec.push_back(s_vals_[pid]);
-        }
-        valid_pt_count += c_pids.size();
-        node_rbf_vec_[i] = std::make_shared<RBF_Core>();
-        vipss_api_.build_cluster_hrbf(cluster_pt_vec, cluster_nl_vec, cluster_sv_vec, node_rbf_vec_[i]);
-    }
-
-    auto t11 = Clock::now();
-    double build_HRBF_time_total = std::chrono::nanoseconds(t11 - t00).count()/1e9;
-    printf("--- build cluster HRBF total  time : %f \n", build_HRBF_time_total);
-    // printf("valid core pt count : %d \n", valid_pt_count);
-    printf("average cluster num : %d \n", valid_pt_count/int(valid_cluster_num));
-    // printf("average cluster core pt num : %d \n", valid_core_pt_count/int(valid_cluster_num));
-}
 
 // double LocalVipss::NodeDistanceFunction(const tetgenmesh::point nn_pt, const tetgenmesh::point cur_pt) const
 // {
@@ -613,11 +1169,14 @@ double LocalVipss::NatureNeighborDistanceFunctionOMP(const tetgenmesh::point cur
             // std::cout << " n id 1111  " << pid << std::endl;
             const arma::vec& a = node_rbf_vec_[pid]->a;
             const arma::vec& b = node_rbf_vec_[pid]->b;
-            const std::vector<size_t>& cluster_pids = VoronoiGen::cluster_init_pids_[pid];
+            const auto& cluster_pids = VoronoiGen::cluster_init_pids_[pid];
             // std::cout << " n id 2222  " << pid << std::endl;
             // std::cout << " cluster_pids size  " << cluster_pids.size() << std::endl;
             // std::cout << " all_pts size  " << all_pts.size() << std::endl;
+            // std::cout << " a size  " << a.size() << std::endl;
+            // std::cout << " b size  " << b.size() << std::endl;
             nn_dist_vec_[i] = HRBF_Dist_Alone(cur_pt,  a, b, cluster_pids, all_pts);
+            // std::cout << " cur pt dist :  " << nn_dist_vec_[i] << std::endl;
             int thread_id = omp_get_thread_num();
             // nn_volume_vec_[i] = 1.0;
             nn_volume_vec_[i] = voro_gen_.CalTruncatedCellVolumePassOMP(cur_pt, nn_pt, thread_id); 
@@ -669,7 +1228,7 @@ double LocalVipss::NatureNeighborGradientOMP(const tetgenmesh::point cur_pt, dou
             size_t pid = VoronoiGen::point_id_map_[nn_pt];
             const arma::vec& a = node_rbf_vec_[pid]->a;
             const arma::vec& b = node_rbf_vec_[pid]->b;
-            const std::vector<size_t>& cluster_pids = VoronoiGen::cluster_init_pids_[pid];
+            // const std::vector<size_t>& cluster_pids = VoronoiGen::cluster_init_pids_[pid];
             // nn_dist_vec_[i] = HRBF_Dist_Alone(cur_pt,  a, b, cluster_pids, all_pts);
             // nn_dist_vec_[i] = 1;
             double gx, gy, gz;
@@ -707,10 +1266,10 @@ double LocalVipss::NatureNeighborGradientOMP(const tetgenmesh::point cur_pt, dou
         gradient[2] += arma::dot(nn_volume_vec_, gz_vec_) / volume_sum;
 
         arma::vec3 partial_grad = {0, 0, 0};
-        for(int vi = 0; vi < nn_num; ++vi)
-        {
-            partial_grad += nn_dist_vec_[vi]/ (volume_sum * volume_sum) * ( volume_sum * nn_vol_grads_[vi] - nn_volume_vec_[vi] * vol_grads_sum);
-        }
+        // for(int vi = 0; vi < nn_num; ++vi)
+        // {
+        //     partial_grad += nn_dist_vec_[vi] / (volume_sum * volume_sum) * ( volume_sum * nn_vol_grads_[vi] - nn_volume_vec_[vi] * vol_grads_sum);
+        // }
         gradient[0] += partial_grad[0];
         gradient[1] += partial_grad[1];
         gradient[2] += partial_grad[2];
@@ -728,21 +1287,28 @@ void LocalVipss::InitNormalWithVipss()
     double vipss_sum = 0;
     auto t_init = Clock::now();
     size_t npt = this->points_.size();
-
-    final_H_.resize(4 * npt , 4 * npt);
-    // cluster_all_pt_ids_.resize(cluster_num);
-    node_rbf_vec_.resize(npt);
-    int ele_num = arma::accu(VoronoiGen::cluster_size_vec_);
+    size_t ele_num = arma::accu(VoronoiGen::cluster_size_vec_);
     std::vector<Triplet> cluster_normals_xele(ele_num);
     std::vector<Triplet> cluster_normals_yele(ele_num);
     std::vector<Triplet> cluster_normals_zele(ele_num);
-
     cluster_normal_x_.resize(npt, npt);
     cluster_normal_y_.resize(npt, npt);
     cluster_normal_z_.resize(npt, npt);
+    s_vals_.resize(npt, 0.0);
+    G_VP_stats.ave_cluster_size = double(ele_num) / double(npt);
+    
+    double std_dev = 0;
+    for(int i = 0; i < npt; ++i)
+    {
+        double delt_val = VoronoiGen::cluster_size_vec_[i+1] - G_VP_stats.ave_cluster_size;
+        std_dev += delt_val * delt_val;
+    }
+    G_VP_stats.cluster_std_dev = sqrt(std_dev/double(npt));
+    std::cout << " ave cluter pt number :  " << G_VP_stats.ave_cluster_size << std::endl;
+    std::cout << " stand dev :  " << G_VP_stats.cluster_std_dev << std::endl;
+
     
 #pragma omp parallel for 
-// shared(VoronoiGen::cluster_init_pts_, VoronoiGen::cluster_init_pids_, VoronoiGen::cluster_accum_size_vec_)
     for(int i =0; i < int(npt); ++i)
     {
         // auto vts = VoronoiGen::cluster_init_pts_[i];
@@ -754,12 +1320,16 @@ void LocalVipss::InitNormalWithVipss()
             vts[3*j + 1] = points_[p_ids[j]][1];
             vts[3*j + 2] = points_[p_ids[j]][2];
         }
-
-
         // cluster_all_pt_ids_[i] = p_ids;
         // auto t1 = Clock::now();
         size_t unit_npt = p_ids.size(); 
-        double cur_lambda = user_lambda_ / double(unit_npt);
+
+        double cur_lambda = user_lambda_;
+        if(InitWithPartialVipss)
+        {
+            cur_lambda = user_lambda_ / double(unit_npt);
+        }
+        // double cur_lambda = user_lambda_ / double(unit_npt);
         // if(!node_rbf_vec_[i])  
         
         // node_rbf_vec_[i] = std::make_shared<RBF_Core>();
@@ -768,12 +1338,12 @@ void LocalVipss::InitNormalWithVipss()
         {
             key_ptn = unit_npt;
         }
-
         std::shared_ptr rbf_temp_ptr = std::make_shared<RBF_Core>();
-        InitNormalPartialVipss(vts, key_ptn,rbf_temp_ptr, cur_lambda);
+        InitNormalPartialVipss(vts, key_ptn, rbf_temp_ptr, cur_lambda);
+
+        s_vals_[i] = rbf_temp_ptr->Dist_Function(vts[0], vts[1], vts[2]);
         // auto t2 = Clock::now();
         // double vipss_time = std::chrono::nanoseconds(t2 - t1).count()/1e9;
-   
         auto iterx = cluster_normals_xele.begin() + VoronoiGen::cluster_accum_size_vec_[i];
         auto itery = cluster_normals_yele.begin() + VoronoiGen::cluster_accum_size_vec_[i];
         auto iterz = cluster_normals_zele.begin() + VoronoiGen::cluster_accum_size_vec_[i];
@@ -781,10 +1351,6 @@ void LocalVipss::InitNormalWithVipss()
         for(size_t p_id = 0; p_id < p_ids.size(); ++p_id)
         {
             size_t v_id = p_ids[p_id];
-            // cluster_normals_xele.push_back(Triplet(v_id, i, node_rbf_vec_[i]->out_normals_[3* p_id]));
-            // cluster_normals_yele.push_back(Triplet(v_id, i, node_rbf_vec_[i]->out_normals_[3* p_id + 1]));
-            // cluster_normals_zele.push_back(Triplet(v_id, i, node_rbf_vec_[i]->out_normals_[3* p_id + 2]));
-
             *(iterx + p_id) = Triplet(v_id, i, rbf_temp_ptr->out_normals_[3* p_id]);
             *(itery + p_id) = Triplet(v_id, i, rbf_temp_ptr->out_normals_[3* p_id + 1]);
             *(iterz + p_id) = Triplet(v_id, i, rbf_temp_ptr->out_normals_[3* p_id + 2]);
@@ -800,8 +1366,6 @@ void LocalVipss::InitNormalWithVipss()
     // double all_init_time = std::chrono::nanoseconds(t_init2 - t_init).count()/1e9;
     // printf("all init time : %f \n", all_init_time);
     // printf("all init vipss time : %f \n", vipss_sum);
-    
-
     // cluster_ptn_vipss_time_stats_.push_back(vipss_time_stats_);
 }
 
@@ -1096,31 +1660,31 @@ void LocalVipss::CalculateClusterNeiScores(bool is_init)
 }
 
 
-void LocalVipss::InitAdjacentData()
-{
-    const auto& adjacent_mat_ = voro_gen_.pt_adjecent_mat_;
-    int cols = adjacent_mat_.n_cols;
-    // cluster_adjacent_ids_.resize(cols);
-    cluster_pt_ids_.resize(cols);
-    std::cout << " start to get col vec by id "<< std::endl;
-    for(size_t i = 0; i < cols; ++i)
-    {
-        arma::sp_umat col_vec(adjacent_mat_.col(i));
-        // std::cout << " get col vec by id "<< std::endl;
-        arma::sp_umat::const_iterator start  = col_vec.begin();
-        arma::sp_umat::const_iterator end    = col_vec.end();
+// void LocalVipss::InitAdjacentData()
+// {
+//     const auto& adjacent_mat_ = voro_gen_.pt_adjecent_mat_;
+//     int cols = adjacent_mat_.n_cols;
+//     // cluster_adjacent_ids_.resize(cols);
+//     cluster_pt_ids_.resize(cols);
+//     std::cout << " start to get col vec by id "<< std::endl;
+//     for(size_t i = 0; i < cols; ++i)
+//     {
+//         arma::sp_umat col_vec(adjacent_mat_.col(i));
+//         // std::cout << " get col vec by id "<< std::endl;
+//         arma::sp_umat::const_iterator start  = col_vec.begin();
+//         arma::sp_umat::const_iterator end    = col_vec.end();
 
-        for(auto iter = start; iter != end; ++iter)
-        {
-            // cluster_adjacent_ids_[i].insert(size_t(iter.row()));
-            cluster_pt_ids_[i].insert(size_t(iter.row()));
-        }
-        // std::cout << " get col vec by id 1"<< std::endl;
-        cluster_pt_ids_[i].insert(i);
-    }
-    // cluster_core_pt_nums_.ones(cols); 
+//         for(auto iter = start; iter != end; ++iter)
+//         {
+//             // cluster_adjacent_ids_[i].insert(size_t(iter.row()));
+//             cluster_pt_ids_[i].insert(size_t(iter.row()));
+//         }
+//         // std::cout << " get col vec by id 1"<< std::endl;
+//         cluster_pt_ids_[i].insert(i);
+//     }
+//     // cluster_core_pt_nums_.ones(cols); 
     
-}
+// }
 
         
 // void LocalVipss::SaveGroupPtsWithColor(const std::string& path)
@@ -1204,6 +1768,7 @@ void LocalVipss::BuildClusterMST()
         // cluster_MST_mat_(j,i) = 1;
     }
     cluster_MST_mat_.setFromTriplets(edge_eles.begin(), edge_eles.end());
+    // cluster_scores_mat_.colw;
 }
 
 void LocalVipss::FlipClusterNormalsByMST()
@@ -1230,6 +1795,7 @@ void LocalVipss::FlipClusterNormalsByMST()
                 cluster_normal_x_.col(n_cid) *= -1.0;
                 cluster_normal_y_.col(n_cid) *= -1.0;
                 cluster_normal_z_.col(n_cid) *= -1.0;
+                s_vals_[n_cid] *= -1.0;
             }
             cluster_queued_ids.push(n_cid);
         }
@@ -1492,6 +2058,8 @@ void LocalVipss::InitNormals()
     G_VP_stats.init_cluster_normal_time_ += (build_mat_time + normal_estimate_time);
     double sum_score_time = 0;
 
+// if(0)
+{
     auto t2 = Clock::now();
     CalculateClusterNeiScores(true);
     auto t3 = Clock::now();
@@ -1533,6 +2101,7 @@ void LocalVipss::InitNormals()
     auto finat_t = Clock::now();
     double init_total_time = std::chrono::nanoseconds(finat_t - t0).count()/1e9;
     printf("Normal initializtion with local vipss total time used : %f \n", init_total_time);
+}
     // G_VP_stats.init_normal_total_time_ += init_total_time;
 }
 
@@ -1540,9 +2109,20 @@ void LocalVipss::ClearPartialMemory()
 {
     // adjacent_mat_.clear();
     cluster_MST_mat_.resize(0,0);
-    cluster_scores_mat_.resize(1,1);
+    cluster_MST_mat_.data().squeeze();
+     cluster_scores_mat_.resize(0,0);
+    cluster_scores_mat_.data().squeeze();
     cluster_normal_x_.resize(0,0);
+    cluster_normal_x_.data().squeeze();
     cluster_normal_y_.resize(0,0);
+    cluster_normal_y_.data().squeeze();
     cluster_normal_z_.resize(0,0);
+    cluster_normal_z_.data().squeeze();
+    voro_gen_.pt_adjecent_mat_.clear();
+    voro_gen_.points_.clear();
+    VoronoiGen::cluster_accum_size_vec_.clear();
+    // voro_gen_.tetMesh_
+    // VoronoiGen::cluster_accum_size_vec_.clear();
+
     // cluster_adjacent_ids_.clear();
 }

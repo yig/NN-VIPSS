@@ -322,6 +322,7 @@ void RBF_Core::Set_Hermite_PredictNormal(std::vector<double>&pts){
         auto t2 = Clock::now();
         // cout << " start bigMinv inv " <<  endl;
         bigMinv = inv(bigM);
+        // bigMinv = inv(bigM, arma::inv_opts::allow_approx);
         //   cout << " finish bigMinv inv " <<  endl;
         if(open_debug_log)
         cout<<"bigMinv: "<<(setK_time= std::chrono::nanoseconds(Clock::now() - t2).count()/1e9)<<endl;
@@ -758,7 +759,7 @@ void RBF_Core::Solve_RBFCoefWithOptNormalAndSval(const std::vector<double>& Vn,
     M.clear();
     N.clear();
 
-    size_t mat_mem_size = bigM.n_elem * sizeof(double) / (1024 * 1024 );
+    // size_t mat_mem_size = bigM.n_elem * sizeof(double) / (1024 * 1024 );
     // printf("------mat_mem_size %llu MB\n", mat_mem_size);
     // auto t0 = Clock::now();
     // arma::mat X2 = arma::solve(bigM, y, arma::solve_opts::fast);
@@ -766,6 +767,8 @@ void RBF_Core::Solve_RBFCoefWithOptNormalAndSval(const std::vector<double>& Vn,
     arma::mat X2 = arma::solve(bigM, y, arma::solve_opts::likely_sympd);
 
     // arma::mat X2 = arma::inv(bigM) * y;
+    bigM.clear();
+    newnormals.clear();
 
     // auto t1 = Clock::now();
     // double t_time =  std::chrono::nanoseconds(t1 - t0).count()/1e9;

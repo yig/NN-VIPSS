@@ -196,8 +196,23 @@ void RBF_Core::SetSigma(double x){
 
 double RBF_Core::Dist_Function(const double x, const double y, const double z){
 
+    double p[3] = {x, y, z};
+	const double *p_pts = pts.data();
+    double G[3];
+    for(int i=0;i<npt;++i) kern_(i) = Kernal_Function_2p(p_pts+i*3, p);
+    for(int i=0;i<key_npt;++i){
+        Kernal_Gradient_Function_2p(p,p_pts+i*3,G);
+        //for(int j=0;j<3;++j)kern(npt+i*3+j) = -G[j];
+        for(int j=0;j<3;++j)kern_(npt+i+j*key_npt) = G[j];
+    }
+    double loc_part = dot(kern_,a);
+        for(int i=0;i<3;++i) {
+            kb_(i+1) = p[i];
+        }
 
-	return -1;
+    double poly_part = arma::dot(kb_,b);
+    double re = loc_part + poly_part;
+    return re;
 
 }
 
@@ -205,42 +220,20 @@ double RBF_Core::Dist_Function(const double x, const double y, const double z){
 
 double RBF_Core::Dist_Function(const double *p){
 
-    // n_evacalls++;
     const double *p_pts = pts.data();
-    // std::cout << "kern_ size " << kern_.size() << std::endl; 
-    // static arma::vec kern(npt), kb;
-    // arma::vec kern, kb;
-    //if(isHermite){
-        // kern_.set_size(npt + 3 * key_npt);
-        double G[3];
-        for(int i=0;i<npt;++i) kern_(i) = Kernal_Function_2p(p_pts+i*3, p);
-        for(int i=0;i<key_npt;++i){
-            Kernal_Gradient_Function_2p(p,p_pts+i*3,G);
-            //for(int j=0;j<3;++j)kern(npt+i*3+j) = -G[j];
-            for(int j=0;j<3;++j)kern_(npt+i+j*key_npt) = G[j];
-        }
-   /* }else{
-        kern.set_size(npt);
-        for(int i=0;i<npt;++i)kern(i) = Kernal_Function_2p(p_pts+i*3, p);
-    }*/
-
+    double G[3];
+    for(int i=0;i<npt;++i) kern_(i) = Kernal_Function_2p(p_pts+i*3, p);
+    for(int i=0;i<key_npt;++i){
+        Kernal_Gradient_Function_2p(p,p_pts+i*3,G);
+        //for(int j=0;j<3;++j)kern(npt+i*3+j) = -G[j];
+        for(int j=0;j<3;++j)kern_(npt+i+j*key_npt) = G[j];
+    }
     double loc_part = dot(kern_,a);
-
-    //if(polyDeg==1){
-        // kb_.set_size(4);
         for(int i=0;i<3;++i) {
             kb_(i+1) = p[i];
         }
-        // kb_(0) = 1;
-   /* }else if(polyDeg==2){
-        std::vector<double>buf(4,1);
-        int ind = 0;
-        kb.set_size(10);
-        for(int j=0;j<3;++j)buf[j+1] = p[j];
-        for(int j=0;j<4;++j)for(int k=j;k<4;++k)kb(ind++) = buf[j] * buf[k];}
-    */
-    double poly_part = arma::dot(kb_,b);
 
+    double poly_part = arma::dot(kb_,b);
     double re = loc_part + poly_part;
     return re;
 }

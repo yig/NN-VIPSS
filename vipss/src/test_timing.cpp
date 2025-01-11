@@ -76,29 +76,29 @@ void generate_test_volume_pts_all(const std::string& data_path, std::vector<doub
 void test_vipss_timing(const std::string& data_path )
 {
     // std::string data_path = "";
-    std::vector<double> in_pts;
-    std::vector<Point> test_pts;
-    std::cout << "inpt size : " << in_pts.size()/3 << std::endl;
-    generate_test_volume_pts_all(data_path, in_pts, test_pts, 20);  
-    std::cout << "inpt size : " << in_pts.size()/3 << std::endl;
-    size_t npt = in_pts.size()/3;
-    arma::vec a = arma::randn(npt * 4);
-    arma::vec b = arma::randn(4); 
-    std::vector<Point> new_pts;
-    for(size_t i = 0; i < npt; ++i)
-    {
-        Point curPt{in_pts[3*i], in_pts[3*i + 1], in_pts[3*i +2]};
-        new_pts.push_back(curPt);
-    }
-    auto t0 = Clock::now();
-    for(const auto& pt : test_pts)
-    {
-        VIPSS_HRBF_Dist_Alone(&(pt[0]), a, b, new_pts);
-    }
-    auto t1 = Clock::now();
-    double call_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
-    double ave_time = call_time / double(test_pts.size());
-    std::cout << " --------- vipss ave test pt time : " << ave_time << std::endl;
+    // std::vector<double> in_pts;
+    // std::vector<Point> test_pts;
+    // std::cout << "inpt size : " << in_pts.size()/3 << std::endl;
+    // generate_test_volume_pts_all(data_path, in_pts, test_pts, 20);  
+    // std::cout << "inpt size : " << in_pts.size()/3 << std::endl;
+    // size_t npt = in_pts.size()/3;
+    // arma::vec a = arma::randn(npt * 4);
+    // arma::vec b = arma::randn(4); 
+    // std::vector<Point> new_pts;
+    // for(size_t i = 0; i < npt; ++i)
+    // {
+    //     Point curPt{in_pts[3*i], in_pts[3*i + 1], in_pts[3*i +2]};
+    //     new_pts.push_back(curPt);
+    // }
+    // auto t0 = Clock::now();
+    // for(const auto& pt : test_pts)
+    // {
+    //     VIPSS_HRBF_Dist_Alone(&(pt[0]), a, b, new_pts);
+    // }
+    // auto t1 = Clock::now();
+    // double call_time = std::chrono::nanoseconds(t1 - t0).count()/1e9;
+    // double ave_time = call_time / double(test_pts.size());
+    // std::cout << " --------- vipss ave test pt time : " << ave_time << std::endl;
 }
 
 std::vector<Point> generate_grid_pts(const Point& min_corner, const Point& max_corner, double py_val = 0, int volume_res = 200)

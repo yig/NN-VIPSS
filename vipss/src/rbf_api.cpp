@@ -235,8 +235,10 @@ void RBF_API::run_vipss(std::vector<double> &Vs, std::vector<double> &Vn,
         // rbf_core_.Write_Hermite_NormalPrediction(outpath_ + "_normal", 1);
         RBF_Core::DistFuncCallNum = 0;
         RBF_Core::DistFuncCallTime = 0.0;
-        rbf_core_.Surfacing(0,n_voxel_line_);
-        rbf_core_.Write_Surface(outpath_ +"_surface");
+        std::cout << " n_voxel_line_ "<< n_voxel_line_ << std::endl;
+        rbf_core_.Surfacing(0, n_voxel_line_);
+        std::string save_path = outpath_  + filename_ +".ply";
+        rbf_core_.Write_Surface( save_path);
         printf("number of call dist function : %d \n", RBF_Core::DistFuncCallNum);
         printf("time of call dist function : %f \n", RBF_Core::DistFuncCallTime);
     }
@@ -327,16 +329,14 @@ void InitNormalPartialVipss(std::vector<double> &Vs, size_t key_ptn, std::shared
         rfb_ptr->InitNormal();
         rfb_ptr->OptNormal(0);
     }
-    // rfb_ptr->SetThis();
     rfb_ptr->EstimateNormals();
-    // EstimateNormals(vs);
-    // normals_ = rbf_core_.out_normals_;
+   
     auto t1 = Clock::now();
     double pre_time = (std::chrono::nanoseconds(t1 - t0).count()/1e9);
 }
 
 double HRBF_Dist_Alone(const double* in_pt, const arma::vec& a, const arma::vec& b, 
-                const std::vector<size_t>& cluster_pids, 
+                const std::vector<int>& cluster_pids, 
                 const std::vector<double*>& all_pts)
 {
     int npt = cluster_pids.size();
@@ -344,6 +344,13 @@ double HRBF_Dist_Alone(const double* in_pt, const arma::vec& a, const arma::vec&
     double G[3];
     arma::vec kern(npt + 3 * key_npt);
     // std::cout << "  start dist pt size  " << npt << std::endl;
+    // for(int i=0;i<npt;++i)
+    // {
+    //     std::cout << " p id : " << cluster_pids[i] << std::endl;
+    //     auto cur_pt = all_pts[cluster_pids[i]];
+    //     std::cout << cur_pt[0] << " " << cur_pt[1] << " " << cur_pt[2] << std::endl;
+    // }
+
     for(int i=0;i<npt;++i) kern(i) = VIPSSKernel::XCube_Kernel_2p(all_pts[cluster_pids[i]], in_pt);
     // std::cout << "  XCube_Kernel_2p " << std::endl;
     for(int i=0;i<key_npt;++i){

@@ -20,7 +20,22 @@ class RBF_API{
         void build_cluster_hrbf_surface(std::shared_ptr<RBF_Core> rbf_ptr, const std::string& mesh_path);
 
         
+    inline std::vector<double> GetClusterNormalsFromIds
+                            (const std::vector<int>& pt_ids, const std::vector<double>& all_normals) 
+    {
+        std::vector<double> normals(pt_ids.size() * 3);
+        for(int i = 0; i < pt_ids.size(); ++i) 
+        {
+            // auto &pt = points_[id];
+            auto id = pt_ids[i];
+            normals[3*i] = (all_normals[3 * id]);
+            normals[3*i + 1] = (all_normals[3 * id + 1]);
+            normals[3*i + 2] = (all_normals[3 * id + 2]);
+        }
+        return normals;
+    }
 
+    
 
     public:
 
@@ -29,11 +44,12 @@ class RBF_API{
         bool is_outputtime_ = false;
         double user_lambda_ = 0.0; 
         double unit_lambda_ = 0.0; 
-        int n_voxel_line_ = 80;
+        int n_voxel_line_ = 100;
         std::vector<double> normals_;
         // size_t key_ptn_ = 0;
         RBF_Core rbf_core_;
         std::string outpath_ = "./vipss";
+        std::string filename_ = "";
         double u_v_time = 0;
         std::vector<size_t> p_ids_;
         // std::vector<double> dist_vals_; 
@@ -53,7 +69,7 @@ void InitNormalPartialVipss(std::vector<double> &Vs, size_t key_ptn, std::shared
 //                 const std::vector<double>& cluster_pts);
 
 double HRBF_Dist_Alone(const double* in_pt, const arma::vec& a, const arma::vec& b, 
-                const std::vector<size_t>& cluster_pids, 
+                const std::vector<int>& cluster_pids, 
                 const std::vector<double*>& all_pts);
 
 double VIPSS_HRBF_Dist_Alone(const double* in_pt, const arma::vec& a, const arma::vec& b, 

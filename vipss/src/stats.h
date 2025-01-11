@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <fstream>
+#include <vector>
 
 struct VP_STATS {
     // time statistics for normal initializaiton
@@ -37,6 +38,12 @@ struct VP_STATS {
     double octree_pt_gradient_cal_time_ = 0; 
     double hrbf_coefficient_time_ = 0;
     double adgrid_gen_time_ = 0;
+    bool save_residuals_ = true;
+    std::vector<double> residuals_;
+    double max_hmat_memory = 0.0;
+    double possible_max_memory = 0.0;
+    double ave_cluster_size = 0;
+    double cluster_std_dev = 0;
 };
 
 extern VP_STATS G_VP_stats; 

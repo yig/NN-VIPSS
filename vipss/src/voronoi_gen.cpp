@@ -18,10 +18,10 @@ typedef std::chrono::high_resolution_clock Clock;
 REAL cps = (REAL) CLOCKS_PER_SEC;
 // double M_PI  = 2*acos(0.0);
 
-const int MAX_ELEMENT_ = 1000;
+const int MAX_ELEMENT_ = 8000;
 const int MAX_THREAD_NUM_ = 32;
 double* truncated_tets_omp_[MAX_THREAD_NUM_][MAX_ELEMENT_*2];
-double truncated_centers_omp_[MAX_THREAD_NUM_][3];
+// double truncated_centers_omp_[MAX_THREAD_NUM_][3];
 double intersect_pts_omp_[MAX_THREAD_NUM_][MAX_ELEMENT_];
 int face_tet_count_omp_[MAX_THREAD_NUM_][MAX_ELEMENT_];
 
@@ -37,6 +37,96 @@ void VoronoiGen::loadData(const std::string& path )
 void VoronoiGen::loadData(const std::vector<double>& in_pts)
 {
     tetIO_.load_node((double*)in_pts.data(), in_pts.size()/3);
+}
+
+void VoronoiGen::InsertSphereBoundryPts42()
+{
+    std::vector<double> sphere_pts = {0.000000,1.241958,0.767572, 0.000000,1.241958,-0.767572,0.000000,-1.241958,0.767572,
+                                    0.000000,-1.241958,-0.767572, 1.241958,0.767572,0.000000,1.241958,-0.767572,0.000000,
+                                    -1.241958,0.767572,0.000000, -1.241958,-0.767572,0.000000, 0.767572,0.000000,1.241958, 
+                                    -0.767572,0.000000,1.241958, 0.767572,0.000000,-1.241958, -0.767572,0.000000,-1.241958,
+                                    0.000000,1.463526,0.000000, 0.731763,1.184017,0.452254, 0.731763,1.184017,-0.452254,
+                                    -0.731763,1.184017,-0.452254, -0.731763,1.184017,0.452254, 0.000000,-1.463526,0.000000,
+                                    0.731763,-1.184017,-0.452254, 0.731763,-1.184017,0.452254, -0.731763,-1.184017,0.452254,
+                                    -0.731763,-1.184017,-0.452254, 1.463526,0.000000,0.000000, 1.184017,-0.452254,-0.731763,
+                                    1.184017,0.452254,-0.731763, 1.184017,0.452254,0.731763, 1.184017,-0.452254,0.731763,
+                                        -1.463526,0.000000,0.000000, -1.184017,-0.452254,0.731763, -1.184017,0.452254,0.731763,
+                                        -1.184017,0.452254,-0.731763, -1.184017,-0.452254,-0.731763, 0.000000,0.000000,1.463526,
+                                        -0.452254,-0.731763,1.184017, 0.452254,-0.731763,1.184017, 0.452254,0.731763,1.184017,
+                                        -0.452254,0.731763,1.184017, 0.000000,0.000000,-1.463526, -0.452254,0.731763,-1.184017,
+                                        0.452254,0.731763,-1.184017, 0.452254,-0.731763,-1.184017, -0.452254,-0.731763,-1.184017};
+    double min_x = std::numeric_limits<double>::max();
+    double min_y = std::numeric_limits<double>::max();
+    double min_z = std::numeric_limits<double>::max();
+
+    double max_x = std::numeric_limits<double>::min();
+    double max_y = std::numeric_limits<double>::min();
+    double max_z = std::numeric_limits<double>::min();
+
+    auto& in_pts = tetIO_.pointlist;
+    for(size_t i =0; i < tetIO_.numberofpoints; ++i)
+    {
+        min_x = min_x < in_pts[3*i]     ? min_x : in_pts[3*i];
+        min_y = min_y < in_pts[3*i + 1] ? min_y : in_pts[3*i + 1];
+        min_z = min_z < in_pts[3*i + 2] ? min_z : in_pts[3*i + 2];
+
+        max_x = max_x > in_pts[3*i]     ? max_x : in_pts[3*i];
+        max_y = max_y > in_pts[3*i + 1] ? max_y : in_pts[3*i + 1];
+        max_z = max_z > in_pts[3*i + 2] ? max_z : in_pts[3*i + 2];
+    }
+
+    bbox_min_ = {min_x, min_y, min_z};
+    bbox_max_ = {max_x, max_y, max_z};
+
+    double cx = (min_x + max_x) / 2.0;
+    double cy = (min_y + max_y) / 2.0;
+    double cz = (min_z + max_z) / 2.0;
+    double scale = 1.5;
+
+    double x_len = (max_x - min_x);
+    double y_len = (max_y - min_y);
+    double z_len = (max_z - min_z);
+    double max_len = std::max(x_len, std::max(y_len, z_len));
+
+    double max_scale = 5.0;
+    double expand_scale_x = 0.2 * std::max(1.0, std::min(max_scale, max_len / x_len));
+    double expand_scale_y = 0.2 * std::max(1.0, std::min(max_scale, max_len / y_len));
+    double expand_scale_z = 0.2 * std::max(1.0, std::min(max_scale, max_len / z_len));
+
+    double dx = (max_x - min_x) / 2.0 * std::max(scale, expand_scale_x);
+    double dy = (max_y - min_y) / 2.0 * std::max(scale, expand_scale_y);
+    double dz = (max_z - min_z) / 2.0 * std::max(scale, expand_scale_z);
+    // double radius = std::max(dx, std::max(dy, dz)); 
+    double radius = sqrt(dx *dx + dy * dy + dz * dz);
+    
+    int pt_num = sphere_pts.size() /3;
+    for(size_t i = 0; i < pt_num; ++i)
+    {
+        tetgenmesh::point newpt;
+        auto& temp_mesh = tetMesh_;
+        temp_mesh.makepoint(&newpt, tetgenmesh::VOLVERTEX);
+        double cur_dist = sqrt(sphere_pts[i * 3] * sphere_pts[i * 3] 
+                                + sphere_pts[i * 3 + 1] * sphere_pts[i * 3 + 1] 
+                                + sphere_pts[i * 3 + 2] * sphere_pts[i * 3 + 2]);
+        newpt[0] = sphere_pts[i * 3]     / cur_dist * radius;
+        newpt[1] = sphere_pts[i * 3 + 1] / cur_dist * radius;
+        newpt[2] = sphere_pts[i * 3 + 2] / cur_dist * radius;
+        tetgenmesh::insertvertexflags ivf;
+        ivf.bowywat = 1; // Use Bowyer-Watson algorithm
+        ivf.lawson = 0;
+        tetgenmesh::triface searchtet;
+        searchtet.tet = NULL;
+        ivf.iloc = (int) tetgenmesh::UNKNOWN;
+        auto t0 = Clock::now();
+        tetgenmesh::face *splitsh = NULL;
+        tetgenmesh::face *splitseg = NULL;
+        // temp_mesh.setpointtype(newpt, tetgenmesh::UNUSEDVERTEX);
+        if(temp_mesh.insertpoint(newpt, &searchtet, splitsh, splitseg,  &ivf))
+        {
+            // printf(" %ld insertion succeeded ! \n", i);
+        }
+        insert_boundary_pts_.push_back(newpt);
+    }
 }
 
 void VoronoiGen::InsertSphereBoundryPts()
@@ -60,16 +150,21 @@ void VoronoiGen::InsertSphereBoundryPts()
         max_y = max_y > in_pts[3*i + 1] ? max_y : in_pts[3*i + 1];
         max_z = max_z > in_pts[3*i + 2] ? max_z : in_pts[3*i + 2];
     }
+
+    bbox_min_ = {min_x, min_y, min_z};
+    bbox_max_ = {max_x, max_y, max_z};
+
     double cx = (min_x + max_x) / 2.0;
     double cy = (min_y + max_y) / 2.0;
     double cz = (min_z + max_z) / 2.0;
     
-    double scale = 3.0;
+    double scale = 1.5;
     double dx = (max_x - min_x) / 2.0 * scale;
     double dy = (max_y - min_y) / 2.0 * scale;
     double dz = (max_z - min_z) / 2.0 * scale;
-    double radius = std::max(dx, std::max(dy, dz)); 
-    int pt_num = 32;
+    // double radius = std::max(dx, std::max(dy, dz)); 
+    double radius = sqrt(dx *dx + dy * dy + dz * dz);
+    int pt_num = 168;
     auto sphere_pts = CreateSpherePoints(cx, cy, cz, radius, pt_num);
     pt_num = sphere_pts.size()/3;
     
@@ -324,8 +419,9 @@ void VoronoiGen::GenerateVoroData()
     // InsertBoundryPts();
 // 
     auto t0 = Clock::now();
-    InsertSphereBoundryPts();
-    InsertBoundryPts();
+    // InsertSphereBoundryPts();
+    InsertSphereBoundryPts42();
+    // InsertBoundryPts();
     
 
     // printf("finsh InsertBoundryPts \n");
@@ -706,7 +802,7 @@ double VoronoiGen::CalTruncatedCellVolumePassOMP(tetgenmesh::point in_pt, tetgen
 
     int cur_opm_id = thread_id;
     double* intersect_pts = intersect_pts_omp_[cur_opm_id];
-    double* trunc_center = truncated_centers_omp_[cur_opm_id];
+    // double* trunc_center = truncated_centers_omp_[cur_opm_id];
     double** trunc_tets = truncated_tets_omp_[cur_opm_id];
     int* face_tet_count = face_tet_count_omp_[cur_opm_id];
 
@@ -827,7 +923,7 @@ double VoronoiGen::CalTruncatedCellVolumeGradientOMP(tetgenmesh::point in_pt, te
 
     int cur_opm_id = thread_id;
     double* intersect_pts = intersect_pts_omp_[cur_opm_id];
-    double* trunc_center = truncated_centers_omp_[cur_opm_id];
+    // double* trunc_center = truncated_centers_omp_[cur_opm_id];
     double** trunc_tets = truncated_tets_omp_[cur_opm_id];
     int* face_tet_count = face_tet_count_omp_[cur_opm_id];
 
@@ -928,10 +1024,12 @@ double VoronoiGen::CalTruncatedCellVolumeGradientOMP(tetgenmesh::point in_pt, te
             f_area += area;
             f_centroid += tri_center * area;
         }
-        f_centroid /= f_area;
+        // f_centroid /= f_area;
         arma::vec3 curPt = {in_pt[0], in_pt[1], in_pt[2]};
-        double pt_dist = PtDistance(in_pt, nei_pt);
-        gradient = f_area / pt_dist * (f_centroid - curPt);
+        double pt_dist = PtDistance(in_pt, nei_pt) + 1e-12;
+        // gradient = f_area / pt_dist * (f_centroid - curPt);
+        
+        gradient = f_centroid / pt_dist  -  curPt * f_area / pt_dist;
 
         const double* trunc_pt = intersect_pts; 
         int cur_tet_id = 0;
@@ -1469,22 +1567,36 @@ void VoronoiGen::BuildAdjecentMat()
         size_t cur_p_id = point_id_map_[ploop]; 
         std::set<tetgenmesh::point> candidate_pts;
         GetVertexStar(ploop, candidate_pts, 1);
-        point_cluster_pts_map_[ploop] = candidate_pts;
-        std::vector<size_t> cur_cluster_pids;
+        // point_cluster_pts_map_[ploop] = candidate_pts;
+        std::vector<int> cur_cluster_pids;
         cur_cluster_pids.push_back(cur_p_id);
-        std::vector<double> cur_cluster_pts;
+        // std::vector<double> cur_cluster_pts;
 
         // cur_cluster_pts.push_back(ploop[0]);
         // cur_cluster_pts.push_back(ploop[1]);
         // cur_cluster_pts.push_back(ploop[2]);
 
+        double dist_threshold = 1e-6;
         for(auto &pt : candidate_pts)
         {
             if(pt == ploop) continue;
             if(point_id_map_.find(pt) == point_id_map_.end()) continue;
             size_t p_id = point_id_map_[pt];
-            pt_adjecent_mat_(cur_p_id, p_id) = 1;
-            cur_cluster_pids.push_back(p_id);
+            bool too_close_pt = false;
+            for(const auto n_id : cur_cluster_pids)
+            {
+                if(PtDistance(points_[p_id], points_[n_id]) < dist_threshold)
+                {
+                    too_close_pt = true;
+                    break;
+                }
+            }
+            if(!too_close_pt)
+            {
+                pt_adjecent_mat_(cur_p_id, p_id) = 1;
+                cur_cluster_pids.push_back(p_id);
+            }
+            
 
             // cur_cluster_pts.push_back(pt[0]);
             // cur_cluster_pts.push_back(pt[1]);
@@ -1530,8 +1642,8 @@ void VoronoiGen::BuildPicoTree()
 }
 
 
-std::unordered_map<tetgenmesh::point, size_t> VoronoiGen::point_id_map_;
-std::vector<std::vector<size_t>> VoronoiGen::cluster_init_pids_;
+std::unordered_map<tetgenmesh::point, int> VoronoiGen::point_id_map_;
+std::vector<std::vector<int>> VoronoiGen::cluster_init_pids_;
 // std::vector<std::vector<double>> VoronoiGen::cluster_init_pts_;
 arma::ivec VoronoiGen::cluster_size_vec_; 
 arma::ivec VoronoiGen::cluster_accum_size_vec_;

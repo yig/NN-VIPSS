@@ -42,6 +42,12 @@ int main(int argc, char** argv)
         bool octree_sample = false;
         bool hrbf_sample = false;
         bool use_global_hrbf = false;
+        bool memory_efficient = false;
+        int max_iter_num = 3000;
+        int batch_size = 10000;
+        int constraint_level =0;
+        double alpha = 50.0;
+        bool use_input_normal = false;
     }args;
     
     // gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -59,11 +65,22 @@ int main(int argc, char** argv)
     app.add_option("-A, --use_adgrid",args.use_adgrid, "use adptive gird to generate mesh");
     app.add_option("-O, --octree_sample",args.octree_sample, "add insert octree pt to generate mesh");
     app.add_option("-G, --use_ghrbf",args.use_global_hrbf, "insert octree sample pts to build new HRBF");
+    app.add_option("-M, --memory_efficient",args.memory_efficient, "insert octree sample pts to build new HRBF");
+    app.add_option("--max_iter",args.max_iter_num, "insert octree sample pts to build new HRBF");
+    app.add_option("-B, --Batch_size", args.batch_size, "point batch size for building sparse matrix H");
+    app.add_option("-c, --constraint_level", args.constraint_level, "optimization contraint level, the higher value the higher punish term");
+    app.add_option(" --alpha", args.alpha, " soft constraints alpha value, larger value has harder constraints ");
+    app.add_option("-N, --use_input_normal",args.use_input_normal, "use input normal to build dist function");
 
     CLI11_PARSE(app, argc, argv);
     LocalVipss::use_octree_sample_ = args.octree_sample;
     // std::cout << "LocalVipss::feature_preserve_sample_ " <<  LocalVipss::feature_preserve_sample_ << std::endl;
     vipss_unit.hard_constraints_ = args.hardConstraints;
+    vipss_unit.use_efficient_memory_ = args.memory_efficient;
+    vipss_unit.max_opt_iter_ = args.max_iter_num;
+    vipss_unit.soft_constraint_level_ = args.constraint_level;
+    vipss_unit.user_alpha_ = args.alpha;
+    vipss_unit.use_input_normal_ = args.use_input_normal;
     if(args.input.size() > 0)
     {
         std::string in_path, in_filename, in_extname;
@@ -80,6 +97,7 @@ int main(int argc, char** argv)
         vipss_unit.use_adgrid_ = args.use_adgrid;
         vipss_unit.make_nn_const_neighbor_num_ = args.hrbf_sample;
         vipss_unit.use_global_hrbf_ = args.use_global_hrbf;
+        vipss_unit.local_vipss_.min_batch_size_ = args.batch_size;
 
         if(args.output.size() > 0)
         {
@@ -109,7 +127,7 @@ int main(int argc, char** argv)
         vipss_unit.volume_dim_ = args.volumeDim; 
         vipss_unit.axi_plane_ = AXI_PlANE::XYZ;
         vipss_unit.hrbf_type_ = HRBF_SURFACE_TYPE::LOCAL_HRBF_NN;
-        // vu.hrbf_type_ = HRBF_SURFACE_TYPE::GLOBAL_HRBF;
+        // vipss_unit.hrbf_type_ = HRBF_SURFACE_TYPE::GLOBAL_HRBF;
         vipss_unit.Run();
     } else {
         std::cout << "There is no valid input point path !" << std::endl;

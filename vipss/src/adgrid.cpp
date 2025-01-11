@@ -130,17 +130,21 @@ void GenerateAdaptiveGridOut(const std::array<size_t, 3>& resolution,
     double max_len = std::max(dx, std::max(dy, dz));
     
     double max_scale = 5.0;
-    double expand_scale_x = 0.2 * std::max(1.0, std::min(max_scale, max_len / dx));
-    double expand_scale_y = 0.2 * std::max(1.0, std::min(max_scale, max_len / dy));
-    double expand_scale_z = 0.2 * std::max(1.0, std::min(max_scale, max_len / dz));
+    double expand_scale_x = 0.2 * std::max(1.0, std::min(max_scale, max_len / dx / 2.0));
+    double expand_scale_y = 0.2 * std::max(1.0, std::min(max_scale, max_len / dy / 2.0));
+    double expand_scale_z = 0.2 * std::max(1.0, std::min(max_scale, max_len / dz / 2.0));
+
+    // double expand_scale_x = expand_scale;
+    // double expand_scale_y = expand_scale;
+    // double expand_scale_z = expand_scale;
 
     // double expand_scale_x = 0.2 ;
     // double expand_scale_y = 0.2 ;
     // double expand_scale_z = 0.2 ;
 
-    // double cx = (bbox_max[0] + bbox_min[0]) / 2.0;
-    // double cy = (bbox_max[1] + bbox_min[1]) / 2.0;
-    // double cz = (bbox_max[2] + bbox_min[2]) / 2.0;
+    double cx = (bbox_max[0] + bbox_min[0]) / 2.0;
+    double cy = (bbox_max[1] + bbox_min[1]) / 2.0;
+    double cz = (bbox_max[2] + bbox_min[2]) / 2.0;
 
     std::array<double, 3> expand_bbox_min = {bbox_min[0] - expand_scale_x * dx, 
                                             bbox_min[1]  - expand_scale_y * dy,
@@ -149,28 +153,24 @@ void GenerateAdaptiveGridOut(const std::array<size_t, 3>& resolution,
                                             bbox_max[1]  + expand_scale_y * dy,
                                             bbox_max[2]  + expand_scale_z * dz};
 
-    std::array<double, 3> new_bbox_min;
+    // std::array<double, 3> new_bbox_min;
+    // double cx = (bbox_max[0] + bbox_min[0]) / 2.0;
+    // double cy = (bbox_max[1] + bbox_min[1]) / 2.0;
+    // double cz = (bbox_max[2] + bbox_min[2]) / 2.0;
+    // double expand_len = max_len / 2.0 * (1 + expand_scale);
+    // std::array<double, 3> expand_bbox_min = {cx - expand_len, cy - expand_len, cz - expand_len};
+    // std::array<double, 3> expand_bbox_max = {cx + expand_len, cy + expand_len, cz + expand_len};
 
-    size_t vol_dim = 3;
-    dx = expand_bbox_max[0] - expand_bbox_min[0];
-    dy = expand_bbox_max[1] - expand_bbox_min[1];
-    dz = expand_bbox_max[2] - expand_bbox_min[2];
+    std::cout << " adgrid min bbox :  " << expand_bbox_min[0] << " " << expand_bbox_min[1] << " " << expand_bbox_min[2] << std::endl;
+    std::cout << " adgrid max bbox :  " << expand_bbox_max[0] << " " << expand_bbox_max[1] << " " << expand_bbox_max[2] << std::endl;
 
-    
-    // expand_bbox_min[0] = cx - max_len;
-    // expand_bbox_min[1] = cy - max_len;
-    // expand_bbox_min[2] = cz - max_len;
-
-    // expand_bbox_max[0] = cx + max_len;
-    // expand_bbox_max[1] = cy + max_len;
-    // expand_bbox_max[2] = cz + max_len;
 
     // double voxel_len = max_len / double(vol_dim);
     // int dimx = std::max(int(dx / voxel_len), 1);
     // int dimy = std::max(int(dy / voxel_len), 1);
     // int dimz = std::max(int(dz / voxel_len), 1);
 
-    std::array<size_t, 3> new_resolution = {vol_dim, vol_dim, vol_dim};
+    std::array<size_t, 3> new_resolution = {3, 3, 3};
 
     mtet::MTetMesh mesh = generate_tet_mesh(new_resolution, expand_bbox_min, expand_bbox_max, grid_mesh::TET5);
     // mtet::MTetMesh mesh;
@@ -204,7 +204,7 @@ void GenerateAdaptiveGridOut(const std::array<size_t, 3>& resolution,
     {
         args.max_elements = numeric_limits<int>::max();
     }
-    double threshold = in_threshold / (1.0 / max_len);
+    double threshold = in_threshold;
     double alpha = args.alpha;
     double smallest_edge_length = args.smallest_edge_length;
     

@@ -69,7 +69,7 @@ class VIPSSUnit {
         // std::vector<arma::sp_mat> unit_matrix_vec_;
         // double user_lambda_ = 0;
         double user_lambda_ = 0;
-        arma::sp_mat Final_H_;
+        // arma::sp_mat Final_H_;
         size_t npt_; 
         Solution_Struct solver_;
         // std::vector<double> initnormals_;
@@ -96,12 +96,15 @@ class VIPSSUnit {
         HRBF_SURFACE_TYPE hrbf_type_;
 
         double opt_tor_ = 1e-7;
-        int max_opt_iter_ = 3000;
+        int max_opt_iter_ = 3000; 
         double adgrid_threshold_ = 0.001;
         bool use_adgrid_ = true;
         double distfunc_threshold_ = 0.3;
         bool make_nn_const_neighbor_num_ = true; 
         bool use_global_hrbf_ = false;
-        
+        bool use_efficient_memory_ = false;
+        int soft_constraint_level_ = 0;
+        double user_alpha_ = 50.0;
+        bool use_input_normal_ = false;
         
 };

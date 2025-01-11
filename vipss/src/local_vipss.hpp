@@ -42,8 +42,8 @@ struct SP_BBOX{
 class LocalVipss {
 
     typedef tetgenmesh::point P3tr;
-    typedef Eigen::SparseMatrix<double> SpMat;
-    typedef Eigen::SparseMatrix<int> SpiMat;
+    // typedef Eigen::SparseMatrix<double> SpMat;
+    // typedef Eigen::SparseMatrix<int> SpiMat;
     typedef Eigen::Triplet<double> Triplet;
     
 
@@ -90,14 +90,17 @@ class LocalVipss {
         inline double CalculateScores(const std::vector<arma::vec3>& a_normals, const std::vector<arma::vec3>& b_normals) const;
         inline double CalculateScores(const arma::mat& a_normals, const arma::mat& b_normals) const;
 
-        inline void AddClusterHMatrix(const std::vector<size_t>& p_ids, const arma::mat& J_m,size_t npt);
-        inline void AddClusterHMatrix(const std::vector<size_t>& p_ids, const arma::mat& J_m, size_t npt, std::vector<Triplet>& ele_vect );
-        inline void AddClusterHMatrix(const std::vector<size_t>& p_ids, const arma::mat& J_m, size_t npt, 
+        inline void AddClusterHMatrix(const std::vector<int>& p_ids, const arma::mat& J_m,size_t npt);
+        inline void AddClusterHMatrix(const std::vector<int>& p_ids, const arma::mat& J_m, size_t npt, std::vector<Triplet>& ele_vect );
+        inline void AddClusterHMatrix(const std::vector<int>& p_ids, const arma::mat& J_m, size_t npt, 
                                     std::vector<Triplet>::iterator& ele_iter );
+        inline void AddHalfClusterHMatrix(const std::vector<int>& p_ids, const arma::mat& J_m, size_t npt, 
+                                    std::vector<Triplet>::iterator& ele_iter, std::vector<Triplet>::iterator& diagonal_ele_iter);
         void BuildMatrixH();
-
-
-        double NodeDistanceFunction(const tetgenmesh::point nn_pt, const tetgenmesh::point cur_pt) const;
+        void BuildMatrixHSparse();
+        void BuildMatrixHBatches();
+        void BuildMatrixHMemoryOpt();
+        // double NodeDistanceFunction(const tetgenmesh::point nn_pt, const tetgenmesh::point cur_pt) const;
         double NatureNeighborDistanceFunctionOMP(const tetgenmesh::point cur_pt) const;
         double NatureNeighborGradientOMP(const tetgenmesh::point cur_pt,double* gradient) const;
         static double NNDistFunction(const R3Pt &in_pt);  
@@ -107,16 +110,14 @@ class LocalVipss {
         void VisualFuncValues(double (*function)(const R3Pt &in_pt), const VoroPlane& plane,
                               const std::string& dist_fuc_color_path);
         
-        
-
         // void GroupClustersWithDegree();
-        void SaveGroupPtsWithColor(const std::string& path);
-        void PtPCA(std::vector<double>& pts);
+        // void SaveGroupPtsWithColor(const std::string& path);
+        // void PtPCA(std::vector<double>& pts);
         // void OptimizeAdjacentMat();
 
-        void InitAdjacentData();
+        // void InitAdjacentData();
         // void MergeHRBFClustersWithMap();
-        void BuildHRBFPerCluster();
+        // void BuildHRBFPerCluster();
 
         void ClearPartialMemory();
         void TestInsertPt();
@@ -130,14 +131,16 @@ class LocalVipss {
         static VoronoiGen voro_gen_;
         RBF_API vipss_api_;
 
+        std::array<double,3> in_pt_center_;
+        double in_pt_scale_;
+
         // std::vector<std::unordered_set<size_t>> cluster_adjacent_ids_;
-        std::vector<std::unordered_set<size_t>> cluster_pt_ids_;
+        // std::vector<std::unordered_set<size_t>> cluster_pt_ids_;
         // std::vector<std::vector<size_t> > cluster_core_pt_ids_vec_; 
         // arma::uvec cluster_core_pt_nums_;
-        arma::vec cluster_volume_vals_;
+        // arma::vec cluster_volume_vals_;
         // std::vector<size_t> cluster_id_map_;
-        std::vector<size_t> valid_cluster_dist_map_;
-
+        // std::vector<size_t> valid_cluster_dist_map_;
         // SpiMat cluster_adjacent_emat_;
         // SpiMat cluster_pt_emat_;
         // SpiMat cluster_cores_emat_;
@@ -157,10 +160,10 @@ class LocalVipss {
         SpMat cluster_normal_y_;
         SpMat cluster_normal_z_;
         SpiMat cluster_MST_mat_;
-        arma::vec cluster_scores_ave_;
+        // arma::vec cluster_scores_ave_;
 
-        arma::sp_mat final_H_; 
-        arma::uvec cluster_valid_sign_vec_;
+        // arma::sp_mat final_H_; 
+        // arma::uvec cluster_valid_sign_vec_;
 
         static std::vector<tetgenmesh::point> points_; 
         // std::vector<double> normals_;
@@ -181,7 +184,7 @@ class LocalVipss {
         // std::vector<arma::sp_mat> temp_H_vec_;
         const size_t temp_H_max_num_ = 2048;
         SpMat final_h_eigen_;
-        std::vector<Triplet> h_ele_triplets_;
+        
         std::set<P3tr> sample_cluster_pts_;
         static std::vector<std::shared_ptr<RBF_Core>> node_rbf_vec_;
         std::vector<double>finalMesh_v_;
@@ -192,7 +195,7 @@ class LocalVipss {
         // SimOctree::SimpleOctree octree_;
         std::vector<double> octree_leaf_pts_;
         std::vector<double> octree_split_leaf_pts_;
-        std::vector<double> origin_in_pts_;
+        // std::vector<double> origin_in_pts_;
         
     public:
         int max_group_iter_ = 12;
@@ -228,4 +231,5 @@ class LocalVipss {
         double tet_gen_triangulation_time_;
         double tet_build_adj_mat_time_;
         double dummy_sign_ = 0;
+        int min_batch_size_ = 10000;
 };

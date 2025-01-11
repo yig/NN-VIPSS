@@ -109,6 +109,7 @@ void RBF_Core::Surfacing(int method, int n_voxels_1d){
     n_evacalls = 0;
     Surfacer sf;
     SetThis();
+    std::cout << "n_voxels_1d " << n_voxels_1d << std::endl;
     surf_time = sf.Surfacing_Implicit(pts, n_voxels_1d, false, RBF_Core::Dist_Function);
     // surf_time = sf.Surfacing_Implicit(pts, n_voxels_1d, false, this->Dist_Function);
 

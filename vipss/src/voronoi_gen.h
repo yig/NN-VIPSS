@@ -118,6 +118,7 @@ class VoronoiGen{
         void OutputVoronisMesh();
         void InsertBoundryPts();
         void InsertSphereBoundryPts();
+        void InsertSphereBoundryPts42();
         void GetVoronoiNeiPts(tetgenmesh::point pt, std::vector<tetgenmesh::point>& candid_pts);
         void BuildTetMeshTetCenterMap();
         void BuildPicoTree();
@@ -172,13 +173,13 @@ class VoronoiGen{
         std::set<tetgenmesh::point> candidate_pts_;
         arma::sp_umat pt_adjecent_mat_;
 
-        static std::unordered_map<tetgenmesh::point, size_t> point_id_map_;
-        std::unordered_map<tetgenmesh::point, P_Set> point_cluster_pts_map_;
-        static std::vector<std::vector<size_t>> cluster_init_pids_;
-        static std::vector<std::vector<double>> cluster_init_pts_;
+        static std::unordered_map<tetgenmesh::point, int> point_id_map_;
+        // std::unordered_map<tetgenmesh::point, P_Set> point_cluster_pts_map_;
+        static std::vector<std::vector<int>> cluster_init_pids_;
+        // static std::vector<std::vector<double>> cluster_init_pts_;
         static arma::ivec cluster_size_vec_;
         static arma::ivec cluster_accum_size_vec_;
-
+        // Eigen::SparseMatrix<uint8_t>  
         // std::vector<double> vertices_;
         // std::vector<double> normals_;6532
         // std::vector<uint8_t> colors_;

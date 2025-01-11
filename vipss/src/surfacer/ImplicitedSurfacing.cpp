@@ -48,6 +48,8 @@ void Surfacer::CalSurfacingPara(vector<double>&Vs, int nvoxels){
    double width = -1;
    for(int j=0;j<3;++j)width = max(width, fabs(rightcorner[j]-leftcorner[j]));
    //dSize = width * 0.02;
+
+   std::cout << " nvoxels " << nvoxels << std::endl;
    dSize = width * (1./nvoxels);
 
    if(0){
@@ -55,10 +57,11 @@ void Surfacer::CalSurfacingPara(vector<double>&Vs, int nvoxels){
    }else{
        for(int j=0;j<3;++j){
          //   st[j] = midpoint[j];
+         //   st[j] = Vs[closet_id*3 +j];
            st[j] = Vs[j];
            center[j] = midpoint[j];
        }
-       iBound = (int) (width / dSize / 2. * 1.2);
+       iBound = (int) (width / dSize / 2. * 1.25);
 
    }
 

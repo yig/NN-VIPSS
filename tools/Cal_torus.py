@@ -2,7 +2,12 @@ import trimesh
 import numpy as np
 
 # Load the point cloud from an .obj file
-point_cloud = trimesh.load(r"c:\Users\xiaji\Documents\projects\sketches_results\ipsr_torus.xyz", file_type='xyz')
+# point_cloud = trimesh.load(r"c:\Users\xiaji\Documents\projects\sketches_results\ipsr_torus.xyz", file_type='xyz')
+# path = "./data/torus/gt.obj"
+
+path = "./data/torus/gt.obj"
+
+point_cloud = trimesh.load(path)
 
 # Get the axis-aligned bounding box (AABB)
 bounding_box = point_cloud.bounds
