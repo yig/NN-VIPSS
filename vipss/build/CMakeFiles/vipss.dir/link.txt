@@ -1,1 +1,0 @@
-/usr/bin/c++  -std=c++2a -O3  CMakeFiles/vipss.dir/main.cpp.o -o vipss  -Wl,-rpath,/usr/local/lib liblocal_vipss.a /usr/lib/x86_64-linux-gnu/libarmadillo.so /usr/local/lib/libnlopt.so.0.13.0 libadgrid.a -lm /usr/lib/gcc/x86_64-linux-gnu/13/libgomp.so /usr/lib/x86_64-linux-gnu/libpthread.a -latomic 

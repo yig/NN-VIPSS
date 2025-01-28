@@ -1,6 +1,0 @@
-/home/jjxia/Documents/projects/VIPSS_LOCAL/vipss/build/CMakeFiles/adgrid.dir
-/home/jjxia/Documents/projects/VIPSS_LOCAL/vipss/build/CMakeFiles/local_vipss.dir
-/home/jjxia/Documents/projects/VIPSS_LOCAL/vipss/build/CMakeFiles/vipss.dir
-/home/jjxia/Documents/projects/VIPSS_LOCAL/vipss/build/CMakeFiles/test_time.dir
-/home/jjxia/Documents/projects/VIPSS_LOCAL/vipss/build/CMakeFiles/edit_cache.dir
-/home/jjxia/Documents/projects/VIPSS_LOCAL/vipss/build/CMakeFiles/rebuild_cache.dir
