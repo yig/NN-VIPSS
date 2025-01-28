@@ -106,5 +106,7 @@ class VIPSSUnit {
         int soft_constraint_level_ = 0;
         double user_alpha_ = 50.0;
         bool use_input_normal_ = false;
+        bool only_use_nn_hrbf_surface_ = false;
+        double iso_offset_val_ = 0;
         
 };

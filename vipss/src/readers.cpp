@@ -1596,6 +1596,10 @@ void WriteStatsTimeCSV(const std::string& path, const VP_STATS& vp_stats)
     if(csv_file)
     {
         csv_file << "pt num, " << vp_stats.pt_num_ << std::endl;
+        double normal_estimation_time = vp_stats.init_normal_total_time_ 
+                                        + vp_stats.build_H_total_time_
+                                        + vp_stats.opt_solver_time_;
+        csv_file << "normal estimation timing, " << normal_estimation_time << std::endl;
         csv_file << "ave evaluate nn num, " << vp_stats.average_neighbor_num_ << std::endl;
         // csv_file << "ave cluster size, " << vp_stats.average_cluster_size_ << std::endl;
         csv_file << "octree dummy pt num, " << vp_stats.octree_dummy_pt_num_ << std::endl;
@@ -1620,6 +1624,7 @@ void WriteStatsTimeCSV(const std::string& path, const VP_STATS& vp_stats)
         csv_file << "final H memory, " << vp_stats.max_hmat_memory << std::endl;
         csv_file << "ave cluster size, " << vp_stats.ave_cluster_size << std::endl;
         csv_file << "cluster size std deviation, " << vp_stats.cluster_std_dev << std::endl;
+        csv_file << "max cluster size : , " << vp_stats.max_cluster_size << std::endl;
     } 
 }
 

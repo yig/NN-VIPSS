@@ -17,6 +17,10 @@ public:
     Hermite_RBF(const std::vector<Vec3> &control_points, const VecX &coeff_a,
                 const Vec4 &coeff_b)
             : coeff_a_(coeff_a), coeff_b_(coeff_b), control_points_(control_points) {}
+    
+    Hermite_RBF(const std::vector<Vec3> &control_points, const VecX &coeff_a,
+                const Vec4 &coeff_b, Scalar offset)
+            : coeff_a_(coeff_a), coeff_b_(coeff_b), control_points_(control_points), offset_value_(offset) {}
 
     Scalar evaluate(Scalar x, Scalar y, Scalar z) const override {
         size_t num_pt = control_points_.size();
@@ -39,7 +43,7 @@ public:
         Vec4 kb(1, p(0), p(1), p(2));
         Scalar poly_part = kb.dot(coeff_b_);
 
-        return loc_part + poly_part;
+        return loc_part + poly_part - offset_value_;
     }
 
     Scalar evaluate_gradient(Scalar x, Scalar y, Scalar z, Scalar &gx, Scalar &gy, Scalar &gz) const override {
@@ -83,12 +87,13 @@ public:
         Scalar loc_part = kern.dot(coeff_a_);
         Vec4 kb(1, p(0), p(1), p(2));
         Scalar poly_part = kb.dot(coeff_b_);
-        return loc_part + poly_part;
+        return loc_part + poly_part - offset_value_;
     }
 
 private:
     VecX coeff_a_;
     Vec4 coeff_b_;
+    Scalar offset_value_ = 0;
     std::vector<Vec3> control_points_;
 
     // |p1-p2|^3

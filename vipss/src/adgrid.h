@@ -22,11 +22,16 @@ public:
         
     }
 
+    HRBFDistanceFunction(double offset): offset_(offset)
+    {
+        
+    }
+
     double evaluate(double x, double y, double z) const override
     {
         // std::cout << "eval pt : " << x << " " << y << " " << z << std::endl;
         R3Pt newPt(x, y, z);
-        return LocalVipss::NNDistFunction(newPt);
+        return LocalVipss::NNDistFunction(newPt) - offset_;
     }
 
     double evaluate_gradient(double x, double y, double z, double &gx, double &gy, double &gz) const override
@@ -34,7 +39,7 @@ public:
         // std::cout << "pt : " << x << " " << y << " " << z << std::endl;
         R3Pt newPt(x, y, z);
         double gradient[3];
-        double dist_val = LocalVipss::NNDistGradient(newPt, gradient);
+        double dist_val = LocalVipss::NNDistGradient(newPt, gradient) - offset_;
         
         gx = gradient[0];
         gy = gradient[1];
@@ -89,10 +94,16 @@ public:
     //     // std::cout << "grad : " << gx << " " << gy << " " << gz << std::endl;
     //     return dist_val;
     // }
+
+    void SetIsoOffset(double offset_val)
+    {
+        offset_ = offset_val;
+    }
     
 
 private:
     double radius_;
+    double offset_ = 0.0;
 };
 
 

@@ -44,6 +44,7 @@ struct VP_STATS {
     double possible_max_memory = 0.0;
     double ave_cluster_size = 0;
     double cluster_std_dev = 0;
+    int max_cluster_size = 0;
 };
 
 extern VP_STATS G_VP_stats; 

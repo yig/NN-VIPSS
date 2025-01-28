@@ -1576,7 +1576,7 @@ void VoronoiGen::BuildAdjecentMat()
         // cur_cluster_pts.push_back(ploop[1]);
         // cur_cluster_pts.push_back(ploop[2]);
 
-        double dist_threshold = 1e-6;
+        double dist_threshold = 1e-5;
         for(auto &pt : candidate_pts)
         {
             if(pt == ploop) continue;
@@ -1597,10 +1597,6 @@ void VoronoiGen::BuildAdjecentMat()
                 cur_cluster_pids.push_back(p_id);
             }
             
-
-            // cur_cluster_pts.push_back(pt[0]);
-            // cur_cluster_pts.push_back(pt[1]);
-            // cur_cluster_pts.push_back(pt[2]);
         }
         ploop = tetMesh_.pointtraverse();
         cluster_init_pids_[cur_p_id] = cur_cluster_pids;
@@ -1618,6 +1614,43 @@ void VoronoiGen::BuildAdjecentMat()
     // printf("finish loop pt id 000\n");
 }
 
+void VoronoiGen::BuildAdjecentMatKNN()
+{
+    // tetgenmesh::point ploop = tetMesh_.pointtraverse();
+    cluster_init_pids_.resize(point_id_map_.size());
+    cluster_size_vec_.resize(point_id_map_.size() + 1);
+    cluster_size_vec_.zeros();
+    PicoTree kd_tree;
+    kd_tree.Init(points_);
+    for(auto pt : points_)
+    {
+        size_t cur_p_id = point_id_map_[pt]; 
+        int k = 8;
+        auto nn_pids = kd_tree.SearchNearestKNN(pt[0], pt[1], pt[2], k);
+        std::vector<int> cluster_pids;
+        cluster_pids.push_back(cur_p_id);
+        for(auto n_id : nn_pids)
+        {
+            if(n_id != cur_p_id)
+            {
+                pt_adjecent_mat_(cur_p_id, n_id) = 1;
+                cluster_pids.push_back(n_id);
+            }
+        }
+        cluster_init_pids_[cur_p_id] = cluster_pids;
+        cluster_size_vec_[cur_p_id + 1] = cluster_pids.size();
+
+        // printf("cur pt id 000 : %d \n", cur_p_id);
+    }
+    average_neighbor_num_ = size_t((double) arma::sum(cluster_size_vec_) / double(points_.size()));
+    cluster_accum_size_vec_.resize(points_.size() + 1);
+    cluster_accum_size_vec_[0] = 0;
+    for(int i = 1; i < int(points_.size()); ++i)
+    {
+        cluster_accum_size_vec_[i] = cluster_accum_size_vec_[i-1] + cluster_size_vec_[i];
+    }
+    // printf("finish loop pt id 000\n");
+}
 
 
 void VoronoiGen::InitMesh()

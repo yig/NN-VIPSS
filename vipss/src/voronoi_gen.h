@@ -102,6 +102,7 @@ class VoronoiGen{
         void InitMesh();
         void Tetrahedralize();
         void BuildAdjecentMat();
+        void BuildAdjecentMatKNN();
         void GetVertexStar(tetgenmesh::point& p_st, std::set<tetgenmesh::point>& candid_pts, int level);
         void BuildPtIdMap();
         void GenerateVoroData();

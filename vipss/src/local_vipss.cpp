@@ -144,9 +144,9 @@ void LocalVipss::Init(const std::string & path, const std::string& ext)
         double min_y = std::numeric_limits<double>::max();
         double min_z = std::numeric_limits<double>::max();
 
-        double max_x = std::numeric_limits<double>::min();
-        double max_y = std::numeric_limits<double>::min();
-        double max_z = std::numeric_limits<double>::min();
+        double max_x = std::numeric_limits<double>::lowest();
+        double max_y = std::numeric_limits<double>::lowest();
+        double max_z = std::numeric_limits<double>::lowest();
 
         for(size_t i =0; i < in_pts.size()/3; ++i)
         {
@@ -165,7 +165,10 @@ void LocalVipss::Init(const std::string & path, const std::string& ext)
         double sx = (max_x - min_x) / 2.0 ;
         double sy = (max_y - min_y) / 2.0 ;
         double sz = (max_z - min_z) / 2.0 ;
+        std::cout << "input data min box corner : " << min_x << " " << min_y << " " << min_z << std::endl;
+        std::cout << "input data max box corner : " << max_x << " " << max_y << " " << max_z << std::endl;
         double scale = std::max(sx, std::max(sy, sz));
+        std::cout << " data scale " << scale << std::endl;
         for(size_t i =0; i < in_pts.size()/3; ++i)
         {
             in_pts[3*i] = (in_pts[3*i] - cx) / scale;
@@ -202,6 +205,7 @@ void LocalVipss::Init(const std::vector<double>& in_pts)
     tet_gen_triangulation_time_ = std::chrono::nanoseconds(t001 - t0).count()/1e9;
     printf("finish triangulation :%f s \n", tet_gen_triangulation_time_);
     voro_gen_.BuildAdjecentMat();
+    // voro_gen_.BuildAdjecentMatKNN();
     auto t002 = Clock::now();
     tet_build_adj_mat_time_ = std::chrono::nanoseconds(t002 - t001).count()/1e9;
 
@@ -536,7 +540,7 @@ void LocalVipss::BuildMatrixH()
     auto t5 = Clock::now();
     // VIPSSKernel::use_rbf_base = LocalVipss::use_rbf_base_;
 // #pragma omp parallel for shared(points_, VoronoiGen::cluster_init_pids_) 
-
+    // double s_factor  = 1.0 / double(npt);
 #pragma omp parallel for
     for(int i =0; i < npt; ++i)
     {
@@ -553,6 +557,7 @@ void LocalVipss::BuildMatrixH()
             F(0, 0, arma::size(unit_npt, unit_npt)) = E;
             double cur_lambda = user_lambda_;
             arma::mat K = (F + Minv * cur_lambda);
+            // arma::mat K =  Minv * cur_lambda ;
             AddClusterHMatrix(cluster_pt_ids, K, npt, cur_iter);
         } else {
             AddClusterHMatrix(cluster_pt_ids, Minv, npt, cur_iter);
@@ -594,15 +599,10 @@ void LocalVipss::BuildMatrixHSparse()
     // Eigen::SparseMatrix<Scalar,IsRowMajor?Eigen::ColMajor:Eigen::RowMajor, long> trMat( 4* npt, 4* npt);
     Eigen::SparseMatrix<Scalar,IsRowMajor?Eigen::ColMajor:Eigen::RowMajor, long> diagMat( 4* npt, 4* npt);
 
-    std::cout << "IsRowMajor " << IsRowMajor << std::endl;
-    // final_h_eigen_.resize(4 * npt , 4 * npt);
-    // final_h_eigen_ = SpMat(4 * npt , 4 * npt);
+  
     double add_ele_to_vector_time = 0;
     auto t5 = Clock::now();
-    // VIPSSKernel::use_rbf_base = LocalVipss::use_rbf_base_;
-// #pragma omp parallel for shared(points_, VoronoiGen::cluster_init_pids_) 
-printf("--- build Sparse H  matrix \n");
-// final_h_eigen_.reserve(npt * 40 * 4);
+
     typename SpMat::IndexVector wi(4*npt);
     typename SpMat::IndexVector di(4*npt);
     
@@ -977,13 +977,10 @@ void LocalVipss::BuildMatrixHMemoryOpt()
 
         std::cout << " all_ele_num 0 " << all_ele_num << std::endl;
         std::cout << " diagonal_ele_num 1 " << diagonal_ele_num << std::endl;
-
-
-
         auto iter = h_ele_triplets.begin();
         auto diag_iter = h_diag_ele_triplets.begin();
         
-       
+
         // arma::ivec acc_j_diag_size_vec = arma::cumsum(cluster_j_diag_size_vec);
         
         std::cout << " cur_batch_size 22 " << cur_batch_size << std::endl;
@@ -1005,7 +1002,8 @@ void LocalVipss::BuildMatrixHMemoryOpt()
                 E.eye();
                 F(0, 0, arma::size(unit_npt, unit_npt)) = E;
                 double cur_lambda = user_lambda_;
-                arma::mat K = (F + Minv * cur_lambda);
+                // arma::mat K = (F + Minv * cur_lambda);
+                arma::mat K =  Minv * cur_lambda;
                 AddHalfClusterHMatrix(cluster_pt_ids, K, npt, cur_iter, cur_diag_iter);
             } else {
                 AddHalfClusterHMatrix(cluster_pt_ids, Minv, npt, cur_iter, cur_diag_iter);
@@ -1265,14 +1263,14 @@ double LocalVipss::NatureNeighborGradientOMP(const tetgenmesh::point cur_pt, dou
         gradient[1] += arma::dot(nn_volume_vec_, gy_vec_) / volume_sum;
         gradient[2] += arma::dot(nn_volume_vec_, gz_vec_) / volume_sum;
 
-        arma::vec3 partial_grad = {0, 0, 0};
+        // arma::vec3 partial_grad = {0, 0, 0};
         // for(int vi = 0; vi < nn_num; ++vi)
         // {
         //     partial_grad += nn_dist_vec_[vi] / (volume_sum * volume_sum) * ( volume_sum * nn_vol_grads_[vi] - nn_volume_vec_[vi] * vol_grads_sum);
         // }
-        gradient[0] += partial_grad[0];
-        gradient[1] += partial_grad[1];
-        gradient[2] += partial_grad[2];
+        // gradient[0] += partial_grad[0];
+        // gradient[1] += partial_grad[1];
+        // gradient[2] += partial_grad[2];
         return arma::dot(nn_dist_vec_, nn_volume_vec_) / volume_sum;
     }
     return 0;
@@ -1304,6 +1302,7 @@ void LocalVipss::InitNormalWithVipss()
         std_dev += delt_val * delt_val;
     }
     G_VP_stats.cluster_std_dev = sqrt(std_dev/double(npt));
+    G_VP_stats.max_cluster_size = (int) arma::max(VoronoiGen::cluster_size_vec_);
     std::cout << " ave cluter pt number :  " << G_VP_stats.ave_cluster_size << std::endl;
     std::cout << " stand dev :  " << G_VP_stats.cluster_std_dev << std::endl;
 

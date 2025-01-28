@@ -208,6 +208,7 @@ void GenerateAdaptiveGridOut(const std::array<size_t, 3>& resolution,
     double alpha = args.alpha;
     double smallest_edge_length = args.smallest_edge_length;
     
+   
     
     //precomputing active multiples' indices:
     multiple_indices.resize(funcNum);
@@ -246,6 +247,8 @@ void GenerateAdaptiveGridOut(const std::array<size_t, 3>& resolution,
             multiple_indices[funcIter] = {pair, triple};
         }
     }
+
+    // std::cout << " finish init tet mesh  000 " << std::endl;
     int search_counter;
     if (args.bfs || args.dfs){
         search_counter = 0;
@@ -254,11 +257,15 @@ void GenerateAdaptiveGridOut(const std::array<size_t, 3>& resolution,
     using IndexMap = ankerl::unordered_dense::map<uint64_t, llvm_vecsmall::SmallVector<std::array<double, 4>, 20>>;
     IndexMap vertex_func_grad_map;
     vertex_func_grad_map.reserve(mesh.get_num_vertices());
+
+    // std::cout << " finish init tet mesh  000 00" << std::endl;
     
     //initialize activeness map: four vertexids (v0, v1, v2, v3) -> hash(v0, v1, v2, v3) -> active boolean
     using activeMap = ankerl::unordered_dense::map<uint64_t, bool>;
     activeMap vertex_active_map;
     vertex_active_map.reserve(mesh.get_num_tets());
+
+    // std::cout << " finish init tet mesh  000 000" << std::endl;
     
     mesh.seq_foreach_vertex([&](VertexId vid, std::span<const Scalar, 3> data)
                             {
@@ -274,7 +281,7 @@ void GenerateAdaptiveGridOut(const std::array<size_t, 3>& resolution,
                    std::pair<mtet::Scalar, mtet::EdgeId> e1)
     { return e0.first < e1.first; };
     std::vector<std::pair<mtet::Scalar, mtet::EdgeId>> Q;
-    
+    // std::cout << " finish init tet mesh  000 11" << std::endl;
     std::array<std::array<double, 3>, 4> pts;
     llvm_vecsmall::SmallVector<std::array<double, 4>, 20> vals(funcNum);
     llvm_vecsmall::SmallVector<std::array<std::array<double, 3>,4>, 20> grads(funcNum);
