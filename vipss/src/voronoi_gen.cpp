@@ -389,8 +389,10 @@ void VoronoiGen::Tetrahedralize()
     m.transfernodes();
     tv[1] = clock();
     m.incrementaldelaunay(ts[0]);
+    // InsertSphereBoundryPts42();
 
     BuildPtIdMap();
+    // InsertSphereBoundryPts42();
     // printf("finsh BuildPtIdMap \n");
     // InsertBoundryPts();
     // GenerateVoroData();

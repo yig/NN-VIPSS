@@ -48,6 +48,7 @@ void VIPSSUnit::InitPtNormalWithLocalVipss()
     {
 
         local_vipss_.BuildMatrixHMemoryOpt();
+        local_vipss_.SetBestNormalsWithHmat();
         if(user_lambda_ < 1e-12)
         {
             local_vipss_.final_h_eigen_ = local_vipss_.final_h_eigen_.block(npt_, npt_, 3 * npt_, 3 * npt_);

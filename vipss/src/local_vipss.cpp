@@ -1054,6 +1054,42 @@ void LocalVipss::BuildMatrixHMemoryOpt()
 
 }
 
+void LocalVipss::SetBestNormalsWithHmat()
+{
+    size_t npt = points_.size();
+    Eigen::VectorXd sg_score_init(npt* 4);
+    Eigen::VectorXd sg_dist_init(npt* 4);
+    for(size_t i = 0; i < npt; ++i)
+    {
+        sg_score_init(i) =  s_vals_score_[i];
+        sg_score_init(i + npt)     = out_normals_[3 * i + 0];
+        sg_score_init(i + npt * 2) = out_normals_[3 * i + 1];
+        sg_score_init(i + npt * 3) = out_normals_[3 * i + 2];
+        
+        sg_dist_init(i) = s_vals_dist_[i];
+        sg_dist_init(i + npt)     = out_normals_dist_[3 * i + 0];
+        sg_dist_init(i + npt * 2) = out_normals_dist_[3 * i + 1];
+        sg_dist_init(i + npt * 3) = out_normals_dist_[3 * i + 2];
+
+        // if(s_vals_score_[i] != s_vals_dist_[i])
+        // {
+        //     std::cout << " s vals :  " << s_vals_score_[i] <<" " <<  s_vals_dist_[i] << std::endl;
+        // }
+    }
+
+    Eigen::VectorXd temp = (sg_score_init.transpose() * final_h_eigen_).transpose();
+    double res_score = temp.dot(sg_score_init);
+
+    temp = (sg_dist_init.transpose() * final_h_eigen_).transpose();
+    double res_dist = temp.dot(sg_dist_init);
+    std::cout << " init normal energy score : " << res_score << " energy dist : " << res_dist << std::endl;
+
+    if(res_dist < res_score)
+    {
+        out_normals_ = out_normals_dist_;
+    }
+}
+
 inline std::vector<double> GetClusterNormalsFromIds
                             (const std::vector<int>& pt_ids, const std::vector<double>& all_normals) 
 {
@@ -1118,8 +1154,8 @@ void LocalVipss::BuildHRBFPerNode()
         node_rbf_vec_[i] = std::make_shared<RBF_Core>();
         vipss_api_.build_cluster_hrbf(cluster_pt_vec, cluster_nl_vec, cluster_sv_vec, node_rbf_vec_[i]);
     }
-    s_vals_.clear();
-    out_normals_.clear();
+    // s_vals_.clear();
+    // out_normals_.clear();
 
     auto t11 = Clock::now();
     double build_HRBF_time_total = std::chrono::nanoseconds(t11 - t00).count()/1e9;
@@ -1715,7 +1751,7 @@ void LocalVipss::CalculateClusterNeiScores(bool is_init)
 //     pt_file.close();
 // }
 
-void LocalVipss::BuildClusterMST()
+void LocalVipss::BuildClusterMST(bool use_distance_weight = false)
 {
     std::set<std::string> visited_edge_ids;
     std::vector<C_Edege> tree_edges;
@@ -1750,6 +1786,11 @@ void LocalVipss::BuildClusterMST()
             if(n_id == cur_pid) continue;
             C_Edege edge(cur_pid, n_id);
             edge.score_ = cluster_scores_mat_.coeff(n_id, cur_pid);
+            if(use_distance_weight)
+            {
+                double dist = PtDistance(points_[n_id], points_[cur_pid]);
+                edge.score_ = dist * edge.score_; 
+            }
             edge_priority_queue.push(edge);
         }
     }
@@ -1763,8 +1804,6 @@ void LocalVipss::BuildClusterMST()
         size_t j = edge.c_b_;
         *(e_iter ++) = TripletInt(i,j,1);
         *(e_iter ++) = TripletInt(j,i,1);
-        // cluster_MST_mat_(i,j) = 1;
-        // cluster_MST_mat_(j,i) = 1;
     }
     cluster_MST_mat_.setFromTriplets(edge_eles.begin(), edge_eles.end());
     // cluster_scores_mat_.colw;
@@ -1799,6 +1838,36 @@ void LocalVipss::FlipClusterNormalsByMST()
             cluster_queued_ids.push(n_cid);
         }
     }
+}
+
+std::vector<double> LocalVipss::GetInitPts() const
+{
+    size_t npt = points_.size();
+    std::vector<double> pts;
+    pts.resize(npt*3);
+    for(size_t i = 0; i < npt; ++i)
+    {
+        const auto& pt = points_[i];
+        pts[i *3]      = pt[0];
+        pts[i *3 + 1]  = pt[1];
+        pts[i *3 + 2]  = pt[2];
+    }
+    return pts;
+}
+
+std::vector<double> LocalVipss::GetInitNormals() const
+{
+
+    size_t npt = points_.size();
+    std::vector<double> normals;
+    normals.resize(npt*3);
+    for(size_t i = 0; i < npt; ++i)
+    {
+        normals[i *3]     = cluster_normal_x_.coeff(i, i);
+        normals[i *3 + 1] = cluster_normal_y_.coeff(i, i);
+        normals[i *3 + 2] = cluster_normal_z_.coeff(i, i);
+    }
+    return normals;
 }
 
 void LocalVipss::OuputPtN(const std::string& out_path, bool orient_normal)
@@ -2080,23 +2149,23 @@ void LocalVipss::InitNormals()
     G_VP_stats.cal_cluster_neigbor_scores_time_ += (scores_time + cluster_scores_time);
 
     size_t iter_num = 1;
+    bool use_distance_weight = true;
     auto ti00 = Clock::now();
     BuildClusterMST();
+    
+    FlipClusterNormalsByMST();
+    s_vals_score_ = s_vals_;
     auto ti11 = Clock::now();
     double MST_time = std::chrono::nanoseconds(ti11 - ti00).count()/1e9;
-    total_time += MST_time;
     G_VP_stats.build_normal_MST_time_ += MST_time;
-    printf("normal MST_time time used : %f \n", MST_time); 
-    auto ti0 = Clock::now();
+    out_pts_ = GetInitPts();
+    out_normals_ = GetInitNormals();
+    
+    BuildClusterMST(use_distance_weight);
     FlipClusterNormalsByMST();
-    auto ti1 = Clock::now();
-    double flip_time = std::chrono::nanoseconds(ti1 - ti0).count()/1e9;
-    G_VP_stats.normal_flip_time_ += flip_time;
-    total_time += flip_time;
-    printf("normal flip time used : %f \n", flip_time);
+    s_vals_dist_ = s_vals_;
+    out_normals_dist_ = GetInitNormals();
 
-    std::string init_ptn_path_iter = out_dir_ + filename_ + "_flipped" + std::to_string(iter_num);
-    OuputPtN(init_ptn_path_iter);
     auto finat_t = Clock::now();
     double init_total_time = std::chrono::nanoseconds(finat_t - t0).count()/1e9;
     printf("Normal initializtion with local vipss total time used : %f \n", init_total_time);

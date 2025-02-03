@@ -67,11 +67,13 @@ class LocalVipss {
         void CalculateClusterNeiScores(bool is_init = false);
 
         void OuputPtN(const std::string& out_path, bool orient_normal = false);
+        std::vector<double> GetInitPts() const;
+        std::vector<double> GetInitNormals() const;
 
         inline bool IsFlipNormal(const arma::mat& a_normals, const arma::mat& b_normals) const;
         inline bool FlipClusterNormal(size_t c_a, size_t c_b) const;
         inline bool FlipClusterNormalSimple(size_t c_a, size_t c_b) const;
-        void BuildClusterMST();
+        void BuildClusterMST(bool use_distance_weight);
         void FlipClusterNormalsByMST();
         void WriteVipssTimeLog();
         void SaveCluster();
@@ -100,6 +102,7 @@ class LocalVipss {
         void BuildMatrixHSparse();
         void BuildMatrixHBatches();
         void BuildMatrixHMemoryOpt();
+        void SetBestNormalsWithHmat();
         // double NodeDistanceFunction(const tetgenmesh::point nn_pt, const tetgenmesh::point cur_pt) const;
         double NatureNeighborDistanceFunctionOMP(const tetgenmesh::point cur_pt) const;
         double NatureNeighborGradientOMP(const tetgenmesh::point cur_pt,double* gradient) const;
@@ -168,6 +171,8 @@ class LocalVipss {
         static std::vector<tetgenmesh::point> points_; 
         // std::vector<double> normals_;
         std::vector<double> s_vals_;
+        std::vector<double> s_vals_score_;
+        std::vector<double> s_vals_dist_;
         // std::vector<std::vector<size_t>> cluster_core_pt_ids_;
         // static std::vector<std::vector<size_t>> cluster_all_pt_ids_;
         std::vector<tetgenmesh::point> cluster_centers_;
@@ -176,6 +181,7 @@ class LocalVipss {
         // std::set<size_t> update_score_cluster_ids_;
         std::vector<double> out_pts_;
         std::vector<double> out_normals_;
+        std::vector<double> out_normals_dist_;
         std::vector<std::pair<size_t, double>> vipss_time_stats_;
         std::vector<std::vector<std::pair<size_t, double>>> cluster_ptn_vipss_time_stats_;
 
