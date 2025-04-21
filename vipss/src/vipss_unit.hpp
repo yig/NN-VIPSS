@@ -44,6 +44,10 @@ class VIPSSUnit {
         void BuildNNHRBFFunctions();
         void CompareMeshDiff( std::shared_ptr<RBF_Core> rbf_func);
 
+        void AdaptiveGridHRBF(std::shared_ptr<RBF_Core> rbf_func, 
+                    std::vector<std::array<double, 3> >& output_vertices,
+                    std::vector<std::array<size_t, 3> >& output_triangles);
+
     public:
         std::string file_name_;
         std::string data_dir_; 

@@ -805,26 +805,20 @@ void VIPSSUnit::ReconSurface()
     }
 }
 
-
 void VIPSSUnit::GenerateAdaptiveGrid()
 {
-    
     // std::cout << " test val " << test_val << std::endl;
     std::array<size_t,3> resolution = {3, 3, 3};
     std::vector<shared_ptr<ImplicitFunction<double>>> functions;
     // load_functions(args.function_file, functions);
 
-    
     if(use_global_hrbf_)
-    // if(LOCAL_HRBF_NN != hrbf_type_)
     {
-
         std::cout << "surface function : global HRBF !" << std::endl;
         auto g_t0 = Clock::now();
         using Vec3 = Eigen::Matrix<double, 3, 1>;
         using Vec4 = Eigen::Matrix<double, 4, 1>;
         auto g_hrbf = std::make_shared<RBF_Core>();
-
         // if(only_use_nn_hrbf_surface_)
         // {
             std::vector<double> in_pts;
@@ -834,8 +828,6 @@ void VIPSSUnit::GenerateAdaptiveGrid()
             newnormals_ = in_normals;
             local_vipss_.out_normals_ = in_normals;
         // }
-       
-        
         // std::string vipss_pt_path = "/home/jjxia/Documents/prejects/VIPSS/data/noise_kitten/kitten_h004.001/input_normal_0.001.ply";
         // std::string vipss_s_val_path = "/home/jjxia/Documents/projects/VIPSS_LOCAL/data/scaled/kitten_h004_vals/kitten_h004_0.01.txt";
         // std::string vipss_s_val_path = "/home/jjxia/Documents/projects/VIPSS_LOCAL/data/scaled/kitten_h004_vals/kitten_h004_s_val_0.01.txt";
@@ -849,51 +841,102 @@ void VIPSSUnit::GenerateAdaptiveGrid()
         std::cout << " s_func_vals_ size " << s_func_vals_.size() << std::endl;
 
         local_vipss_.vipss_api_.build_cluster_hrbf(in_pts, local_vipss_.out_normals_, s_func_vals_, g_hrbf);
+        std::vector<std::array<double, 3> > output_vertices;
+        std::vector<std::array<size_t, 3> > output_triangles;
+        AdaptiveGridHRBF(g_hrbf, output_vertices, output_triangles);
 
-        // CompareMeshDiff(g_hrbf);
-        // std::cout << " Finish build_cluster_hrbf  " << std::endl;
-
-        std::cout << "local_vipss_.out_pts_ size " << local_vipss_.out_pts_.size()/3 << std::endl;
-
-        std::vector<Vec3> in_points(local_vipss_.out_pts_.size()/3);
-        for(int i = 0; i < local_vipss_.out_pts_.size()/3; ++i)
-        {
-            in_points[i] =  {local_vipss_.out_pts_[3*i], local_vipss_.out_pts_[3*i +1], local_vipss_.out_pts_[3*i +2]};
-        }
-
-        Eigen::VectorXd hrbf_a;
-        hrbf_a.resize(g_hrbf->a.size());
-
-        std::cout << " g_hrbf->a.size() " << g_hrbf->a.size() << std::endl;
-        for(int i = 0; i < g_hrbf->a.size(); ++i)
-        {
-            hrbf_a[i] = g_hrbf->a[i];
-        }
-        Vec4 hrbf_b;
-        for(int i =0; i < 4; ++i)
-        {
-            hrbf_b[i] = g_hrbf->b[i];
-        }
-        std::shared_ptr<ImplicitFunction<double>> hrbf_func = std::make_shared<Hermite_RBF<double>>(in_points, hrbf_a, hrbf_b, iso_offset_val_);
-        functions.push_back(hrbf_func);
-        auto g_t1 = Clock::now();
-        G_VP_stats.hrbf_coefficient_time_ = std::chrono::nanoseconds(g_t1 - g_t0).count() / 1e9;
-        
     } else {
         std::shared_ptr<ImplicitFunction<double>> hrbf_func = std::make_shared<HRBFDistanceFunction>(iso_offset_val_);
         // hrbf_func->SetIsoOffset(iso_offset_val_);
         functions.push_back(hrbf_func);
+        auto t000 = Clock::now();   
+        std::vector<std::array<double, 3> > output_vertices;
+        std::vector<std::array<size_t, 3> > output_triangles;
+        GenerateAdaptiveGridOut(resolution, local_vipss_.voro_gen_.bbox_min_, 
+                                local_vipss_.voro_gen_.bbox_max_, out_dir_,  
+                                file_name_,  functions, adgrid_threshold_, output_vertices, output_triangles);
+        auto t001 = Clock::now();
+
+        for(auto& pt : output_vertices)
+        {
+            pt[0] = pt[0] *  local_vipss_.in_pt_scale_ + local_vipss_.in_pt_center_[0];
+            pt[1] = pt[1] *  local_vipss_.in_pt_scale_ + local_vipss_.in_pt_center_[1];
+            pt[2] = pt[2] *  local_vipss_.in_pt_scale_ + local_vipss_.in_pt_center_[2];
+        }
+        
+        SaveMeshToPly(out_surface_path_, output_vertices, output_triangles);
+        G_VP_stats.adgrid_gen_time_ = std::chrono::nanoseconds(t001 - t000).count() / 1e9;
+
+        printf("adaptive grid generation time : %f ! \n", G_VP_stats.adgrid_gen_time_);
     }
 
-    auto t000 = Clock::now();   
-    GenerateAdaptiveGridOut(resolution, local_vipss_.voro_gen_.bbox_min_, 
-                            local_vipss_.voro_gen_.bbox_max_, out_dir_,  
-                            file_name_,  functions, adgrid_threshold_);
+    
+}
+
+
+void VIPSSUnit::AdaptiveGridHRBF(std::shared_ptr<RBF_Core> g_hrbf, 
+                    std::vector<std::array<double, 3> >& output_vertices,
+                    std::vector<std::array<size_t, 3> >& output_triangles)
+{
+    std::array<size_t,3> resolution = {3, 3, 3};
+    std::vector<shared_ptr<ImplicitFunction<double>>> functions;
+    using Vec3 = Eigen::Matrix<double, 3, 1>;
+    using Vec4 = Eigen::Matrix<double, 4, 1>;
+
+    double min_x = std::numeric_limits<double>::max();
+    double min_y = std::numeric_limits<double>::max();
+    double min_z = std::numeric_limits<double>::max();
+
+    double max_x = std::numeric_limits<double>::lowest();
+    double max_y = std::numeric_limits<double>::lowest();
+    double max_z = std::numeric_limits<double>::lowest();
+
+    std::vector<Vec3> in_points(g_hrbf->pts.size()/3);
+    for(int i = 0; i < g_hrbf->pts.size()/3; ++i)
+    {
+        in_points[i] =  {g_hrbf->pts[3*i], g_hrbf->pts[3*i +1], g_hrbf->pts[3*i +2]};
+        min_x = min_x < g_hrbf->pts[3*i]     ? min_x : g_hrbf->pts[3*i];
+        min_y = min_y < g_hrbf->pts[3*i + 1] ? min_y : g_hrbf->pts[3*i + 1];
+        min_z = min_z < g_hrbf->pts[3*i + 2] ? min_z : g_hrbf->pts[3*i + 2];
+
+        max_x = max_x > g_hrbf->pts[3*i]     ? max_x : g_hrbf->pts[3*i];
+        max_y = max_y > g_hrbf->pts[3*i + 1] ? max_y : g_hrbf->pts[3*i + 1];
+        max_z = max_z > g_hrbf->pts[3*i + 2] ? max_z : g_hrbf->pts[3*i + 2];
+    }
+
+    std::array<double,3> bbox_min = {min_x, min_y, min_z};
+    std::array<double,3> bbox_max = {max_x, max_y, max_z};
+
+    Eigen::VectorXd hrbf_a;
+    hrbf_a.resize(g_hrbf->a.size());
+
+    std::cout << " g_hrbf->a.size() " << g_hrbf->a.size() << std::endl;
+    for(int i = 0; i < g_hrbf->a.size(); ++i)
+    {
+        hrbf_a[i] = g_hrbf->a[i];
+    }
+    Vec4 hrbf_b;
+    for(int i =0; i < 4; ++i)
+    {
+        hrbf_b[i] = g_hrbf->b[i];
+    }
+    std::shared_ptr<ImplicitFunction<double>> hrbf_func = std::make_shared<Hermite_RBF<double>>(in_points, hrbf_a, hrbf_b, iso_offset_val_);
+    functions.push_back(hrbf_func);
+    auto g_t1 = Clock::now();
+    auto t000 = Clock::now();
+
+    
+      
+    GenerateAdaptiveGridOut(resolution, bbox_min, bbox_max, out_dir_,  
+                            file_name_,  functions, adgrid_threshold_, output_vertices, output_triangles);
+    
     auto t001 = Clock::now();
     G_VP_stats.adgrid_gen_time_ = std::chrono::nanoseconds(t001 - t000).count() / 1e9;
 
     printf("adaptive grid generation time : %f ! \n", G_VP_stats.adgrid_gen_time_);
+
 }
+
 
 void VIPSSUnit::SolveOptimizaiton()
 {
