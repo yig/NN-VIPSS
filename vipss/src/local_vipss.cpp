@@ -1789,7 +1789,7 @@ void LocalVipss::BuildClusterMST(bool use_distance_weight = false)
             if(use_distance_weight)
             {
                 double dist = PtDistance(points_[n_id], points_[cur_pid]);
-                edge.score_ = dist * edge.score_; 
+                edge.score_ = sqrt(dist) * edge.score_; 
             }
             edge_priority_queue.push(edge);
         }
@@ -2152,7 +2152,6 @@ void LocalVipss::InitNormals()
     bool use_distance_weight = true;
     auto ti00 = Clock::now();
     BuildClusterMST();
-    
     FlipClusterNormalsByMST();
     s_vals_score_ = s_vals_;
     auto ti11 = Clock::now();
@@ -2161,10 +2160,10 @@ void LocalVipss::InitNormals()
     out_pts_ = GetInitPts();
     out_normals_ = GetInitNormals();
     
-    BuildClusterMST(use_distance_weight);
-    FlipClusterNormalsByMST();
-    s_vals_dist_ = s_vals_;
-    out_normals_dist_ = GetInitNormals();
+    // BuildClusterMST(use_distance_weight);
+    // FlipClusterNormalsByMST();
+    // s_vals_dist_ = s_vals_;
+    // out_normals_dist_ = GetInitNormals();
 
     auto finat_t = Clock::now();
     double init_total_time = std::chrono::nanoseconds(finat_t - t0).count()/1e9;
