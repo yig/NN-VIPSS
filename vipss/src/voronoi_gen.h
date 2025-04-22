@@ -158,6 +158,7 @@ class VoronoiGen{
         std::vector<arma::vec3> vcell_face_normals_; 
         double truncated_cell_center_[3];
         double truncated_face_center_[3];
+        std::vector<tetgenmesh::point> convex_hull_pts_; 
 
         // static const int MAX_ELEMENT_ = 1000;
         // static const int MAX_THREAD_NUM_ = 32;

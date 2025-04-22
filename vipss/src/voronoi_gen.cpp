@@ -390,9 +390,10 @@ void VoronoiGen::Tetrahedralize()
     tv[1] = clock();
     m.incrementaldelaunay(ts[0]);
     // InsertSphereBoundryPts42();
+    m.outhullPts(m.in, convex_hull_pts_);
 
     BuildPtIdMap();
-    // InsertSphereBoundryPts42();
+    InsertSphereBoundryPts42();
     // printf("finsh BuildPtIdMap \n");
     // InsertBoundryPts();
     // GenerateVoroData();
@@ -422,7 +423,7 @@ void VoronoiGen::GenerateVoroData()
 // 
     auto t0 = Clock::now();
     // InsertSphereBoundryPts();
-    InsertSphereBoundryPts42();
+    // InsertSphereBoundryPts42();
     // InsertBoundryPts();
     
 
@@ -1573,11 +1574,9 @@ void VoronoiGen::BuildAdjecentMat()
         std::vector<int> cur_cluster_pids;
         cur_cluster_pids.push_back(cur_p_id);
         // std::vector<double> cur_cluster_pts;
-
         // cur_cluster_pts.push_back(ploop[0]);
         // cur_cluster_pts.push_back(ploop[1]);
         // cur_cluster_pts.push_back(ploop[2]);
-
         double dist_threshold = 1e-5;
         for(auto &pt : candidate_pts)
         {

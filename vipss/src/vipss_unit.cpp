@@ -610,7 +610,7 @@ void VIPSSUnit::BuildNNHRBFFunctions()
     //     std::cout << "v_normals " << local_vipss_.out_normals_[i] << std::endl;
     // }
     
-    newnormals_.clear();
+    // newnormals_.clear();
     // s_func_vals_.clear();
     local_vipss_.BuildHRBFPerNode();
     local_vipss_.SetThis(); 
@@ -1076,7 +1076,53 @@ void VIPSSUnit::Run()
     // std::string out_path  = local_vipss_.out_dir_ + local_vipss_.filename_  + "_opt";
     if(! only_use_nn_hrbf_surface_)
     {   
-        writePLYFile_VN(out_normal_path_, local_vipss_.out_pts_, newnormals_);
+        // std::vector<tetgenmesh::point> hull_pts;
+        // local_vipss_.voro_gen_.tetMesh_.outhullPts(&(local_vipss_.voro_gen_.tetIO_), hull_pts);
+        std::vector<double> out_hull_pts;
+        arma::vec3 hull_c= {0, 0, 0};   
+        std::vector<arma::vec3> hull_normals;
+        int normal_size = newnormals_.size();
+        std::cout << " newnormals_ size 00 " << normal_size << std::endl;
+        for(auto pt: local_vipss_.voro_gen_.convex_hull_pts_)
+        {
+            hull_c[0] += pt[0];
+            hull_c[1] += pt[1];
+            hull_c[2] += pt[2];
+            size_t pid = local_vipss_.voro_gen_.point_id_map_[pt];
+            hull_normals.push_back({newnormals_[3* pid], newnormals_[3* pid + 1], newnormals_[3* pid+ 2]});
+        }
+        if(! local_vipss_.voro_gen_.convex_hull_pts_.empty())
+        {
+            hull_c = hull_c / double(local_vipss_.voro_gen_.convex_hull_pts_.size());
+        }
+        double sign_sum = 0;
+        for(int i = 0; i < local_vipss_.voro_gen_.convex_hull_pts_.size(); ++i)
+        {
+            const auto& pt = local_vipss_.voro_gen_.convex_hull_pts_[i];
+            arma::vec3 diff = {pt[0] - hull_c[0], pt[1] - hull_c[1], pt[2] - hull_c[2]};
+            sign_sum += arma::dot(diff, hull_normals[i]); 
+        }
+        std::cout << " sign_sum value " << sign_sum << std::endl;
+        auto out_normals  = newnormals_;
+        std::cout << " newnormals_ size " <<(int) newnormals_.size() << std::endl;
+        if(sign_sum < 0)
+        {
+            for( auto& ele : out_normals)
+            {
+                ele *= -1.0;
+            }
+        }
+        std::cout << "recover data to origin scale !" << std::endl;
+        // std::string hull_pt_path = "convex_hull_pts.xyz";
+        // writeXYZ(hull_pt_path, out_hull_pts);
+        std::vector<double> out_pts(local_vipss_.out_pts_.size(), 0);
+        for(int i = 0; i < local_vipss_.out_pts_.size()/3; ++i)
+        {
+            out_pts[3*i] = local_vipss_.out_pts_[3*i] * local_vipss_.in_pt_scale_ + local_vipss_.in_pt_center_[0];
+            out_pts[3*i + 1] = local_vipss_.out_pts_[3*i + 1] * local_vipss_.in_pt_scale_ + local_vipss_.in_pt_center_[1];
+            out_pts[3*i + 2] = local_vipss_.out_pts_[3*i + 2] * local_vipss_.in_pt_scale_ + local_vipss_.in_pt_center_[2];
+        }
+        writePLYFile_VN(out_normal_path_, out_pts, out_normals);
         std::cout << " save estimated normal to file : " << out_normal_path_ << std::endl;
     }
     

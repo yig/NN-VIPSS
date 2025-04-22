@@ -2149,9 +2149,9 @@ void LocalVipss::InitNormals()
     G_VP_stats.cal_cluster_neigbor_scores_time_ += (scores_time + cluster_scores_time);
 
     size_t iter_num = 1;
-    bool use_distance_weight = true;
+    
     auto ti00 = Clock::now();
-    BuildClusterMST();
+    BuildClusterMST(use_distance_weight_mst_);
     FlipClusterNormalsByMST();
     s_vals_score_ = s_vals_;
     auto ti11 = Clock::now();
