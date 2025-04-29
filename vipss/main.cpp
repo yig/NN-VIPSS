@@ -8,18 +8,8 @@
 typedef std::chrono::high_resolution_clock Clock;
 using namespace std;
 
-// DEFINE_string(input, "", "The input point file name.");
-// DEFINE_string(output, "", "The output file name");
-// DEFINE_double(lambda, 0.0, "The smooth term for vipss");
-// DEFINE_int32(volumeDim, 100, "The volume dimension for surfacing marching cubes");
-// DEFINE_int32(surfacing, 1, "Whether generate surface using Nature Neighbor HRBF");
-// DEFINE_int32(initPV, 1, "Whether to use partial vipss to init point normals, this method runs faster");
-// DEFINE_int32(hard_constraints, 1, "Whether to use normal length as hard constraints");
-
 void SplitPath(const std::string& fullfilename,std::string &filepath);
 void SplitFileName (const std::string& fullfilename,std::string &filepath,std::string &filename,std::string &extname);
-
-
 
 int main(int argc, char** argv)
 {
@@ -34,7 +24,7 @@ int main(int argc, char** argv)
         int volumeDim = 100;
         bool surfacing = true;
         bool initPV = true;
-        bool hardConstraints = true;
+        bool hardConstraints = false;
         bool rbf_base = false;
         double opt_threshold = 1e-7;
         double adgrid_threshold = 0.001;
@@ -43,12 +33,16 @@ int main(int argc, char** argv)
         bool hrbf_sample = false;
         bool use_global_hrbf = false;
         bool memory_efficient = false;
-        int max_iter_num = 3000;
+        int max_iter_num = 10000;
         int batch_size = 10000;
         int constraint_level =0;
         double alpha = 50.0;
         bool use_input_normal = false;
         double iso_offset = 0.0;
+        // enable dense input can reduce natural neighbor size
+        // it is useful for densely sampled input from plane or sphere look geometry 
+        bool is_dense_input = false;
+        int MST_weight_type = 0; 
     }args;
     
     // gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -56,34 +50,39 @@ int main(int argc, char** argv)
     app.add_option("-i, --input ", args.input, "input file")->required();
     app.add_option("-o, --output ", args.output, "output file, if not given , output will be saved in same folder as input");
     app.add_option("-l, --lambda ", args.lambda, "lambda value");
-    app.add_option("-v, --volume_size ", args.volumeDim, "surface volumeDim");
+    
     app.add_option("-P, --initPV", args.initPV, "enable or disable partial vipss for normal initialization");
     app.add_option("-S, --surfacing", args.surfacing, "reconstruct surface or not");
-    app.add_option("-H, --hardConstraints", args.hardConstraints, "use hard constraints for energy optimization");
-    app.add_option("-R, --use_rbfBase",args.rbf_base, "use simplified rbf base");
-    app.add_option("-t, --opt_threshold",args.opt_threshold, "use simplified rbf base");
+    // app.add_option("-H, --hardConstraints", args.hardConstraints, "use hard constraints for energy optimization");
+    // app.add_option("-R, --use_rbfBase",args.rbf_base, "use simplified rbf base");
+    // app.add_option("-t, --opt_threshold",args.opt_threshold, "use simplified rbf base");
+    app.add_option("-v, --volume_size ", args.volumeDim, "surface volumeDim for surface tracker, not useful for adaptive grid"); 
     app.add_option("-a, --adgrid_threshold",args.adgrid_threshold, "adptive gird generation threshold");
     app.add_option("-A, --use_adgrid",args.use_adgrid, "use adptive gird to generate mesh");
     app.add_option("-O, --only_surface",args.only_surface, "add insert octree pt to generate mesh");
     app.add_option("-G, --use_ghrbf",args.use_global_hrbf, "insert octree sample pts to build new HRBF");
-    app.add_option("-M, --memory_efficient",args.memory_efficient, "insert octree sample pts to build new HRBF");
+    // app.add_option("-M, --memory_efficient",args.memory_efficient, "insert octree sample pts to build new HRBF");
     app.add_option("--max_iter",args.max_iter_num, "insert octree sample pts to build new HRBF");
-    app.add_option("-B, --Batch_size", args.batch_size, "point batch size for building sparse matrix H");
-    app.add_option("-c, --constraint_level", args.constraint_level, "optimization contraint level, the higher value the higher punish term");
+    // app.add_option("-B, --Batch_size", args.batch_size, "point batch size for building sparse matrix H");
+    // app.add_option("-c, --constraint_level", args.constraint_level, "optimization contraint level, the higher value the higher punish term");
     app.add_option(" --alpha", args.alpha, " soft constraints alpha value, larger value has harder constraints ");
     app.add_option("-N, --use_input_normal",args.use_input_normal, "use input normal to build dist function");
-    app.add_option(" --iso_offset", args.iso_offset, " iso offset value for adaptive grid surface ");
+    // app.add_option(" --iso_offset", args.iso_offset, " iso offset value for adaptive grid surface ");
+    app.add_option("-D, --is_dense_input",args.is_dense_input, "enable dense input can reduce natural neighbor size");
+    app.add_option("-w, --MST_weight_type",args.MST_weight_type, "MST weight type, 0 uses angle score, 1 use both dist and score");
+
 
     CLI11_PARSE(app, argc, argv);
     // LocalVipss::use_octree_sample_ = args.octree_sample;
     // std::cout << "LocalVipss::feature_preserve_sample_ " <<  LocalVipss::feature_preserve_sample_ << std::endl;
     vipss_unit.hard_constraints_ = args.hardConstraints;
-    vipss_unit.use_efficient_memory_ = args.memory_efficient;
     vipss_unit.max_opt_iter_ = args.max_iter_num;
-    vipss_unit.soft_constraint_level_ = args.constraint_level;
     vipss_unit.user_alpha_ = args.alpha;
     vipss_unit.use_input_normal_ = args.use_input_normal;
     vipss_unit.only_use_nn_hrbf_surface_ = args.only_surface;
+    vipss_unit.is_dense_input_ = args.is_dense_input;
+    vipss_unit.MST_weight_type_ = args.MST_weight_type;
+
     if(args.input.size() > 0)
     {
         std::string in_path, in_filename, in_extname;
@@ -94,7 +93,7 @@ int main(int argc, char** argv)
         std::cout << "in_filename : " << in_filename << std::endl;
         std::cout << "in_extname : " << in_extname << std::endl;
         LocalVipss::InitWithPartialVipss = args.initPV;
-        LocalVipss::use_rbf_base_ = args.rbf_base;
+        // LocalVipss::use_rbf_base_ = args.rbf_base;
         vipss_unit.is_surfacing_ = args.surfacing;
         vipss_unit.adgrid_threshold_ = args.adgrid_threshold;
         vipss_unit.use_adgrid_ = args.use_adgrid;

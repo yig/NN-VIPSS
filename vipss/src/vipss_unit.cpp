@@ -159,7 +159,6 @@ double optfunc_unit_vipss_direct_simple_eigen(const std::vector<double>&x, std::
     
     if(!is_alpha_initialized)
     {
-        // soft_constraints_alpha = re / double(n) * pow(10, drbf->soft_constraint_level_);
         // soft_constraints_alpha = 100.0;
         soft_constraints_alpha = drbf->user_alpha_;
         if(drbf->user_lambda_ > 1e-16)
@@ -236,7 +235,6 @@ double optfunc_unit_vipss_direct_eigen(const std::vector<double>& x, std::vector
 
     if(!is_alpha_initialized)
     {
-        // soft_constraints_alpha = res_vec_g.sum() / (double(n)) * pow(10, drbf->soft_constraint_level_);
         soft_constraints_alpha = drbf->user_alpha_;
         if(drbf->user_lambda_ > 1e-16)
         {
@@ -1005,10 +1003,16 @@ void VIPSSUnit::Run()
 {
     local_vipss_.out_dir_ = data_dir_ + "/" + file_name_ + "/";
     auto t00 = Clock::now();
+    local_vipss_.voro_gen_.dense_input_ = is_dense_input_;
+    if(MST_weight_type_ == 1)
+    {
+        local_vipss_.use_distance_weight_mst_ = true;
+    }
+    
     rbf_api_.Set_RBF_PARA();
     InitPtNormalWithLocalVipss();
     
-    std::string out_init_normal_path = out_dir_ + + "/" + file_name_ + "_init_normal.ply";
+    std::string out_init_normal_path = out_dir_  + "/" + file_name_ + "_init_normal.ply";
     writePLYFile_VN(out_init_normal_path, local_vipss_.out_pts_, local_vipss_.out_normals_);
 
     if(! only_use_nn_hrbf_surface_ )

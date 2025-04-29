@@ -194,6 +194,7 @@ class VoronoiGen{
         std::array<double, 3> bbox_max_;
         size_t average_neighbor_num_ = 0;
         std::array<double,3> dummy_sign_pt_;
+        bool dense_input_ = false;
 
         
     private:

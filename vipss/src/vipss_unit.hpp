@@ -106,11 +106,11 @@ class VIPSSUnit {
         double distfunc_threshold_ = 0.3;
         bool make_nn_const_neighbor_num_ = true; 
         bool use_global_hrbf_ = false;
-        bool use_efficient_memory_ = false;
-        int soft_constraint_level_ = 0;
         double user_alpha_ = 50.0;
         bool use_input_normal_ = false;
         bool only_use_nn_hrbf_surface_ = false;
         double iso_offset_val_ = 0;
+        bool is_dense_input_ = false;
+        int MST_weight_type_ = 0;
         
 };

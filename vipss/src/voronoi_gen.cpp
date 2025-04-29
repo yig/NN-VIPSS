@@ -393,7 +393,11 @@ void VoronoiGen::Tetrahedralize()
     m.outhullPts(m.in, convex_hull_pts_);
 
     BuildPtIdMap();
-    InsertSphereBoundryPts42();
+    if(dense_input_)
+    {
+        InsertSphereBoundryPts42();
+    }
+    
     // printf("finsh BuildPtIdMap \n");
     // InsertBoundryPts();
     // GenerateVoroData();
@@ -423,10 +427,13 @@ void VoronoiGen::GenerateVoroData()
 // 
     auto t0 = Clock::now();
     // InsertSphereBoundryPts();
-    // InsertSphereBoundryPts42();
-    // InsertBoundryPts();
-    
 
+    if(! dense_input_)
+    {
+        InsertSphereBoundryPts42();
+    }
+    
+    // InsertBoundryPts();
     // printf("finsh InsertBoundryPts \n");
     tetMesh_.generate_voronoi_cell(&voronoi_data_);
     

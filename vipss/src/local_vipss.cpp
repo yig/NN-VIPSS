@@ -538,7 +538,6 @@ void LocalVipss::BuildMatrixH()
     arma::ivec acc_j_size_vec = arma::cumsum(cluster_j_size_vec);
     auto iter = h_ele_triplets.begin();
     auto t5 = Clock::now();
-    // VIPSSKernel::use_rbf_base = LocalVipss::use_rbf_base_;
 // #pragma omp parallel for shared(points_, VoronoiGen::cluster_init_pids_) 
     // double s_factor  = 1.0 / double(npt);
 #pragma omp parallel for
