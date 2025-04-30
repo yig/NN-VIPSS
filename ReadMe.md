@@ -17,14 +17,14 @@ BUILDING
 ======================================================================================================
 
 
-The code need dependencies: 
-1)Armadillo (https://gitlab.com/conradsnicta/armadillo-code)
-2)NLOPT
-3)OpenBlas (need to enable OpenMP support, better recompile it when using ubuntu) https://github.com/OpenMathLib/OpenBLAS
-4)Eigen 
-5)ClI11 https://github.com/CLIUtils/CLI11  
-6)pico tree v0.8.3 https://github.com/Jaybro/pico_tree/tree/v0.8.3
-7)C++ json https://github.com/nlohmann/json
+The code need dependencies: \\
+1)Armadillo (https://gitlab.com/conradsnicta/armadillo-code)\\
+2)NLOPT\\
+3)OpenBlas (need to enable OpenMP support, better recompile it when using ubuntu) https://github.com/OpenMathLib/OpenBLAS\\
+4)Eigen \\
+5)ClI11 https://github.com/CLIUtils/CLI11  \\
+6)pico tree v0.8.3 https://github.com/Jaybro/pico_tree/tree/v0.8.3\\
+7)C++ json https://github.com/nlohmann/json\\
 
 If you are compiling on Ubuntu, install Openblass from source with OpenMP enabled first, then Amardillo and other libs. If using Windows, vcpkg is preferred to install the libs, but you may need to compile pico tree by yourself. When compile with Visual Studio, please set C++ version to 20+ and enable OpenMP support.   
 
