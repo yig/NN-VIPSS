@@ -426,7 +426,7 @@ void VIPSSUnit::OptUnitVipssNormalDirectSimple(){
         lower[i*3 + 1] = -1.0;
         lower[i*3 + 2] = -1.0;
     }
-    printf("start to call simple soft solver optimizer ! \n");
+    // printf("start to call simple soft solver optimizer ! \n");
     Solver::nloptwrapperDirect(lower,upper,optfunc_unit_vipss_direct_simple_eigen,
                 this,opt_tor_, max_opt_iter_,solver_);
     // Solver::nloptwrapper(lower,upper,optfunc_unit_vipss_simple,this,1e-7,3000,solver_);

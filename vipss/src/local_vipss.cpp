@@ -932,7 +932,7 @@ void LocalVipss::BuildMatrixHMemoryOpt()
     auto t00 = Clock::now(); 
     size_t npt = this->points_.size();
     final_h_eigen_.resize(4 * npt , 4 * npt);
-    std::cout << " cluster size : " << npt << std::endl;
+    // std::cout << " cluster size : " << npt << std::endl;
     std::cout << " cluster size : " << VoronoiGen::cluster_size_vec_.size() << std::endl;
     arma::ivec cluster_j_size_vec = VoronoiGen::cluster_size_vec_  % VoronoiGen::cluster_size_vec_ * 16;    
     arma::ivec cluster_j_top_size_vec = (cluster_j_size_vec - VoronoiGen::cluster_size_vec_ * 4)/2;
@@ -952,38 +952,30 @@ void LocalVipss::BuildMatrixHMemoryOpt()
     {
         // std::cout << " st id " << st_id << std::endl;
         int cur_batch_size = std::min(int(npt - st_id), batch_size);
-        // if(0)
-        // std::cout << " cur_batch_size " << cur_batch_size << std::endl;
         arma::ivec cur_j_top_size_vec = cluster_j_top_size_vec.subvec(st_id, st_id + cur_batch_size);
         cur_j_top_size_vec[0] = 0;
         arma::ivec cur_acc_j_size_vec = arma::cumsum(cur_j_top_size_vec);
         arma::ivec cur_j_diag_size_vec = VoronoiGen::cluster_size_vec_.subvec(st_id, st_id + cur_batch_size) * 4;
         cur_j_diag_size_vec[0] = 0;
 
-        // std::cout << " cur_batch_size 01" << cur_batch_size << std::endl;
         size_t all_ele_num = arma::accu(cur_j_top_size_vec);
         size_t diagonal_ele_num = arma::accu(cur_j_diag_size_vec);
         cur_j_diag_size_vec =  arma::cumsum(cur_j_diag_size_vec);
         std::vector<Triplet> h_ele_triplets;
         std::vector<Triplet> h_diag_ele_triplets;
-        // std::cout << " cur_batch_size 02" << cur_batch_size << std::endl;
-        std::cout << " all_ele_num " << all_ele_num << std::endl;
-        std::cout << " diagonal_ele_num " << diagonal_ele_num << std::endl;
 
         size_t memory_size = sizeof(Triplet) * all_ele_num / (1024 * 1024 * 1024);
-        std::cout << " allocate memory : " <<  memory_size << std::endl;
+        // std::cout << " allocate memory : " <<  memory_size << std::endl;
         h_ele_triplets.resize(all_ele_num);
         h_diag_ele_triplets.resize(diagonal_ele_num);
 
-        std::cout << " all_ele_num 0 " << all_ele_num << std::endl;
-        std::cout << " diagonal_ele_num 1 " << diagonal_ele_num << std::endl;
+        // std::cout << " all_ele_num 0 " << all_ele_num << std::endl;
+        // std::cout << " diagonal_ele_num 1 " << diagonal_ele_num << std::endl;
         auto iter = h_ele_triplets.begin();
         auto diag_iter = h_diag_ele_triplets.begin();
         
 
         // arma::ivec acc_j_diag_size_vec = arma::cumsum(cluster_j_diag_size_vec);
-        
-        std::cout << " cur_batch_size 22 " << cur_batch_size << std::endl;
         #pragma omp parallel for
         for(int i = st_id; i < st_id + cur_batch_size; ++i)
         {
@@ -1009,7 +1001,7 @@ void LocalVipss::BuildMatrixHMemoryOpt()
                 AddHalfClusterHMatrix(cluster_pt_ids, Minv, npt, cur_iter, cur_diag_iter);
             }
         }
-        std::cout << " finish retrive current batch" << std::endl;
+        // std::cout << " finish retrive current batch" << std::endl;
        
         SpMat temp_diag(4 *npt, 4* npt);
         temp_diag.setFromTriplets(h_diag_ele_triplets.begin(), h_diag_ele_triplets.end());
