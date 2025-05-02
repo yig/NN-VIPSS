@@ -1012,8 +1012,8 @@ void VIPSSUnit::Run()
     rbf_api_.Set_RBF_PARA();
     InitPtNormalWithLocalVipss();
     
-    std::string out_init_normal_path = out_dir_  + "/" + file_name_ + "_init_normal.ply";
-    writePLYFile_VN(out_init_normal_path, local_vipss_.out_pts_, local_vipss_.out_normals_);
+    // std::string out_init_normal_path = out_dir_  + "/" + file_name_ + "_init_normal.ply";
+    // writePLYFile_VN(out_init_normal_path, local_vipss_.out_pts_, local_vipss_.out_normals_);
 
     if(! only_use_nn_hrbf_surface_ )
     {
