@@ -1,50 +1,59 @@
 import numpy as np
+import os
 
-# Function to read an XYZ file
-def read_xyz(filename):
+def read_xyz_with_normals(filename):
+    data = []
     with open(filename, 'r') as file:
-        lines = file.readlines()
-        # num_atoms = int(lines[0].strip())  # First line contains the number of atoms
-        # comment = lines[1].strip()         # Second line is a comment
-        atoms = []
-        coordinates = []
+        for line in file:
+            if line.strip():
+                values = list(map(float, line.strip().split()))
+                if len(values) == 6:
+                    data.append(values)
+                else:
+                    raise ValueError("Each line must have 6 values: x y z nx ny nz")
+    return np.array(data)
 
-        for line in lines[2:]:
-            parts = line.split()
-            # atoms.append(parts[0])
-            coordinates.append([float(parts[0]), float(parts[1]), float(parts[2])])
+def scale_points_uniform(points, target_min=-1.0, target_max=1.0):
+    center = (points.max(axis=0) + points.min(axis=0)) / 2.0
+    centered = points - center
+    scale = np.max(np.abs(centered))
+    scaled = centered / (scale + 1e-8)  # avoid division by zero
+    return scaled
 
-        return atoms, np.array(coordinates)
-
-# Function to normalize the coordinates
-def normalize_coordinates(coords):
-    # Translate coordinates to have mean at origin
-    mean = np.mean(coords, axis=0)
-    centered_coords = coords - mean
-    
-    # Scale the coordinates so that the maximum absolute value in any dimension is 1
-    max_val = np.max(np.abs(centered_coords))
-    normalized_coords = centered_coords / max_val
-
-    return normalized_coords
-
-# Function to write the normalized coordinates back to an XYZ file
-def write_xyz(filename,  coordinates):
+def write_xyz_with_normals(filename, points, normals):
     with open(filename, 'w') as file:
-        for coord in  coordinates:
-            file.write(f"{coord[0]:.6f} {coord[1]:.6f} {coord[2]:.6f}\n")
+        for p, n in zip(points, normals):
+            file.write(f"{p[0]:.6f} {p[1]:.6f} {p[2]:.6f} {n[0]:.6f} {n[1]:.6f} {n[2]:.6f}\n")
 
-# Example usage
-input_file = r'c:\Users\xiaji\Documents\projects\3D_pointcloud_dataset\contours\elbow_scan\6007_9_9.xyz'
-output_file = r'c:\Users\xiaji\Documents\projects\3D_pointcloud_dataset\contours\elbow_scan\6007_9_9_normalized.xyz'
+# # Main usage
+# input_file = 'input.xyz'
+# output_file = 'output_scaled.xyz'
+# # Example usage
+# input_file = r'c:\Users\xiaji\Documents\projects\3D_pointcloud_dataset\contours\elbow_scan\6007_9_9.xyz'
+# output_file = r'c:\Users\xiaji\Documents\projects\3D_pointcloud_dataset\contours\elbow_scan\6007_9_9_normalized.xyz'
 
-# Read the original XYZ file
-atoms, coords = read_xyz(input_file)
+input_dir = '/home/jjxia/Documents/projects/VIPSS_LOCAL/data_old/new_gt'
+out_dir = '/home/jjxia/Documents/projects/VIPSS_LOCAL/data/gt_normal'
 
-# Normalize the coordinates
-normalized_coords = normalize_coordinates(coords)
+file_names = os.listdir(input_dir)
+for file_name in file_names : 
 
-# Write the normalized data back to a new XYZ file
-write_xyz(output_file,  normalized_coords)
+    input_file = os.path.join(input_dir, file_name)
+    output_file = os.path.join(out_dir, file_name)
+    
+    data = read_xyz_with_normals(input_file)
+    points = data[:, :3]
+    normals = data[:, 3:]
 
-print(f"Normalized XYZ file written to {output_file}")
+    scaled_points = scale_points_uniform(points)
+    write_xyz_with_normals(output_file, scaled_points, normals)
+
+    # file_path = os.path.join(input_dir, file_name)
+    # out_file = os.path.join(out_dir, file_name)
+    # # Read the original XYZ file
+    # atoms, coords = read_xyz(file_path)
+    # # Normalize the coordinates
+    # normalized_coords = normalize_coordinates(coords)
+    # # Write the normalized data back to a new XYZ file
+    # write_xyz(out_file,  normalized_coords)
+    # print(f"Normalized XYZ file written to {out_file}")
