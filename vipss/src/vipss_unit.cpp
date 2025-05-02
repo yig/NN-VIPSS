@@ -1153,11 +1153,12 @@ void VIPSSUnit::Run()
     }
     // test_vipss_timing::test_local_vipss(input_data_path_);
     // test_vipss_timing::visual_distval_pt(input_data_path_, 200);
-    std::string out_csv_file = out_dir_ + file_name_ + "_time_stats_" + std::to_string(user_lambda_) + " .txt";
+    // std::string out_csv_file = out_dir_ + file_name_ + "_time_stats_" + std::to_string(user_lambda_) + " .txt";
+    std::string out_csv_file = out_dir_ + file_name_ + "_time_stats.txt";
     WriteStatsTimeCSV(out_csv_file, G_VP_stats);
 
-    std::string out_csv_re_file = out_dir_ + file_name_ + "_res.txt";
-    WriteVectorValsToCSV(out_csv_re_file, G_VP_stats.residuals_);
+    // std::string out_csv_re_file = out_dir_ + file_name_ + "_res.txt";
+    // WriteVectorValsToCSV(out_csv_re_file, G_VP_stats.residuals_);
 }
 
 void VIPSSUnit::CalEnergyWithGtNormal()
