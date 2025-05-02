@@ -129,12 +129,13 @@ void LocalVipss::VisualFuncValues(double (*function)(const R3Pt &in_pt), const V
 void LocalVipss::Init(const std::string & path, const std::string& ext)
 {   
     std::vector<double> in_pts;
-    std::vector<double> in_normals;
+    auto& in_normals = input_normals_;
     if(ext == ".ply") 
     {
         readPLYFile(path, in_pts, in_normals);
     } else {
-        readXYZ(path, in_pts);
+        readXYZnormal(path, in_pts, in_normals);
+        // readXYZ(path, in_pts);
     }
     bool normalize_init_pts = true;
 

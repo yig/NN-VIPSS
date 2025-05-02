@@ -588,9 +588,9 @@ void VIPSSUnit::BuildNNHRBFFunctions()
     if(only_use_nn_hrbf_surface_)
     {
         std::vector<double> in_pts;
-        std::vector<double> in_normals;
-        readXYZnormal(input_data_path_, in_pts, in_normals);
-        std::cout << "--- input normal size " << in_normals.size() / 3 << std::endl;
+        auto& in_normals = local_vipss_.input_normals_;
+        // readXYZnormal(input_data_path_, in_pts, in_normals);
+        // std::cout << "--- input normal size " << in_normals.size() / 3 << std::endl;
         newnormals_ = in_normals;
         local_vipss_.out_normals_ = in_normals;
         s_func_vals_.resize(in_normals.size()/3, 0);
@@ -1022,27 +1022,6 @@ void VIPSSUnit::Run()
     
     if (is_surfacing_)
     {
-        if(use_input_normal_)
-        {   
-            // std::string vipss_pt_path = "../../data/torus/torus_two_parts_normal.ply";
-            std::string vipss_pt_path = input_data_path_;
-            std::vector<double> v_pts;
-            std::vector<double> v_normals;
-            // readPLYFile(vipss_pt_path, v_pts, v_normals);
-            readXYZnormal(vipss_pt_path, v_pts, v_normals);
-            local_vipss_.out_normals_ = v_normals;
-            // std::vector<double> s_vals = ReadVectorFromFile(vipss_s_val_path);
-            std::vector<double> s_vals(v_pts.size()/3, 0);
-            local_vipss_.s_vals_ = s_vals;
-            newnormals_ = v_normals;
-            s_func_vals_ = s_vals;
-            for(int i = 0; i < 9 ; ++i)
-            {
-                std::cout << v_pts[i] * 2<< " " << local_vipss_.out_pts_[i] << std::endl;
-                std::cout << "v_normals " << v_normals[i] << std::endl;
-            }
-            // local_vipss_.out_pts_ = v_pts;
-        }
         BuildNNHRBFFunctions();
     }
     
@@ -1086,7 +1065,7 @@ void VIPSSUnit::Run()
         arma::vec3 hull_c= {0, 0, 0};   
         std::vector<arma::vec3> hull_normals;
         int normal_size = newnormals_.size();
-        std::cout << " newnormals_ size 00 " << normal_size << std::endl;
+        // std::cout << " newnormals_ size 00 " << normal_size << std::endl;
         for(auto pt: local_vipss_.voro_gen_.convex_hull_pts_)
         {
             hull_c[0] += pt[0];
@@ -1133,8 +1112,6 @@ void VIPSSUnit::Run()
     newnormals_.clear();
     // local_vipss_.out_pts_.clear();
     local_vipss_.voro_gen_.vcell_face_centers_.clear();
-   
-
     // is_surfacing_ = false;
     if (is_surfacing_)
     {
@@ -1163,7 +1140,7 @@ void VIPSSUnit::Run()
 
 void VIPSSUnit::CalEnergyWithGtNormal()
 {
-    std::string norm_path = "c:\\Users\\xiaji\\Documents\\projects\\sketches_results\\crab_out_normal_old.ply";
+    std::string norm_path = "";
     std::vector<double> vertices;
     std::vector<double> normals;
     readPLYFile(norm_path, vertices, normals);

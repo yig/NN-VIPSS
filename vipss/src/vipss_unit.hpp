@@ -107,7 +107,7 @@ class VIPSSUnit {
         bool make_nn_const_neighbor_num_ = true; 
         bool use_global_hrbf_ = false;
         double user_alpha_ = 50.0;
-        bool use_input_normal_ = false;
+        // bool use_input_normal_ = false;
         bool only_use_nn_hrbf_surface_ = false;
         double iso_offset_val_ = 0;
         bool is_dense_input_ = false;

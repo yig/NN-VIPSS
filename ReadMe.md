@@ -28,11 +28,8 @@ The code need dependencies:
 
 If you are compiling on Ubuntu, install Openblass from source with OpenMP enabled first, then Amardillo and other libs. If using Windows, vcpkg is preferred to install the libs, but you may need to compile pico tree by yourself. When compile with Visual Studio, please set C++ version to 20+ and enable OpenMP support.   
 
-
-
-You can download & install them by yourself, or run the env.sh script which will install homebrew first.
-
-$source env.sh  
+<!-- You can download & install them by yourself, or run the env.sh script which will install homebrew first.
+$source env.sh   -->
 
 Then go to the vipss folder, build the Cmake file and make:
 $mkdir ./vipss/build  
@@ -69,19 +66,17 @@ where:
 
 8. --max_iter: Followed by the a integer number, the default value 10000. You can finetune the number if you want early stop or more iteration for smoother results.
 
-9. -w : MST weight type, 0 for angle score, 1 for both a conbined weight(sqrt(dist) * score), default is 0. You may try 1 if the init normals are not correctly flipped for some tricky cases, especially when the there are large missing part on dense sampling cases.  
+9. -w : MST weight type, 0 for angle score, 1 for a conbined weight(sqrt(dist) * score), default is 0. You may try 1 if the init normals are not correctly flipped for some tricky cases, especially when the there are large missing part on dense sampling cases.  
  
 
 Some examples have been placed at data folder for testing:
-1. $./vipss -i ../../data/points/doghead.xyz -o {your_own_out_dir}/doghead.ply 
+$./vipss -i ../../data/points/doghead.xyz -o {your_own_out_dir}/doghead.ply 
 
 The program will generate the predicted normal in [input file name]_normal.ply.
 If -s is included in the command line, the program will generate the surface as the zero-level set of the solved implicit function ([input file name]_surface.ply).
 
 :bell: To generate all the example in the paper, please run the makefigure.sh script in the vipss folder:  
 check makefigure.sh file, and replace the out_dir with your output directory.  
-
-
 
 :mega: For further questions about the code and the paper, please contact Jianjun Xia  jianjun.x@wustl.edu (might be invalid after he graduated). You can also contact Prof. Tao Ju at taoju@wustl.edu.
 

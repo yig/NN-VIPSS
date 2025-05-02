@@ -180,6 +180,7 @@ class LocalVipss {
         size_t pt_num_;
         // std::vector<std::pair<int, double>> cluster_id_scores_;
         // std::set<size_t> update_score_cluster_ids_;
+        std::vector<double> input_normals_;
         std::vector<double> out_pts_;
         std::vector<double> out_normals_;
         std::vector<double> out_normals_dist_;
