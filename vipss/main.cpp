@@ -66,7 +66,7 @@ int main(int argc, char** argv)
     // app.add_option("-B, --Batch_size", args.batch_size, "point batch size for building sparse matrix H");
     // app.add_option("-c, --constraint_level", args.constraint_level, "optimization contraint level, the higher value the higher punish term");
     app.add_option(" --alpha", args.alpha, " soft constraints alpha value, larger value has harder constraints ");
-    app.add_option("-N, --use_input_normal",args.use_input_normal, "use input normal to build dist function");
+    // app.add_option("-N, --use_input_normal",args.use_input_normal, "use input normal to build dist function");
     // app.add_option(" --iso_offset", args.iso_offset, " iso offset value for adaptive grid surface ");
     app.add_option("-D, --is_dense_input",args.is_dense_input, "enable dense input can reduce natural neighbor size");
     app.add_option("-w, --MST_weight_type",args.MST_weight_type, "MST weight type, 0 uses angle score, 1 use both dist and score");
@@ -78,7 +78,7 @@ int main(int argc, char** argv)
     vipss_unit.hard_constraints_ = args.hardConstraints;
     vipss_unit.max_opt_iter_ = args.max_iter_num;
     vipss_unit.user_alpha_ = args.alpha;
-    vipss_unit.use_input_normal_ = args.use_input_normal;
+    // vipss_unit.use_input_normal_ = args.use_input_normal;
     vipss_unit.only_use_nn_hrbf_surface_ = args.only_surface;
     vipss_unit.is_dense_input_ = args.is_dense_input;
     vipss_unit.MST_weight_type_ = args.MST_weight_type;

@@ -37,7 +37,7 @@ $cd ./vipss/build
 $cmake ..  
 $make  
 
-In the vipss directory, there should be an executable called "vipss" (or "vipss.exe" on Windows if it is successfully built).
+In the build directory, there should be an executable called "nnvipss" (or "nnvipss.exe" on Windows if it is successfully built).
 
 
 RUNNING
@@ -45,7 +45,7 @@ RUNNING
 
 To run the code from the command line, type:
 
-$./vipss -i input_file_name [-l user_lambda] [-o output_file_path]
+$./nnvipss -i input_file_name [-l user_lambda] [-o output_file_path]
 
 where:
 1. -i: followed by the path of the input file. input_file_name is a path to the input file. currently, support file format includes ".xyz" and ".ply". The format of .xyz is:  
@@ -70,7 +70,7 @@ where:
  
 
 Some examples have been placed at data folder for testing:
-$./vipss -i ../../data/points/doghead.xyz -o {your_own_out_dir}/doghead.ply 
+$./nnvipss -i ../../data/points/doghead.xyz -o {your_own_out_dir}/doghead.ply 
 
 The program will generate the predicted normal in [input file name]_normal.ply.
 If -s is included in the command line, the program will generate the surface as the zero-level set of the solved implicit function ([input file name]_surface.ply).

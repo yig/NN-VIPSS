@@ -1,6 +1,6 @@
 
 cmake_minimum_required(VERSION 3.10)
-project(vipss)
+project(nnvipss)
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++2a -O3 ")
 
 # check_library_exists(atomic __atomic_compare_exchange_16 "" NEEDS_LIBATOMIC)
@@ -69,8 +69,3 @@ add_executable(${PROJECT_NAME} main.cpp)
 target_link_libraries(${PROJECT_NAME} local_vipss ${ARMADILLO_LIB} ${NLOPT_LIBRARIES} 
             OpenMP::OpenMP_CXX adgrid )
 
-find_library(OpenBLAS_LIB openblas REQUIRED)
-
-add_executable(test_time test_time.cpp)
-target_link_libraries(test_time local_vipss ${ARMADILLO_LIB} ${NLOPT_LIBRARIES} 
-            OpenMP::OpenMP_CXX ${OpenBLAS_LIB})
