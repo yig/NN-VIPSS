@@ -10,7 +10,7 @@ This code implements the algorithm described in
 
 The primary function of this program is to predict the normal as well as the underlying surface of a given set of unoriented points.
 
-Currently, the code is tested on Ubuntu OS 24.04, it should work at other platforms with minor modification.
+Currently, the code is tested on Ubuntu OS 24.04, it should work at other platforms with minor modification. If you are not familiar with compilation on windows, we provide a pre-compiled [binary files](https://gowustl-my.sharepoint.com/:u:/g/personal/jianjun_x_wustl_edu/Ea108LLPWkJJrr3xBJBVrckB4ipwM4qRdXkxsJRkugdTmQ?e=cJ3dQI) for you to try. 
 
 
 BUILDING
@@ -26,7 +26,7 @@ The code need dependencies:
 6) [pico_tree v0.8.3](https://github.com/Jaybro/pico_tree/tree/v0.8.3)  
 7) [C++ JSON (nlohmann/json)](https://github.com/nlohmann/json)
 
-If you are compiling on Ubuntu, install Openblass from source with OpenMP enabled first, then Amardillo and other libs. If using Windows, vcpkg is preferred to install the libs, but you may need to compile pico tree by yourself. When compile with Visual Studio, please set C++ version to 20+ and enable OpenMP support.   
+Install Openblass from source with OpenMP enabled first, then Amardillo and other libs. If using Windows, vcpkg is preferred to install the libs and pico header files are already in the source code. When compile with Visual Studio, please set C++ version to 20+ and enable OpenMP support.   
 
 <!-- You can download & install them by yourself, or run the env.sh script which will install homebrew first.
 $source env.sh   -->
