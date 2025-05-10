@@ -50,21 +50,19 @@ $./nnvipss -i input_file_name [-l user_lambda] [-o output_file_path]
 where:
 1. -i: followed by the path of the input file. input_file_name is a path to the input file. currently, support file format includes ".xyz" and ".ply". The format of .xyz is:  
 
-4. -o: optional argument. Followed by the path of the output path. output_file_path is a path to the folder for generating output files. Default the folder of the input file.
+2. -o: optional argument. Followed by the path of the output path. output_file_path is a path to the folder for generating output files. Default the folder of the input file.
 
-2. -l: optional argument. Followed by a float number indicating the lambda which balances the energy (see the paper for details). Default 0 (exact interpolation), you should set and tune this number according to your inputs.
+3. -l: optional argument. Followed by a float number indicating the lambda which balances the energy (see the paper for details). Default 0 (exact interpolation), you should set and tune this number according to your inputs.
 
-3. -S: optional bool argument(false or true, true for default). If true, the program would output the surface ([input file name].ply). 
+4. -s: optional bool argument(false or true, true for default). If true, the program would output the surface ([input file name].ply). 
 
-4. -o: optional argument. Followed by the path of the output path. output_file_path is a path to the folder for generating output files. Default the folder of the input file.
+5. --alpha : optional argument. Followed by a float number indicating the soft constraints level of the gradient length. Larger value means stronger constraints, the default value is 50, you may finetune if needed.   
 
-5. -O: optional bool argument, if true and the input contains normals, the program will only use the input normals to build our blended interpolant to extract surface. 
+6. --large_input : optional bool argument(false or true, false for default). For test on dense sampling cases, setting the option true, can reduce the average nature neighbor size, which is useful when we are doing the test on the large benchmark described in the paper.    
 
-6. --alpha : optional argument. Followed by a float number indicating the soft constraints level of the gradient length. Larger value means stronger constraints, the default value is 50, you may finetune if needed.   
+7. --max_iter: Followed by the a integer number, the default value 10000. You can finetune the number if you want early stop or more iteration for smoother results.
 
-7. -D: (--is_dense_input) optional bool argument(false or true, false for default). For test on dense sampling cases, setting the option true, can reduce the average nature neighbor size, which is useful when we are doing the test on the large benchmark described in the paper.    
-
-8. --max_iter: Followed by the a integer number, the default value 10000. You can finetune the number if you want early stop or more iteration for smoother results.
+8. -a : [apative grid surface](https://jurwen.github.io/Adaptive-grid-for-implicit-complexes/) threshold value for surface generation, default value is 0.003.  
 
 9. -w : MST weight type, 0 for angle score, 1 for a conbined weight(sqrt(dist) * score), default is 0. You may try 1 if the init normals are not correctly flipped for some tricky cases, especially when the there are large missing part on dense sampling cases.  
  
