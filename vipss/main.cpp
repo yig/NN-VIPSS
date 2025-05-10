@@ -51,24 +51,24 @@ int main(int argc, char** argv)
     app.add_option("-o, --output ", args.output, "output file, if not given , output will be saved in same folder as input");
     app.add_option("-l, --lambda ", args.lambda, "lambda value");
     
-    app.add_option("-P, --initPV", args.initPV, "enable or disable partial vipss for normal initialization");
-    app.add_option("-S, --surfacing", args.surfacing, "reconstruct surface or not");
+    // app.add_option("-P, --initPV", args.initPV, "enable or disable partial vipss for normal initialization");
+    app.add_option("-s, --surfacing", args.surfacing, "reconstruct surface or not");
     // app.add_option("-H, --hardConstraints", args.hardConstraints, "use hard constraints for energy optimization");
     // app.add_option("-R, --use_rbfBase",args.rbf_base, "use simplified rbf base");
     // app.add_option("-t, --opt_threshold",args.opt_threshold, "use simplified rbf base");
-    app.add_option("-v, --volume_size ", args.volumeDim, "surface volumeDim for surface tracker, not useful for adaptive grid"); 
+    // app.add_option("-v, --volume_size ", args.volumeDim, "surface volumeDim for surface tracker, not useful for adaptive grid"); 
     app.add_option("-a, --adgrid_threshold",args.adgrid_threshold, "adptive gird generation threshold");
-    app.add_option("-A, --use_adgrid",args.use_adgrid, "use adptive gird to generate mesh");
-    app.add_option("-O, --only_surface",args.only_surface, "add insert octree pt to generate mesh");
-    app.add_option("-G, --use_ghrbf",args.use_global_hrbf, "insert octree sample pts to build new HRBF");
+    // app.add_option("-A, --use_adgrid",args.use_adgrid, "use adptive gird to generate mesh");
+    // app.add_option("-O, --only_surface",args.only_surface, "add insert octree pt to generate mesh");
+    // app.add_option("-G, --use_ghrbf",args.use_global_hrbf, "insert octree sample pts to build new HRBF");
     // app.add_option("-M, --memory_efficient",args.memory_efficient, "insert octree sample pts to build new HRBF");
-    app.add_option("--max_iter",args.max_iter_num, "insert octree sample pts to build new HRBF");
+    app.add_option("--max_iter",args.max_iter_num, "set max optimization iteration");
     // app.add_option("-B, --Batch_size", args.batch_size, "point batch size for building sparse matrix H");
     // app.add_option("-c, --constraint_level", args.constraint_level, "optimization contraint level, the higher value the higher punish term");
-    app.add_option(" --alpha", args.alpha, " soft constraints alpha value, larger value has harder constraints ");
+    app.add_option("--alpha", args.alpha, " soft constraints alpha value, larger value has harder constraints ");
     // app.add_option("-N, --use_input_normal",args.use_input_normal, "use input normal to build dist function");
     // app.add_option(" --iso_offset", args.iso_offset, " iso offset value for adaptive grid surface ");
-    app.add_option("-D, --is_dense_input",args.is_dense_input, "enable dense input can reduce natural neighbor size");
+    app.add_option("--large_input",args.is_dense_input, "enable large input can reduce natural neighbor size");
     app.add_option("-w, --MST_weight_type",args.MST_weight_type, "MST weight type, 0 uses angle score, 1 use both dist and score");
 
 
