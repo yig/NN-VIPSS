@@ -17,7 +17,8 @@ BUILDING
 ======================================================================================================
 
 
-The code need dependencies: 
+The code needs the following dependencies, all installed automatically via CMake FetchContent:
+
 1) [Armadillo](https://gitlab.com/conradsnicta/armadillo-code)  
 2) NLOPT  
 3) [OpenBLAS](https://github.com/OpenMathLib/OpenBLAS) (need to enable OpenMP support, better recompile it when using Ubuntu)  
@@ -26,18 +27,13 @@ The code need dependencies:
 6) [pico_tree v0.8.3](https://github.com/Jaybro/pico_tree/tree/v0.8.3)  
 7) [C++ JSON (nlohmann/json)](https://github.com/nlohmann/json)
 
-Install Openblass from source with OpenMP enabled first, then Amardillo and other libs. If using Windows, switch windows branch first and vcpkg is preferred to install the libs except OpenBlas, as you need to recompile the lib with USE_OPENMP on; pico header files are already in the source code. When compiling with Visual Studio, please set C++ version to 20+ and enable OpenMP support.   
+Then go to the vipss folder, and build the Cmake file:
+```
+$ cmake -B build-dir
+$ cmake --build build-dir
+```
 
-<!-- You can download & install them by yourself, or run the env.sh script which will install homebrew first.
-$source env.sh   -->
-
-Then go to the vipss folder, build the Cmake file and make:
-$mkdir ./vipss/build  
-$cd ./vipss/build  
-$cmake ..  
-$make  
-
-In the build directory, there should be an executable called "nnvipss" (or "nnvipss.exe" on Windows if it is successfully built).
+In the `build-dir` directory, there should be an executable called "nnvipss" (or "nnvipss.exe" on Windows if it is successfully built).
 
 
 RUNNING
@@ -45,7 +41,9 @@ RUNNING
 
 To run the code from the command line, type:
 
-$./nnvipss -i input_file_name [-l user_lambda] [-o output_file_path]
+```
+$ ./nnvipss -i input_file_name [-l user_lambda] [-o output_file_path]
+```
 
 where:
 1. -i: followed by the path of the input file. input_file_name is a path to the input file. currently, support file format includes ".xyz" and ".ply". The format of .xyz is:  
@@ -68,7 +66,9 @@ where:
  
 
 Some examples have been placed at data folder for testing:
-$./nnvipss -i ../../data/points/doghead.xyz -o {your_own_out_dir}/doghead.ply 
+```
+$ ./nnvipss -i ../../data/points/doghead.xyz -o {your_own_out_dir}/doghead.ply 
+```
 
 The program will generate the predicted normal in [input file name]_normal.ply.
 If -s is included in the command line, the program will generate the surface as the zero-level set of the solved implicit function ([input file name]_surface.ply).

@@ -39,6 +39,8 @@ x64
 3rd
 .vs
 .vscode
+build
+build-dir
 
 #output 
 output
